@@ -10,8 +10,18 @@
 
 \begin{document}
 
-\title{\textbf{Título del Informe} \\ \large \textbf{Subtítulo del Informe}}
-\author{Doe, John}
+\title{\textbf{FIUBAKKA} \\ \large \textbf{Juego multijugador online con Akka}}
+\author{
+    Rolando, Marcos
+    \and
+    Soriano, Iván
+    \and
+    Raveszani, Nicole
+    \and
+    Scaccheri Cassanello, Franco
+    \and
+    Deymonnaz, Pablo
+}
 \date{\today}
 
 \maketitle % Prints the title, author, and date
@@ -20,7 +30,11 @@
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.5\textwidth]{../assets/latex.png}
+    \includegraphics[width=0.5\textwidth]{../assets/fiuba-logo.png}
+\end{figure}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.5\textwidth]{../assets/akka-toolkit-logo.png}
 \end{figure}
 
 \newpage
@@ -30,37 +44,53 @@
 
 \setcounter{page}{1} % Reset page counter to 1
 
+\section{Resumen / Abstract}
+
+\subfile{resumen.tex}
+
+\vspace{5mm} %5mm vertical space
+
+\subfile{abstract.tex}
+
+\newpage
+
 \section{Introducción}
 
 \subfile{introduction.tex}
 
-\section{Desarrollo}
+\section{Backend: servidor distribuido Akka}
 \index{Desarrollo}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-Sed eu augue ut nunc semper lacinia id in enim. Sed bibendum 
-molestie dignissim. Aenean quis odio id leo gravida sodales. 
-Nam id turpis nunc. Aliquam imperdiet quam maximus nisl 
-iaculis maximus. Vestibulum gravida egestas sapien, ac posuere 
-metus sagittis quis. Aliquam quis turpis non ex placerat iaculis. 
-Nunc quis nisl eu ipsum ullamcorper feugiat. Sed eu faucibus metus, 
-quis ultricies erat. Donec vel commodo eros. Donec pretium sed 
-ligula et placerat. In hac habitasse platea dictumst. 
-Aenean ultricies vulputate dignissim. Maecenas et leo eleifend 
-libero efficitur condimentum id eu quam. Mauris sit amet pretium felis.
+\subsection{Introducción a Akka}
 
-\section{Desarrollo}
+\subsection{Arquitectura}
 
-\subsection{Supuestos}
+\subsection{Diagramas}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+\subsection{Mensajes de Kafka}
 
-\subsection{Extra}
 
-Sed eu augue ut nunc semper lacinia id in enim. Sed bibendum 
+\section{Frontend: cliente Godot}
 
-\section{Conclusión}
+\subsection{Introducción a Godot}
 
-Aenean ultricies vulputate dignissim. Maecenas et leo eleifend.
+\subsection{Estructura de proyecto}
+
+\subsection{Comunicación con el servidor}
+
+\subsection{Dificultades}
+
+
+\section{Resultados}
+
+\subsection{Resultados esperados}
+
+\subsection{Resultados obtenidos}
+
+\subsection{Métricas de latencia}
+
+\section{Conclusiones}
+
+
 
 \end{document}
