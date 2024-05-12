@@ -1,0 +1,49 @@
+% En esta sección se presenta una breve descripción de la solución que se propone, 
+% el principal objetivo de esta sección es poder dar el bosquejo de la solución 
+% para que pueda ser evaluado. No es necesario detalles, pero sí mencionar sus 
+% componentes generales. 
+% Si las tecnologías que se van a utilizar ya están establecidas, se deberán 
+% incluir aquí. De no estar definidas todas, enumerar las que sí están definidas 
+% y explicar qué consideraciones tendrán en cuenta para definir las restantes.
+
+
+\subsection{Backend: servidor distribuido Akka}
+\index{Desarrollo}
+
+\subsubsection{Introducción a Akka}
+
+\subsubsection{Arquitectura}
+
+\subsubsection{Diagramas}
+
+\subsubsection{Mensajes de Kafka}
+
+
+\subsection{Frontend: cliente Godot}
+
+\subsubsection{Introducción a Godot}
+
+Godot es un motor para desarrollar videojuegos, argentino, gratuito y de código abierto. Este motor permite crear tanto juegos 2D como también juegos 3D. Además de permitir desarrollar para múltiples plataformas, permite programar scripts exponiendo una API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaje propio de Godot.
+
+La filosofía del diseño de Godot es construir escenas reutilizables usando nodos. A estas escenas y nodos se les puede agregar comportamiento con scripts. Con la composición y jerarquía de los Nodos, se puede construir una lógica de juego que es clara de entender.
+
+\subsubsection{Estructura de proyecto}
+
+Para este proyecto, definimos una Escena \textbf{Main} donde instanciamos las escenas del juego necesarias a medida que sean requeridas. Por ejemplo, los niveles propiamente dichos no se instancian al iniciar el juego, sino después de que el jugador se haya conectado al servidor. De esta forma, encapsulamos todas las escenas activas en un mismo lugar y no desperdiciamos recursos instanciando todas las escenas a la vez.
+
+Además hacemos uso de los \textbf{Autoloads} de Godot, que funcionan igual que el patrón \textbf{Singleton}, para ciertas Escenas o scripts que son necesarios en un scope global. Por ejemplo, para el manejo, carga y borrado de escenas, hacemos uso de un \textbf{SceneManager}, que es un script Autoload que permite transicionar entre niveles dentro del juego. 
+
+\subsubsection{Comunicación con el servidor}
+
+Al comienzo del proyecto, un posible limitante de usar Godot eran las herramientas que podía ofrecer el motor para la conectividad con el servidor, ya sea UDP, TCP o incluso HTTP. Para nuestro beneficio, Godot provee clases y funciones para la comunicación utilizando cualquiera de los protocolos mencionados. En nuestro caso, decidimos usar el protocolo TCP por sus beneficios: conexión mantenida con el servidor, garantía de que se envíen todos los paquetes, etc.
+
+Luego, definimos nuestras propias clases \textit{wrapper} para establecer la conexión al servidor y el manejo de mensajes, tanto para recibirlos (\textbf{ServerConsumer}) como para enviarlos (\textbf{ServerProducer}).
+
+\subsection{Comunicación entre cliente y servidor}
+
+\subsubsection{Protocol buffers}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/protobuf.png}
+\end{figure}
