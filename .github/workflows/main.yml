@@ -1,0 +1,31 @@
+name: Main
+on: [push]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install texlive-latex-base texlive-latex-extra texlive-lang-spanish latexmk procps
+
+      - name: Compile file
+        run: |
+          latexmk -pdf -cd -output-directory=../target -view=none -jobname=informe src/main.tex
+          
+
+      - name: Upload to Google Drive folder
+        uses: adityak74/google-drive-upload-git-action@main
+        with:
+          credentials: ${{ secrets.CREDENTIALS }}
+          filename: "target/informe.pdf"
+          folderId: ${{ secrets.FOLDER_ID }}
+          name: "informe.pdf" # optional string
+          overwrite: "true" # optional boolean
+          
