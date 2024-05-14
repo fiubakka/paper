@@ -6,6 +6,46 @@
 % incluir aquí. De no estar definidas todas, enumerar las que sí están definidas 
 % y explicar qué consideraciones tendrán en cuenta para definir las restantes.
 
+Proponemos una arquitectura distribuida totalmente opuesta al modelo monolítico clásico, 
+donde el estado del juego no se encuentra condensado en una única máquina sino que se encuentra 
+distribuido en varias. El conjunto del estado en cada una de estas terminaría siendo el 
+estado del juego global. Además de esto, proponemos que utilizar el modelo de actores resulta 
+una forma natural de representar a las entidades del videojuego, donde podemos plantear una 
+relación 1 a 1 entre entidad y actor. Si planteamos entonces que el estado de cada entidad 
+debería ser administrado por ella misma, (¡uno de los principios del modelo de actores!) 
+se desprende que el paradigma de actores se ajusta perfectamente al modelo que queremos desarrollar.
+
+Existen muchas implementaciones del modelo de actores (el lenguaje Erlang o el framework de Rust actix) 
+pero nosotros nos decantamos por Akka.
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.5\textwidth]{../assets/architecture.png}
+    \caption{Diagrama de arquitectura propuesta utilizando el modelo de actores y streams}
+\end{figure}
+
+Para solucionar el problema mencionado anteriormente, planteamos desde el diseño tener al juego 
+dividido en “secciones” o “niveles” (que no necesariamente sean niveles o zonas físicas distintas) 
+donde los actores correspondientes a cada entidad únicamente conocerán (y por tanto podrán interactuar) 
+con actores de su misma zona o zonas adyacentes. Esto nos acota la carga de mensajes sobre cada actor, 
+ya que si cada actor pudiera comunicarse con cualquier otro, terminaremos teniendo un carga de 
+N cuadrado, donde N denota a los actores del juego (las entidades).
+
+Los entidades podrán interactuar entre ellas a través de los mensajes entre los actores, 
+sin embargo optamos por utilizar Akka Streams para todo lo que sea actualizaciones globales 
+del estado para evitar el problema de saturar las mailboxes de los actores ante eventos muy 
+recurrentes, como es el claro ejemplo de las actualizaciones de las posiciones de los actores. 
+La idea es que cada entidad tendrá asociada un actor por zona del juego encargado de leer del 
+Stream de esa zona y agrupar varias de las actualizaciones de estado más generales (en forma de batch) 
+y enviar por mensaje al actor principal de la entidad esas actualizaciones. 
+Así disminuimos considerablemente la cantidad de mensajes que tiene que procesar cada actor 
+principal de la entidad y además aprovechamos el mecanismo de back pressure que Akka Stream 
+provee transparentemente. Cada actor principal de la entidad entonces envía sus actualizaciones 
+generales (por ejemplo la posición) a través del Stream de la zona en la que reside, para que 
+sea consumida por los actores de las demás entidades.
+
+
 
 \subsection{Backend: servidor distribuido Akka}
 \index{Desarrollo}

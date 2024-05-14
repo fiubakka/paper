@@ -3,3 +3,15 @@
 % La misma debe ser redactada de manera clara y concisa debe ser entendida 
 % en la primera lectura, este ítem es de fundamental importancia al momento 
 % de ser evaluado el proyecto.
+
+Si bien el modelo monolítico descrito anteriormente funciona bien para la mayoría de los 
+casos con una cantidad acotada de jugadores, empieza a ser un problema cuando el juego 
+permite la interacción de una magnitud mayor de jugadores / entidades (NPCs) en simultáneo. 
+Al ser una arquitectura monolítica las herramientas típicas que se utilizan para escalar 
+la performance es delegar ciertas tareas a distintos threads del procesador, para así distribuir 
+el cómputo realizado y conseguir paralelizar las tareas, obteniendo una mejor performance. 
+Sin embargo el uso de threads conlleva conocidos potenciales problemas de concurrencia, 
+como pueden ser los deadlocks o race conditions que se originan al estar compartiendo 
+recursos / memoria. Además, este enfoque se ve también limitado por la cantidad de threads 
+que posea el procesador, siendo imposible paralelizar más tareas que la cantidad de núcleos 
+que el procesador posea.
