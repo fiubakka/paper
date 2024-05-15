@@ -15,8 +15,8 @@ relación 1 a 1 entre entidad y actor. Si planteamos entonces que el estado de c
 debería ser administrado por ella misma, (¡uno de los principios del modelo de actores!) 
 se desprende que el paradigma de actores se ajusta perfectamente al modelo que queremos desarrollar.
 
-Existen muchas implementaciones del modelo de actores (el lenguaje Erlang o el framework de Rust actix) 
-pero nosotros nos decantamos por Akka.
+Existen muchas implementaciones del modelo de actores (el lenguaje \textit{Erlang} o el framework de 
+\textit{Rust actix}) pero nosotros nos decantamos por \textit{Akka}.
 
 
 \begin{figure}[htbp]
@@ -33,7 +33,7 @@ ya que si cada actor pudiera comunicarse con cualquier otro, terminaremos tenien
 N cuadrado, donde N denota a los actores del juego (las entidades).
 
 Los entidades podrán interactuar entre ellas a través de los mensajes entre los actores, 
-sin embargo optamos por utilizar Akka Streams para todo lo que sea actualizaciones globales 
+sin embargo optamos por utilizar \textit{Akka Streams} para todo lo que sea actualizaciones globales 
 del estado para evitar el problema de saturar las mailboxes de los actores ante eventos muy 
 recurrentes, como es el claro ejemplo de las actualizaciones de las posiciones de los actores. 
 La idea es que cada entidad tendrá asociada un actor por zona del juego encargado de leer del 
@@ -61,23 +61,68 @@ sea consumida por los actores de las demás entidades.
 
 \subsection{Frontend: cliente Godot}
 
-\subsubsection{Introducción a Godot}
+\textit{Godot} es un motor para desarrollar videojuegos, argentino, gratuito y de código abierto. 
+Este motor brinda distintas herramientas para desarrollar aplicaciones interactivas, como por ejemplo 
+interfaces gráficas, gráficos 2D y 3D, input del usuario con distintos periféricos, control de audio, 
+lógica de físicas y colisiones, conectividad a través de la red, entre muchas otras.
+Además de permitir desarrollar para múltiples plataformas, permite programar scripts exponiendo una 
+API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaje propio de Godot.
 
-Godot es un motor para desarrollar videojuegos, argentino, gratuito y de código abierto. Este motor permite crear tanto juegos 2D como también juegos 3D. Además de permitir desarrollar para múltiples plataformas, permite programar scripts exponiendo una API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaje propio de Godot.
+El motor ofrece una amplia colección de Nodos, que son los componentes básicos que se utilizan para 
+construir Escenas, que a su vez pueden ser sub-nodos de otras escenas. Los Nodos pueden ser desde un 
+simple botón (\textbf{Button}) hasta un cuerpo con lógica de físicas y colisiones tridimensionales 
+(\textbf{PhysicsBody3D}) e incluso un \textbf{AnimationPlayer} que se encarga de manejar animaciones, 
+es decir, una secuencia de imágenes o \textit{Sprites}.
 
-La filosofía del diseño de Godot es construir escenas reutilizables usando nodos. A estas escenas y nodos se les puede agregar comportamiento con scripts. Con la composición y jerarquía de los Nodos, se puede construir una lógica de juego que es clara de entender.
+Otro feature importante de Godot es el uso de señales (\textit{signals}) para comunicar eventos entre nodos.
+Un Nodo cualquiera o una Escena personalizada pueden emitir \textit{signals} con un nombre específico 
+(incluso con parámetros) para que otros Nodos o Escenas se suscriban a dicha señal. Al suscribirse, los 
+Nodos receptores definen un handler (comúnmente nombrado \textit{_on_<node>_<signal_name>}) para manejar 
+la señal recibida. De esta forma se pueden crear escenas compuestas de múltiples Nodos distintos, con 
+comportamiento más complejo, pero sin acoplar todos los nodos que necesiten comunicarse entre sí.
+
+La filosofía del diseño de Godot es construir escenas reutilizables usando nodos. A estas escenas y 
+nodos se les puede agregar comportamiento con \textit{scripts}. Con la composición y jerarquía de los Nodos, 
+se puede construir una lógica de juego que es clara y fácil de entender.
 
 \subsubsection{Estructura de proyecto}
 
-Para este proyecto, definimos una Escena \textbf{Main} donde instanciamos las escenas del juego necesarias a medida que sean requeridas. Por ejemplo, los niveles propiamente dichos no se instancian al iniciar el juego, sino después de que el jugador se haya conectado al servidor. De esta forma, encapsulamos todas las escenas activas en un mismo lugar y no desperdiciamos recursos instanciando todas las escenas a la vez.
+Para este proyecto, definimos una Escena \textbf{Main} donde instanciamos las escenas del juego necesarias 
+a medida que sean requeridas. Por ejemplo, los niveles propiamente dichos no se instancian al iniciar el 
+juego, sino después de que el jugador se haya conectado al servidor. De esta forma, encapsulamos todas las 
+escenas activas en un mismo lugar y no desperdiciamos recursos instanciando todas las escenas a la vez.
 
-Además hacemos uso de los \textbf{Autoloads} de Godot, que funcionan igual que el patrón \textbf{Singleton}, para ciertas Escenas o scripts que son necesarios en un scope global. Por ejemplo, para el manejo, carga y borrado de escenas, hacemos uso de un \textbf{SceneManager}, que es un script Autoload que permite transicionar entre niveles dentro del juego. 
+Además hacemos uso de los \textbf{Autoloads} de Godot, que funcionan igual que el patrón \textbf{Singleton}, 
+para ciertas Escenas o scripts que son necesarios en un scope global. Por ejemplo, para el manejo, carga 
+y borrado de escenas, hacemos uso de un \textbf{SceneManager}, que es un script Autoload que permite 
+transicionar entre niveles dentro del juego. En general, se implementaron Singletons de tipo \textit{Manager}
+para acceder a distintos comportamientos y configuraciones globales (información del jugador, cambio de 
+escenas, control del audio, entre otros).
 
 \subsubsection{Comunicación con el servidor}
 
-Al comienzo del proyecto, un posible limitante de usar Godot eran las herramientas que podía ofrecer el motor para la conectividad con el servidor, ya sea UDP, TCP o incluso HTTP. Para nuestro beneficio, Godot provee clases y funciones para la comunicación utilizando cualquiera de los protocolos mencionados. En nuestro caso, decidimos usar el protocolo TCP por sus beneficios: conexión mantenida con el servidor, garantía de que se envíen todos los paquetes, etc.
+Al comienzo del proyecto, un posible limitante de usar Godot eran las herramientas que podía ofrecer 
+el motor para la conectividad con el servidor, ya sea UDP, TCP o incluso HTTP. 
+Para nuestro beneficio, Godot provee distintas APIs para conectividad que cumplen los requisitos
+de los protocolos antes mencionados. En nuestro caso, decidimos usar el protocolo TCP por sus características:
+\begin{itemize}
+    \item Handshake con el Servidor
+    \item Conexión mantenida con el Servidor
+    \item Garantía de recepción de todos los paquetes enviados
+    \item \textit{Flow Control}
+\end{itemize}
 
-Luego, definimos nuestras propias clases \textit{wrapper} para establecer la conexión al servidor y el manejo de mensajes, tanto para recibirlos (\textbf{ServerConsumer}) como para enviarlos (\textbf{ServerProducer}).
+Luego, definimos nuestras propias clases \textit{wrapper} para establecer la conexión al servidor y el 
+manejo de mensajes. 
+
+Para la recepción implementamos un \textbf{ServerConsumer} que se encarga de recibir los paquetes 
+del Servidor, parsea el mensaje completo (ver sección Protocol buffers) y según qué mensaje recibió, 
+invoca al \textit{handler} correspondiente para actualizar el estado del juego del lado del Cliente.
+
+Es análogo el envío de mensajes en el sentido desde el Cliente hacia el Servidor: algún input de un 
+usuario dispara una \textit{signal} que el \textbf{ServerProducer} recibe, este se encarga de crear 
+el mensaje correspondiente con los parámetros correctos, lo serializa y envía los paquetes de bytes 
+al Servidor a través de la conexión TCP.
 
 \subsection{Comunicación entre cliente y servidor}
 
@@ -87,3 +132,5 @@ Luego, definimos nuestras propias clases \textit{wrapper} para establecer la con
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/protobuf.png}
 \end{figure}
+
+\subsubsection{Lógica del juego: movimiento y colisiones}
