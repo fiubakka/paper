@@ -77,7 +77,7 @@ es decir, una secuencia de imágenes o \textit{Sprites}.
 Otro feature importante de Godot es el uso de señales (\textit{signals}) para comunicar eventos entre nodos.
 Un Nodo cualquiera o una Escena personalizada pueden emitir \textit{signals} con un nombre específico 
 (incluso con parámetros) para que otros Nodos o Escenas se suscriban a dicha señal. Al suscribirse, los 
-Nodos receptores definen un handler (comúnmente nombrado \textit{_on_<node>_<signal_name>}) para manejar 
+Nodos receptores definen un handler (comúnmente nombrado \textit{\_on\_node\_signal\_name}) para manejar 
 la señal recibida. De esta forma se pueden crear escenas compuestas de múltiples Nodos distintos, con 
 comportamiento más complejo, pero sin acoplar todos los nodos que necesiten comunicarse entre sí.
 
@@ -128,9 +128,71 @@ al Servidor a través de la conexión TCP.
 
 \subsubsection{Protocol buffers}
 
+La comunicación entre Cliente y Servidor requirió que definamos un protocolo de mensajes propio para 
+el envío de acciones del Cliente y las correspondientes actualizaciones del Servidor.
+Para esto no solo necesitamos definir un protocolo de mensajes, sino además que sea rápido y eficiente, 
+para mantener al mínimo la latencia entre mensajes.
+Es por esto que decidimos usar \textit{Protocol buffers} (o \textit{protobufs}). Los 
+\textit{Protocol buffers} son un mecanismo para serializar datos estructurados, ajeno completamente 
+a algún lenguaje. El propósito es definir los mensajes del protocolo una sola vez y reutilizarlos 
+tanto en el Cliente como el Servidor.
+Por ejemplo, veamos el siguiente mensaje que definimos para el movimiento de un usuario:
+\begin{verbatim}
+    message PBPlayerVelocity {
+        required float x = 1;
+        required float y = 2;
+    }
+
+    message PBPlayerPosition {
+        required float x = 1;
+        required float y = 2;
+    }
+
+    message PBPlayerMovement {
+        required PBPlayerVelocity velocity = 1;
+        required PBPlayerPosition position = 2;
+    }
+\end{verbatim}
+
+El mensaje que el Cliente enviará es \textbf{PBPlayerMovement}, que se compone de otros dos mensajes: 
+\textbf{PBPlayerVelocity} y \textbf{PBPlayerPosition}, ambos vectores bidimensionales representados 
+por sus coordenadas en \textbf{x} e \textbf{y}. De esta forma cuando el usuario controla y mueve a 
+su personaje, el Cliente se lo comunica al Servidor creando una instancia de \textbf{PBPlayerMovement} 
+con los valores correspondientes, serializandolo y finalmente enviandolo.
+
+% TODO: seria mejor moverlo a un apendice?
+A continuación listamos todos los mensajes \textit{protobuf} definidos:
+
+\begin{table}[htbp]
+    \centering
+    
+    \begin{tabular}{|c|c|c|}
+        \hline
+        \textbf{Mensaje} & \textbf{Atributos} & \textbf{Quién lo envía} \\
+        \hline
+        PBPlayerMovement & required float x & Cliente \\
+                         & required float y & \\
+        \hline
+        PBPlayerVelocity & required float x & Cliente \\
+                         & required float y & \\
+        \hline
+        PBPlayerPosition & required PBPlayerVelocity velocity & Cliente \\
+                         & required PBPlayerPosition position & \\
+        \hline
+        % Add more rows here
+    \end{tabular}
+    \caption{Mensajes Protobuf}
+    \label{tab:my_table}
+\end{table}
+
+
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/protobuf.png}
 \end{figure}
 
 \subsubsection{Lógica del juego: movimiento y colisiones}
+
+\subsubsection{Juego de cartas: Truco}
+A modo de muestra del tipo de funcionalidades que se pueden desarrollar para el juego, hemos implementado 
+el juego de cartas \textbf{Truco}, específicamente en su versión argentina.
