@@ -6,7 +6,7 @@
 % incluir aquí. De no estar definidas todas, enumerar las que sí están definidas 
 % y explicar qué consideraciones tendrán en cuenta para definir las restantes.
 
-Proponemos una arquitectura distribuida totalmente opuesta al modelo monolítico clásico, 
+\noindent Proponemos una arquitectura distribuida totalmente opuesta al modelo monolítico clásico, 
 donde el estado del juego no se encuentra condensado en una única máquina sino que se encuentra 
 distribuido en varias. El conjunto del estado en cada una de estas terminaría siendo el 
 estado del juego global. Además de esto, proponemos que utilizar el modelo de actores resulta 
@@ -61,7 +61,7 @@ sea consumida por los actores de las demás entidades.
 
 \subsection{Frontend: cliente Godot}
 
-\textit{Godot} es un motor para desarrollar videojuegos, argentino, gratuito y de código abierto. 
+\noindent \textit{Godot} es un motor para desarrollar videojuegos, argentino, gratuito y de código abierto. 
 Este motor brinda distintas herramientas para desarrollar aplicaciones interactivas, como por ejemplo 
 interfaces gráficas, gráficos 2D y 3D, input del usuario con distintos periféricos, control de audio, 
 lógica de físicas y colisiones, conectividad a través de la red, entre muchas otras.
@@ -87,7 +87,7 @@ se puede construir una lógica de juego que es clara y fácil de entender.
 
 \subsubsection{Estructura de proyecto}
 
-Para este proyecto, definimos una Escena \textbf{Main} donde instanciamos las escenas del juego necesarias 
+\noindent Para este proyecto, definimos una Escena \textbf{Main} donde instanciamos las escenas del juego necesarias 
 a medida que sean requeridas. Por ejemplo, los niveles propiamente dichos no se instancian al iniciar el 
 juego, sino después de que el jugador se haya conectado al servidor. De esta forma, encapsulamos todas las 
 escenas activas en un mismo lugar y no desperdiciamos recursos instanciando todas las escenas a la vez.
@@ -101,7 +101,7 @@ escenas, control del audio, entre otros).
 
 \subsubsection{Comunicación con el servidor}
 
-Al comienzo del proyecto, un posible limitante de usar Godot eran las herramientas que podía ofrecer 
+\noindent Al comienzo del proyecto, un posible limitante de usar Godot eran las herramientas que podía ofrecer 
 el motor para la conectividad con el servidor, ya sea UDP, TCP o incluso HTTP. 
 Para nuestro beneficio, Godot provee distintas APIs para conectividad que cumplen los requisitos
 de los protocolos antes mencionados. En nuestro caso, decidimos usar el protocolo TCP por sus características:
@@ -128,7 +128,7 @@ al Servidor a través de la conexión TCP.
 
 \subsubsection{Protocol buffers}
 
-La comunicación entre Cliente y Servidor requirió que definamos un protocolo de mensajes propio para 
+\noindent La comunicación entre Cliente y Servidor requirió que definamos un protocolo de mensajes propio para 
 el envío de acciones del Cliente y las correspondientes actualizaciones del Servidor.
 Para esto no solo necesitamos definir un protocolo de mensajes, sino además que sea rápido y eficiente, 
 para mantener al mínimo la latencia entre mensajes.
@@ -194,5 +194,5 @@ A continuación listamos todos los mensajes \textit{protobuf} definidos:
 \subsubsection{Lógica del juego: movimiento y colisiones}
 
 \subsubsection{Juego de cartas: Truco}
-A modo de muestra del tipo de funcionalidades que se pueden desarrollar para el juego, hemos implementado 
+\noindent A modo de muestra del tipo de funcionalidades que se pueden desarrollar para el juego, hemos implementado 
 el juego de cartas \textbf{Truco}, específicamente en su versión argentina.
