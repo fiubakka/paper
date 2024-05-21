@@ -1,8 +1,7 @@
-FROM texlive/texlive:latest-minimal
+FROM texlive/texlive:latest-full
 
 # Install procps for ps command (used by latexmk -pvc)
-RUN apt-get update && apt-get -y install texlive-latex-base  \
-    texlive-latex-extra texlive-lang-spanish latexmk procps
+RUN apt-get update && apt-get -y install latexmk procps
 
 ARG LATEX_PROJECT_NAME
 # Use the env variable because the arg variable is not available in the entrypoint
