@@ -1,14 +1,15 @@
-\noindent En el presente documento se describe el objetivo del trabajo profesional a desarrollar 
-por el equipo. El trabajo implica desarrollar un videojuego utilizando Akka como entorno 
-de desarrollo principal para el servidor y Godot para el cliente. 
-En caso de imposibilitarse el desarrollo en Godot optaremos por utilizar alguna otra 
-herramienta para el cliente, como puede ser el lenguaje de programación C/C++ junto con
-librerías como SDL o QT.
+\noindent El proyecto desarrollado tiene como objetivo validar una \textit{prueba de concepto} de
+una arquitectura de servidor de videjuegos distribuida, de alta escalabilidad horizontal,
+tolerancia a fallos y elasticidad. Analizaremos las ventajas y desventajas de la arquitectura
+propuesta frente a la alternativa de un servidor monolítico, y evaluaremos su rendimiento
+con el videojuego desarrollado.
+ 
+Este informe se encuentra compuesto por dos secciones principales. En primera
+instancia se presenta, explica y analiza la arquitectura diseñada y desarrollada para el
+servidor del videojuego. Dicha arquitectura tiene sus cimientos en el uso de Akka, un 
+\textit{toolkit} para el desarrollo de aplicaciones concurrentes y distribuidas basado
+en el modelo de actores. En segunda instancia se presentará cómo integramos este servidor
+con Godot, un motor de videojuegos \textit{open source} de origen argentino, que utilizamos
+para implementar el cliente del videojuego.
 
-Akka es un toolkit y runtime para desarrollar sistemas reactivos y escalables, 
-aplicando el modelo de actores para abstraer y facilitar el manejo de la concurrencia. 
-El objetivo es aplicar Akka para el desarrollo de un game server que soporte una alta cantidad 
-de jugadores concurrentes de forma eficiente y escalable horizontalmente, 
-planteando una arquitectura que se adapte naturalmente al modelo de actores y 
-que se vea beneficiada por todas las herramientas que Akka provee para el desarrollo de la misma.
-
+TODO a medida que avancemos con el informe entender si podemos expandir esta seccion!
