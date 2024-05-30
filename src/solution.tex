@@ -192,6 +192,25 @@ A continuación listamos todos los mensajes \textit{protobuf} definidos:
 \end{figure}
 
 \subsubsection{Lógica del juego: movimiento y colisiones}
+\noindent Otro de nuestros problemas iniciales fue decidir cómo implementaríamos el movimiento del 
+jugador. Al tratarse de un juego online, lo ideal era que la lógica fuera mayormente implementada del 
+lado del servidor y así garantizar que los jugadores no pudieran realizar movimientos prohibidos, como 
+ir a zonas que no estuvieran permitidas u obtener algún tipo de ventaja. Con este acercamiento del 
+problema, Godor no debía hacer más que enviar los inputs del movimiento del jugador, y dejar que el 
+servidor se encargara de verificar que se tratase de un input válido, calcular el efecto de este 
+input en la posición y enviar a Godot la nueva posición para que se viera reflejada en el juego.
+
+Este acercamiento sirvió en un inicio donde el juego no era más que un personaje que se movía en 
+el vacío, pero su complejidad aumentó cuando se tomó en consideración las colisiones del mapa.
+
+Se decidió ceder la mayor parte de la lógica del movimiento a Godot debido a que este provee 
+su propio sistema de colisiones. Este acercamiento nos hacía renunciar a que el input fuera 
+verificado con cada movimiento, pero facilitaba de forma significativa la implementación del 
+movimiento y las colisiones. Debido a que nuestro juego no muestra ninguna ventaja competitiva 
+en la modificación del movimiento del jugador, decidimos perder parte de las verificaciones en 
+favor a la facilidad de desarrollo provista por Godot.
+
+
 
 \subsubsection{Juego de cartas: Truco}
 \noindent A modo de muestra del tipo de funcionalidades que se pueden desarrollar para el juego, hemos implementado 
