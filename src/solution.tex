@@ -196,22 +196,47 @@ A continuación listamos todos los mensajes \textit{protobuf} definidos:
 jugador. Al tratarse de un juego online, lo ideal era que la lógica fuera mayormente implementada del 
 lado del servidor y así garantizar que los jugadores no pudieran realizar movimientos prohibidos, como 
 ir a zonas que no estuvieran permitidas u obtener algún tipo de ventaja. Con este acercamiento del 
-problema, Godor no debía hacer más que enviar los inputs del movimiento del jugador, y dejar que el 
+problema, Godot no debería hacer más que enviar los inputs de la dirección a la que se desea mover el 
+jugador del jugador, y dejar que el 
 servidor se encargara de verificar que se tratase de un input válido, calcular el efecto de este 
-input en la posición y enviar a Godot la nueva posición para que se viera reflejada en el juego.
+input en la posición y enviar a Godot la nueva dirección para que se viera reflejada en el juego.
 
-Este acercamiento sirvió en un inicio donde el juego no era más que un personaje que se movía en 
-el vacío, pero su complejidad aumentó cuando se tomó en consideración las colisiones del mapa.
+Este acercamiento sirvió en un inicio donde el juego era un prototipo donde no teníamos definidos 
+mapas con un perímetro definido, sin embargo empezaron a verse las faltas en esta solución cuando 
+se comenzó a implementar las colisiones del jugador con los mapas y los objetos dentro de sus límites.
 
 Se decidió ceder la mayor parte de la lógica del movimiento a Godot debido a que este provee 
-su propio sistema de colisiones. Este acercamiento nos hacía renunciar a que el input fuera 
+su propio sistema de colisiones, aprovechando las herramientas que provee sin reinventar un sistema 
+colisiones. Este acercamiento nos hacía renunciar a que el input fuera 
 verificado con cada movimiento, pero facilitaba de forma significativa la implementación del 
 movimiento y las colisiones. Debido a que nuestro juego no muestra ninguna ventaja competitiva 
 en la modificación del movimiento del jugador, decidimos perder parte de las verificaciones en 
 favor a la facilidad de desarrollo provista por Godot.
 
-
+# algoritmos de colisiones son resolubles en el backend, era reiventar la rueda, ya tenemos godot <3
+# y no sabíamos cómo iba a ir el tema de performance.
 
 \subsubsection{Juego de cartas: Truco}
-\noindent A modo de muestra del tipo de funcionalidades que se pueden desarrollar para el juego, hemos implementado 
-el juego de cartas \textbf{Truco}, específicamente en su versión argentina.
+\noindent A modo de muestra del tipo de funcionalidades que se pueden desarrollar en conjunto de 
+Godot y el modelo de actores, hemos implementado el juego de cartas \textbf{Truco}, específicamente 
+en su versión argentina.
+
+Al igual que con el movimiento del jugador y las colisiones, debimos decidir qué 
+responsabilidades recaerían tanto para el frontend como para el backend. En la sección 
+sobre el movimiento del jugador, concluímos que no existía una importante necesidad de 
+validar cada movimiento del jugador, pero el caso de un minijuego como el Truco es distinto. 
+En el movimiento, que los demás jugadores vean a otro jugador en una posición incorrecta es 
+corregible, momentáneo e insignificante, pero en el Truco, que un jugador presencie una acción 
+incorrecta es inaceptable debido a que cada acción realizada por un jugador afecta el flujo del juego.
+
+Para poder mantener la coherencia y la integridad de una partida de Truco, se decidió dejar 
+la responsabilidad del manejo de flujo y las verificaciones al backend, mientras que el 
+frontend tiene la responsabilidad de mostrarle al jugador todo lo que el backend dicte, 
+como por ejemplo las cartas en su mano, las jugadas de su adversario y los cantos disponibles. 
+El frontend también posee la responsabilidad de ofrecerle una buena jugabilidad al jugador, 
+por lo que la interfaz de juego fue diseñada con estas intenciones. Implementamos un método 
+de movimiento para jugar las cartas denominado “drag and drop” para que el jugador pueda 
+arrastrar las cartas en caso de que desee jugarlas o volver a colocarla en la mano con tan 
+solo volver a arrastrarla a su zona original y una interfaz que muestre los cantos disponibles; 
+un cartel que aparezca para avisarle al jugador que su oponente realizó un canto y que luego 
+desaparezca, indicadores de a qué jugador le corresponde realizar una jugada, entre otras cosas.
