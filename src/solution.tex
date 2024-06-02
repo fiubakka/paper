@@ -160,31 +160,8 @@ por sus coordenadas en \textbf{x} e \textbf{y}. De esta forma cuando el usuario 
 su personaje, el Cliente se lo comunica al Servidor creando una instancia de \textbf{PBPlayerMovement} 
 con los valores correspondientes, serializandolo y finalmente enviandolo.
 
-% TODO: seria mejor moverlo a un apendice?
-A continuación listamos todos los mensajes \textit{protobuf} definidos:
 
-\begin{table}[htbp]
-    \centering
-    
-    \begin{tabular}{|c|c|c|}
-        \hline
-        \textbf{Mensaje} & \textbf{Atributos} & \textbf{Quién lo envía} \\
-        \hline
-        PBPlayerMovement & required float x & Cliente \\
-                         & required float y & \\
-        \hline
-        PBPlayerVelocity & required float x & Cliente \\
-                         & required float y & \\
-        \hline
-        PBPlayerPosition & required PBPlayerVelocity velocity & Cliente \\
-                         & required PBPlayerPosition position & \\
-        \hline
-        % Add more rows here
-    \end{tabular}
-    \caption{Mensajes Protobuf}
-    \label{tab:my_table}
-\end{table}
-
+La totalidad de los mensajes que definimos en nuestro protocolo está en el Anexo \ref{apendix:protobuf}
 
 \begin{figure}[htbp]
     \centering
@@ -213,8 +190,8 @@ movimiento y las colisiones. Debido a que nuestro juego no muestra ninguna venta
 en la modificación del movimiento del jugador, decidimos perder parte de las verificaciones en 
 favor a la facilidad de desarrollo provista por Godot.
 
-# algoritmos de colisiones son resolubles en el backend, era reiventar la rueda, ya tenemos godot <3
-# y no sabíamos cómo iba a ir el tema de performance.
+% algoritmos de colisiones son resolubles en el backend, era reiventar la rueda, ya tenemos godot <3
+% y no sabíamos cómo iba a ir el tema de performance.
 
 \subsubsection{Juego de cartas: Truco}
 \noindent A modo de muestra del tipo de funcionalidades que se pueden desarrollar en conjunto de 

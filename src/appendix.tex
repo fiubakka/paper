@@ -1,1 +1,243 @@
 % En caso de ser necesario agregar toda información relevante en uno o varios anexos.
+
+\subsubsection{Mensajes de Protocol Buffers}
+
+A continuación listamos todos los mensajes \textit{protobuf} definidos:
+
+\label{apendix:protobuf}
+\begin{longtable}{|l|l|l|}
+    \hline
+    \textbf{Mensaje} & \textbf{Atributos} & \textbf{Quién lo envía} \\
+    \hline
+    PBPlayerMovement & required float x & Cliente \\
+                        & required float y & \\
+    \hline
+    PBPlayerVelocity & required float x & Cliente \\
+                        & required float y & \\
+    \hline
+    PBPlayerPosition & required PBPlayerVelocity velocity & Cliente \\
+                        & required PBPlayerPosition position & \\
+    \hline
+    PBPlayerChangeMap & required int32 new\_map\_id & Cliente \\
+    \hline
+    PBPlayerMessage & required string content & Cliente \\
+    \hline
+    PBPlayerLogin & required string username & Cliente \\
+                    & required string password & \\
+    \hline
+    PBPlayerRegister & required string username & Cliente \\
+                        & required string password & \\
+                        & required PBPlayerEquipment equipment & \\
+    \hline
+    PBPlayerEquipment & required int32 hat & Cliente \\
+                        & required int32 hair & \\
+                        & required int32 eyes & \\
+                        & required int32 glasses & \\
+                        & required int32 facial\_hair & \\
+                        & required int32 body & \\
+                        & required int32 outfit & \\
+    \hline
+    PBINewnventoryItem & required uint32 id & Cliente \\
+                        & required PBItemType type & \\
+    \hline
+    PBPlayerUpdateEquipment & required int32 hat & Cliente \\
+                            & required int32 hair & \\
+                            & required int32 eyes & \\
+                            & required int32 glasses & \\
+                            & required int32 facial\_hair & \\
+                            & required int32 body & \\
+                            & required int32 outfit & \\
+    \hline
+    PBClientMetadata & required uint32 length & Cliente \\
+                        & required PBClientMessageType type & \\
+    \hline
+    PBTrucoAckPlay & required int32 playId & Cliente \\
+    \hline
+    PBTrucoDisconnect &  & Cliente \\
+    \hline
+    PBTrucoMatchChallengeReply & required string opponent\_username & Cliente \\
+                                & required PBTrucoMatchChallengeReplyEnum status & \\
+    \hline
+    PBTrucoMatchChallenge & required string opponent\_username & Cliente \\
+    \hline
+    PBTrucoPlay & required int32 playId & Cliente \\
+                & required PBTrucoPlayType playType & \\
+                & optional int32 card & \\
+                & optional PBTrucoShout shout & \\
+    \hline
+    PBServerMetadata & required uint32 length & Servidor \\
+                        & required PBServerMessageType type & \\
+    \hline
+    PBPlayerMessage & required string entityId & Servidor \\
+                    & required string content & \\
+    \hline
+    PBPlayerInitError & required string error\_code & Servidor \\
+    \hline
+    PBPlayerInitSuccess & required PBPlayerInitialState initialState & Servidor \\
+    \hline
+    PBPlayerInitialState & required PBPlayerPosition position & Servidor \\
+                            & required PBPlayerEquipment equipment & \\
+                            & required int32 mapId & \\
+    \hline
+    PBPlayerPosition & required float x & Servidor \\
+                        & required float y & \\
+    \hline
+    PBPlayerEquipment & required int32 hat & Servidor \\
+                        & required int32 hair & \\
+                        & required int32 eyes & \\
+                        & required int32 glasses & \\
+                        & required int32 facial\_hair & \\
+                        & required int32 body & \\
+                        & required int32 outfit & \\
+    \hline
+    PBInventoryItem & required uint32 id & Servidor \\
+                    & required PBInventoryItemType type & \\
+    \hline
+    PBInventoryItemList & repeated PBInventoryItem items & Servidor \\
+    \hline
+    PBPlayerChangeMapReady & required int32 new\_map\_id & Servidor \\
+    \hline
+    PBGameEntityDisconnect & required string entityId & Servidor \\
+    \hline
+    PBGameEntityState & required string entityId & Servidor \\
+                        & required PBGameEntityPosition position & \\
+                        & required PBGameEntityVelocity velocity & \\
+                        & required PBGameEntityEquipment equipment & \\
+                        & optional PBGameEntityMetrics metrics & \\
+    \hline
+    PBGameEntityPosition & required float x & Servidor \\
+                            & required float y & \\
+    \hline
+    PBGameEntityVelocity & required float x & Servidor \\
+                            & required float y & \\
+    \hline
+    PBGameEntityEquipment & required int32 hat & Servidor \\
+                            & required int32 hair & \\
+                            & required int32 eyes & \\
+                            & required int32 glasses & \\
+                            & required int32 facial\_hair & \\
+                            & required int32 body & \\
+                            & required int32 outfit & \\
+    \hline
+    PBGameEntityMetrics & required string nodeId & Servidor \\
+                        & required float messageRatePerSecond & \\
+    \hline
+    PBTrucoAllowPlay & required int32 playId & Servidor \\
+    \hline
+    PBTrucoMatchChallengeDenied & required string opponent\_username & Servidor \\
+    \hline
+    PBTrucoMatchChallengeRequest & required string opponent\_username & Servidor \\
+    \hline
+    PBTrucoPlay & required int32 playId & Servidor \\
+                & required PBTrucoPlayType playType & \\
+                & repeated PBTrucoCard playerCards & \\
+                & required int32 opponentCardAmount & \\
+                & required PBTrucoPoints firstPlayerPoints & \\
+                & required PBTrucoPoints secondPlayerPoints & \\
+                & required bool isGameOver & \\
+                & required bool isMatchOver & \\
+                & optional PBTrucoCard card & \\
+                & optional PBTrucoShout shout & \\
+                & optional PBTrucoNextPlay nextPlayInfo & \\
+    \hline
+    PBTrucoNextPlay & required string nextPlayer & Servidor \\
+                    & required bool isPlayCardAvailable & \\
+                    & repeated PBTrucoShout availableShouts & \\
+    \hline
+    PBTrucoCard & required int32 cardId & Servidor \\
+                & required PBTrucoCardSuit suit & \\
+                & required int32 number & \\
+    \hline
+    PBTrucoPoints & required string playerName & Servidor \\
+                    & required int32 points & \\
+    \hline
+
+    \caption{Mensajes Protobuf}\\    
+\end{longtable}
+
+\begin{longtable}{|l|l|l|}
+    \hline
+    \textbf{Nombre} & \textbf{Valores} & \textbf{Usado en} \\
+    \hline
+    PBClientMessageType & PBPlayerLogin = 0 & PBClientMetadata \\
+                        & PBPlayerRegister = 1 & \\
+                        & PBPlayerMovement = 2 & \\
+                        & PBPlayerMessage = 3 & \\
+                        & PBPlayerChangeMap = 4 & \\
+                        & PBPlayerUpdateEquipment = 5 & \\
+                        & PBTrucoMatchChallenge = 6 & \\
+                        & PBTrucoMatchChallengeReply = 7 & \\
+                        & PBTrucoPlay = 8 & \\
+                        & PBTrucoPlayAck = 9 & \\
+                        & PBTrucoDisconnect = 10 & \\
+    \hline
+    PBItemType & hair = 0 & PBINewnventoryItem \\
+                & outfit = 1 & \\
+                & facial\_hair = 2 & \\
+                & glases = 3 & \\
+                & hats = 4 & \\
+    \hline
+    PBTrucoMatchChallengeReplyEnum & ACCEPTED = 0 & PBTrucoMatchChallengeReply \\
+                                    & REJECTED = 1 & \\
+    \hline
+    PBTrucoPlayType & CARD = 0 & PBTrucoPlay \\
+                    & SHOUT = 1 & \\
+                    & UPDATE = 2 & \\
+    \hline
+    PBTrucoShout & ENVIDO = 0 & PBTrucoPlay \\
+                    & REAL\_ENVIDO = 1 & \\
+                    & FALTA\_ENVIDO = 2 & \\
+                    & ENVIDO\_QUIERO = 3 & \\
+                    & ENVIDO\_NO\_QUIERO = 4 & \\
+                    & TRUCO = 5 & \\
+                    & RETRUCO = 6 & \\
+                    & VALE\_CUATRO = 7 & \\
+                    & TRUCO\_QUIERO = 8 & \\
+                    & TRUCO\_NO\_QUIERO = 9 & \\
+                    & MAZO = 10 & \\
+    \hline
+    PBServerMessageType & PBGameEntityState = 0 & PBServerMetadata \\
+                        & PBPlayerMessage = 1 & \\
+                        & PBPlayerInitError = 2 & \\
+                        & PBPlayerInitSuccess = 3 & \\
+                        & PBPlayerChangeMapReady = 4 & \\
+                        & PBGameEntityDisconnect = 5 & \\
+                        & PBTrucoMatchChallengeRequest = 6 & \\
+                        & PBTrucoMatchChallengeDenied = 7 & \\
+                        & PBTrucoPlay = 8 & \\
+                        & PBTrucoAllowPlay = 9 & \\
+    \hline
+    PBPlayerInitErrorCode & UNKNOWN = 0 & PBPlayerInitError \\
+                            & INVALID\_PLAYER\_CREDENTIALS = 1 & \\
+                            & PLAYER\_ALREADY\_EXISTS = 2 & \\
+    \hline
+    PBInventoryItemType & hair = 0 & PBInventoryItem \\
+                        & outfit = 1 & \\
+                        & facial\_hair = 2 & \\
+                        & glases = 3 & \\
+                        & hats = 4 & \\
+    \hline
+    PBTrucoPlayType & CARD = 0 & PBTrucoPlay \\
+                    & SHOUT = 1 & \\
+                    & UPDATE = 2 & \\
+    \hline
+    PBTrucoCardSuit & CUPS = 0 & PBTrucoCard \\
+                    & SWORDS = 1 & \\
+                    & COINS = 2 & \\
+                    & CLUBS = 3 & \\
+    \hline
+    PBTrucoShout & ENVIDO = 0 & PBTrucoPlay \\
+                    & REAL\_ENVIDO = 1 & \\
+                    & FALTA\_ENVIDO = 2 & \\
+                    & ENVIDO\_QUIERO = 3 & \\
+                    & ENVIDO\_NO\_QUIERO = 4 & \\
+                    & TRUCO = 5 & \\
+                    & RETRUCO = 6 & \\
+                    & VALE\_CUATRO = 7 & \\
+                    & TRUCO\_QUIERO = 8 & \\
+                    & TRUCO\_NO\_QUIERO = 9 & \\
+                    & MAZO = 10 & \\
+    \hline
+    \caption{Enums Protobuf}\\
+\end{longtable}
+
