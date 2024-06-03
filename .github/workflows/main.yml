@@ -12,9 +12,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt upgrade -y
           sudo apt-get update
-          sudo apt-get -y install texlive-latex-full texlive-latex-extra texlive-lang-spanish latexmk procps
+          sudo apt-get -y install texlive-full texlive-latex-extra texlive-lang-spanish latexmk procps
 
       - name: Compile file
         run: |
