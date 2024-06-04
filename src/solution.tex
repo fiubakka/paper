@@ -6,14 +6,24 @@
 % incluir aquí. De no estar definidas todas, enumerar las que sí están definidas 
 % y explicar qué consideraciones tendrán en cuenta para definir las restantes.
 
-\noindent Proponemos una arquitectura distribuida totalmente opuesta al modelo monolítico clásico, 
-donde el estado del juego no se encuentra condensado en una única máquina sino que se encuentra 
-distribuido en varias. El conjunto del estado en cada una de estas terminaría siendo el 
-estado del juego global. Además de esto, proponemos que utilizar el modelo de actores resulta 
-una forma natural de representar a las entidades del videojuego, donde podemos plantear una 
-relación 1 a 1 entre entidad y actor. Si planteamos entonces que el estado de cada entidad 
-debería ser administrado por ella misma, (¡uno de los principios del modelo de actores!) 
-se desprende que el paradigma de actores se ajusta perfectamente al modelo que queremos desarrollar.
+\noindent Como respuesta a las problemáticas presentadas anteriormente nosotros desarrollamos una arquitectura
+completamente distribuida, opuesta totalmente al modelo monolítico prevaleciente en la industria de los videojuegos. 
+El estado del juego no se encuentra restringido a un único nodo servidor, sino que se encuentra 
+distribuido en varios, cada uno con igual importancia y responsabilidades que el resto. El conjunto del estado en cada uno de estos nodos compone el 
+estado del juego en su totalidad.
+
+El aspecto central del videojuego desarrollado es el uso que hace del \textbf{modelo de actores}.
+Dicho modelo se basa en el \textbf{actor} como mínima unidad de cómputo y el pasaje de \textbf{mensajes} como única manera
+de compartir información entre los actores. En la práctica, esto significa que toda la lógica del juego
+es procesada por los actores, y la comunicación entre ellos se realiza únicamente mediante mensajes.
+Este paradigma, ideado por Carl Hewitt en los años 70, eliminá varios de los problemas presentes
+en la programación concurrente tradicional que mencionamos anteriormente, como
+los \textit{deadlocks} y \textit{race conditions}, al eliminar el uso de memoria compartida
+como herramienta de comunicación en el sistema.
+Este modelo además resulta en una forma natural de representar a las entidades del videojuego, donde podemos plantear una 
+relación \textbf{1 a 1} entre entidad y actor. Si además establecemos que el estado de cada entidad 
+debería ser administrado por ella misma, otra característica intrínseca del modelo de actores,
+se desprende entonces que se ajusta perfectamente a lo que queremos desarrollar.
 
 Existen muchas implementaciones del modelo de actores (el lenguaje \textit{Erlang} o el framework de 
 \textit{Rust actix}) pero nosotros nos decantamos por \textit{Akka}.
