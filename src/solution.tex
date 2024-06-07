@@ -25,9 +25,42 @@ relación \textbf{1 a 1} entre entidad y actor. Si además establecemos que el e
 debería ser administrado por ella misma, otra característica intrínseca del modelo de actores,
 se desprende entonces que se ajusta perfectamente a lo que queremos desarrollar.
 
-Existen muchas implementaciones del modelo de actores (el lenguaje \textit{Erlang} o el framework de 
-\textit{Rust actix}) pero nosotros nos decantamos por \textit{Akka}.
+Existen muchas implementaciones del modelo de actores. Algunas de ellas son estándar del lenguaje de programación,
+como Erlang y Elixir, otras son bibliotecas de terceros que implementan el paradigma sobre lenguajes
+agnósticos al mismo, como es el caso de la biblioteca Actix en Rust.
+Nosotros decidimos utilizar Akka, un toolkit para construir aplicaciones concurrentes
+y distribuidas que implementa el modelo de actores para la JVM (Java Virtual Machine).
+Si bien Akka en sí está implementado en Scala, es compatible con otros lenguajes
+basados en la JVM, como Java y Kotlin. Particularmente nos decantamos por utilizar Scala también
+como lenguaje de programación del proyecto, ya que es el lenguaje nativo de Akka y cuenta con la documentación
+más completa y actualizada.
 
+Llegado a este punto, tenemos que el modelo de actores, y particularmente Akka, nos permite desarrollar un sistema distribuido
+donde nuestra aplicación puede ejecutarse en N nodos de manera transparente, donde los distintos actores que residen en cada nodo
+pueden comunicarse entre sí sin importar en qué nodo se encuentren y desconociendo la ubicación del otro actor con el que se comunican.
+Más adelante entraremos en más detalle sobre el funcionamiento de Akka y los distintos componentes que utilizamos.
+
+No alcanza sin embargo únicamente con Akka para poder desarrollar la arquitectura de nuestro videojuego.
+El primer punto a resolver con el que nos encontramos es que necesitamos un mecanismo que nos permita comunicar distintos eventos
+provenientes de un actor a otros N actores. Algunos de estos eventos pueden ser la actualización de las propiedades de uno de los jugadores,
+como su posición y equipamiento, o las acciones que el jugador realice. Una primera solución que se podría plantear a esta problemática sería que cuando un jugador realice una acción,
+por ejemplo de movimiento, sea responsabilidad de este notificar vía mensajes a todos los demás actores del juego que se ha desplazado. Esta solución sin embargo no es escalable, principalmente por dos motivos:
+
+\begin{itemize}
+    \item Cada actor correspondiente a un jugador debería almacenar una referencia a todos los demás jugadores para poder notificarles los eventos.
+    Dados N actores en el sistema, esto generaría una complejidad espacial de O($N^2$).
+    \item No contamos con un mecanismo que nos permita notificar a los demás actores que un nuevo actor se ha unido al sistema de forma automática.
+    Para que un actor conozca a otro depende de haber recibido su dirección a través de un mensaje o haberlo creado él mismo.
+\end{itemize}
+
+El segundo punto podría resolverse si utilizamos un actor central el cual es el encargado de crear a todos los actores de los jugadores
+y almacene las referencias a cada jugador creado, pero este mecanismo presenta un único punto de falla en el sistema, algo que queremos evitar a toda costa
+para poder maximizar la distribución del modelo desarrollado.
+
+Debido a esto, y siempre con el objetivo de maximizar la distribución del sistema minimizando los puntos de falla únicos del mismo,
+decidimos hacer uso de otra herramienta distribuida, \textbf{Kafka}.
+
+// TODO
 
 \begin{figure}[htbp]
     \centering
