@@ -60,11 +60,17 @@ para poder maximizar la distribución del modelo desarrollado.
 Debido a esto, y siempre con el objetivo de maximizar la distribución del sistema minimizando los puntos de falla únicos del mismo,
 decidimos hacer uso de otra herramienta distribuida, \textbf{Kafka}.
 
+Kafka es un sistema distribuido de procesamiento de datos y almacenamiento de eventos caracterizado
+por alto \textit{throughput} y baja latencia, características críticas para los sistemas de tiempo real.
+Todas estas características son exactamente lo que necesitamos para poder comunicar los eventos que los jugadores
+realicen dentro del juego. Kafka nos permite implementar un protocolo de comunicación de eventos entre los actores
+de baja latencia, alta disponibilidad, tolerancia a fallos y escalabilidad horizontal.
+
 // TODO
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.5\textwidth]{../assets/architecture.png}
+    \includegraphics[width=1\textwidth]{../assets/architecture.png}
     \caption{Diagrama de arquitectura propuesta utilizando el modelo de actores y streams}
 \end{figure}
 
