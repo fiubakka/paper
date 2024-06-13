@@ -62,9 +62,38 @@ decidimos hacer uso de otra herramienta distribuida, \textbf{Kafka}.
 
 Kafka es un sistema distribuido de procesamiento de datos y almacenamiento de eventos caracterizado
 por alto \textit{throughput} y baja latencia, características críticas para los sistemas de tiempo real.
-Todas estas características son exactamente lo que necesitamos para poder comunicar los eventos que los jugadores
-realicen dentro del juego. Kafka nos permite implementar un protocolo de comunicación de eventos entre los actores
+Kafka se adapta perfectamente a lo que necesitamos para poder comunicar los eventos que los jugadores
+realicen dentro del juego, y nos permite implementar un protocolo de comunicación de eventos entre los actores
 de baja latencia, alta disponibilidad, tolerancia a fallos y escalabilidad horizontal.
+
+Integrando Kafka en el sistema diseñamos un mecanismo de comunicación de eventos donde delegamos la lectura
+y publicación de eventos en Kafka a actores específicos, de aquí en adelante denominados \textbf{Consumidores}
+y \textbf{Productores}. Los Productores son los encargados de publicar en un tópico de Kafka los eventos de notificación masiva
+que un jugador realice en el juego, como por ejemplo un movimiento o un mensaje de chat a la sala, y los Consumidores
+son los encargados de leer estos eventos y notificar a los actores correspondientes a los demás jugadores.
+Este último paso, la notificación del Consumidor a los demás jugadores de la partida, no es trivial de implementar.
+A primera vista, volvemos al problema inicial de que deberíamos almacenar referencias a todos los actores del juego registrados
+para poder enviarles los mensajes de notificación. Una forma de evitar esto podría ser proponer que cada jugador tenga un correspondiente
+Consumidor, lo que tiene la ventaja de no introducir un punto único de falla. En la práctica sin embargo, los consumidores de Kafka consumen muchos recursos y
+nuestro servidor sería incapaz de procesar una gran cantidad de jugadores.
+Es aquí donde introducimos otro de los principales \textit{features} de Akka que nos permite resolver esta problemática:
+\textbf{Akka Streams}.
+
+Akka Streams es una implementación de Akka de la iniciativa \textit{Reactive Streams}, un estándar para el procesamiento de datos de forma asincrónica y no bloqueante.
+En particular, Akka Streams permite definir \textit{pipelines} de procesamiento de datos a los cuales se les pueden aplicar distintas transformaciones y operaciones.
+La clave detrás del uso de Akka Streams es que permite conectar múltiples fuentes de datos con múltiples consumidores de forma eficiente y sin bloqueos. Es similar a
+lo que ya hacemos con Kafka, pero a nivel del nodo de la aplicación, es decir, internamente, y con la ventaja de consumir considerablemente menos recursos que con
+consumidores de Kafka.
+
+En resumidas cuentas, los eventos masivos se procesan de la siguiente manera:
+
+\begin{itemize}
+    \item Un jugador realiza una acción en el juego, como por ejemplo un movimiento.
+    \item El actor correspondiente al jugador envía un mensaje al Productor con el evento.
+    \item El Productor publica el evento en un tópico de Kafka.
+    \item Un Consumidor lee el evento del tópico de Kafka y lo envía por un \textit{stream}.
+    \item Cada uno de los demás jugadores del nodo recibe el evento a través del \textit{stream}.
+\end{itemize}
 
 // TODO
 
@@ -73,28 +102,6 @@ de baja latencia, alta disponibilidad, tolerancia a fallos y escalabilidad horiz
     \includegraphics[width=1\textwidth]{../assets/architecture.png}
     \caption{Diagrama de arquitectura propuesta utilizando el modelo de actores y streams}
 \end{figure}
-
-Para solucionar el problema mencionado anteriormente, planteamos desde el diseño tener al juego 
-dividido en “secciones” o “niveles” (que no necesariamente sean niveles o zonas físicas distintas) 
-donde los actores correspondientes a cada entidad únicamente conocerán (y por tanto podrán interactuar) 
-con actores de su misma zona o zonas adyacentes. Esto nos acota la carga de mensajes sobre cada actor, 
-ya que si cada actor pudiera comunicarse con cualquier otro, terminaremos teniendo un carga de 
-N cuadrado, donde N denota a los actores del juego (las entidades).
-
-Los entidades podrán interactuar entre ellas a través de los mensajes entre los actores, 
-sin embargo optamos por utilizar \textit{Akka Streams} para todo lo que sea actualizaciones globales 
-del estado para evitar el problema de saturar las mailboxes de los actores ante eventos muy 
-recurrentes, como es el claro ejemplo de las actualizaciones de las posiciones de los actores. 
-La idea es que cada entidad tendrá asociada un actor por zona del juego encargado de leer del 
-Stream de esa zona y agrupar varias de las actualizaciones de estado más generales (en forma de batch) 
-y enviar por mensaje al actor principal de la entidad esas actualizaciones. 
-Así disminuimos considerablemente la cantidad de mensajes que tiene que procesar cada actor 
-principal de la entidad y además aprovechamos el mecanismo de back pressure que Akka Stream 
-provee transparentemente. Cada actor principal de la entidad entonces envía sus actualizaciones 
-generales (por ejemplo la posición) a través del Stream de la zona en la que reside, para que 
-sea consumida por los actores de las demás entidades.
-
-
 
 \subsection{Backend: servidor distribuido Akka}
 \index{Desarrollo}
