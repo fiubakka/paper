@@ -143,17 +143,24 @@ se puede construir una lógica de juego que es clara y fácil de entender.
 
 \subsubsection{Estructura de proyecto}
 
-\noindent Para este proyecto, definimos una Escena \textbf{Main} donde instanciamos las escenas del juego necesarias 
-a medida que sean requeridas. Por ejemplo, los niveles propiamente dichos no se instancian al iniciar el 
-juego, sino después de que el jugador se haya conectado al servidor. De esta forma, encapsulamos todas las 
-escenas activas en un mismo lugar y no desperdiciamos recursos instanciando todas las escenas a la vez.
+\noindent Para este proyecto, definimos una Escena \textbf{Main} donde se instancian las escenas más importantes 
+del juego, necesarias para el funcionamiento del mismo, como el Menú Principal (\textbf{MainMenu}),
+las pantallas de login (\textbf{Login} y \textbf{Register}) y los nodos necesarios para la conexión 
+con el Servidor (\textbf{ServerConsumer}, \textbf{ServerProducer}, entre otros).
+Los niveles propiamente dichos no se instancian al iniciar el juego, sino una vez que el jugador 
+se haya conectado al servidor y luego a medida que se mueve por las distintas zonas del juego.
+De esta forma, encapsulamos todas las escenas activas en un mismo lugar y 
+no desperdiciamos recursos instanciandolas a la vez, solo se instancian las escenas que
+se van a usar.
 
-Además hacemos uso de los \textbf{Autoloads} de Godot, que funcionan igual que el patrón \textbf{Singleton}, 
-para ciertas Escenas o scripts que son necesarios en un scope global. Por ejemplo, para el manejo, carga 
-y borrado de escenas, hacemos uso de un \textbf{SceneManager}, que es un script Autoload que permite 
-transicionar entre niveles dentro del juego. En general, se implementaron Singletons de tipo \textit{Manager}
-para acceder a distintos comportamientos y configuraciones globales (información del jugador, cambio de 
-escenas, control del audio, entre otros).
+Además hacemos uso de los \textbf{Autoloads} de Godot, que funcionan igual que el patrón \textbf{Singleton}. 
+Se definieron ciertas Escenas y scripts que son necesarios en un scope global como Autoloads.
+Por ejemplo, para el manejo, carga y borrado de escenas, hacemos uso de un \textbf{SceneManager}, 
+que es un script Autoload que permite transicionar entre niveles dentro del juego. En general, 
+se implementaron Singletons de tipo \textit{Manager} para acceder a distintos comportamientos y 
+configuraciones globales (información del jugador, cambio de escenas, control del audio, entre otros).
+
+
 
 \subsubsection{Comunicación con el servidor}
 
