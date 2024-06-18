@@ -117,18 +117,48 @@ En resumidas cuentas, los eventos masivos se procesan de la siguiente manera:
 
 \subsection{Frontend: cliente Godot}
 
-\noindent \textit{Godot} es un motor para desarrollar videojuegos, argentino, gratuito y de código abierto. 
+\noindent \textit{Godot} es un motor para desarrollo de videojuegos, de origen argentino, gratuito y de código abierto. 
 Este motor brinda distintas herramientas para desarrollar aplicaciones interactivas, como por ejemplo 
 interfaces gráficas, gráficos 2D y 3D, input del usuario con distintos periféricos, control de audio, 
 lógica de físicas y colisiones, conectividad a través de la red, entre muchas otras.
 Además de permitir desarrollar para múltiples plataformas, permite programar scripts exponiendo una 
-API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaje propio de Godot.
+API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaje propio de Godot. 
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-engine-showcase.png}
+    \caption{Editor de Godot Engine. 
+            Source: https://docs.godotengine.org/en/stable/getting\_started/introduction/introduction\_to\_godot.html}
+\end{figure}
+
+\textit{GDScript} es un lenguaje de programación de alto nivel y con sintaxis similar a Python. 
+El hecho de que sea un lenguaje interpretado tiene la ventaja de que no es necesario volver a compilar 
+todo el código cada vez que se hacen modificaciones sobre el mismo.
+A partir de la versión 4.0 de Godot, GDScript ofrece soporte opcional de tipado estático, el cual puede
+mejorar la performance en runtime y aumenta la eficiencia del código.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-editor.png}
+    \caption{Editor de código de Godot.}
+\end{figure}
 
 El motor ofrece una amplia colección de Nodos, que son los componentes básicos que se utilizan para 
-construir Escenas, que a su vez pueden ser sub-nodos de otras escenas. Los Nodos pueden ser desde un 
-simple botón (\textbf{Button}) hasta un cuerpo con lógica de físicas y colisiones tridimensionales 
+construir Escenas. A su vez, estas escenas pueden ser sub-nodos de otras escenas. Los Nodos pueden ser desde un 
+simple botón (\textbf{Button}) hasta un cuerpo tridimensional con lógica de físicas y colisiones 
 (\textbf{PhysicsBody3D}) e incluso un \textbf{AnimationPlayer} que se encarga de manejar animaciones, 
 es decir, una secuencia de imágenes o \textit{Sprites}.
+
+Estos nodos no solamente son modificables y configurables como se desee, sino que además se les puede 
+añadir un script, extendiendo y personalizando su comportamiento como sea necesario.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-editor.png}
+    \caption{Interfaz gráfica del editor de Godot. Los componentes enumerados son el árbol de nodos (1),
+            el explorador de archivos (2), el editor de la escena (3), el panel de animaciones (4) y el
+            inspector del nodo seleccionado (5).}
+\end{figure}
 
 Otro feature importante de Godot es el uso de señales (\textit{signals}) para comunicar eventos entre nodos.
 Un Nodo cualquiera o una Escena personalizada pueden emitir \textit{signals} con un nombre específico 
@@ -137,9 +167,29 @@ Nodos receptores definen un handler (comúnmente nombrado \textit{\_on\_node\_si
 la señal recibida. De esta forma se pueden crear escenas compuestas de múltiples Nodos distintos, con 
 comportamiento más complejo, pero sin acoplar todos los nodos que necesiten comunicarse entre sí.
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-signals.png}
+    \caption{Ejemplo de conexión de una signal. Cuando el nodo LoginUsername emite la signal
+            username\_submitted, el nodo Login la recive en su función \_on\_login\_username\_text\_submitted}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-signals-diagram.png}
+    \caption{Diagrama del flujo de emisión de una signal. Primero se define la señal text\_submitted
+            en el nodo LoginUsername y se la conecta al nodo Login (que es padre de LoginUsername).
+            Al emitirse esta señal, Login la escucha y entonces ejecuta su función handler
+            \_on\_login\_username\_text\_submitted}
+\end{figure}
+
 La filosofía del diseño de Godot es construir escenas reutilizables usando nodos. A estas escenas y 
 nodos se les puede agregar comportamiento con \textit{scripts}. Con la composición y jerarquía de los Nodos, 
 se puede construir una lógica de juego que es clara y fácil de entender.
+Es por estas características de cohesión, simplicidad y eficiencia en el diseño de Godot, así
+como también el tipo de herramientas que provee que optamos por usar este motor para el desarrollo del
+frontend del proyecto en lugar de crear módulos de autoría propia con un lenguaje de más bajo nivel, 
+como por ejemplo C o C++.
 
 \subsubsection{Estructura de proyecto}
 
@@ -200,11 +250,13 @@ al Servidor a través de la conexión TCP.
 
 \subsection{Comunicación entre cliente y servidor}
 
+
+
 \subsubsection{Protocol buffers}
 
 \noindent La comunicación entre Cliente y Servidor requirió que definamos un protocolo de mensajes propio para 
 el envío de acciones del Cliente y las correspondientes actualizaciones del Servidor.
-Para esto no solo necesitamos definir un protocolo de mensajes, sino además que sea rápido y eficiente, 
+Para esto no solo necesitamos definir un protocolo de mensajes, sino que además sea rápido y eficiente, 
 para mantener al mínimo la latencia entre mensajes.
 Es por esto que decidimos usar \textit{Protocol buffers} (o \textit{protobufs}). Los 
 \textit{Protocol buffers} son un mecanismo para serializar datos estructurados, ajeno completamente 
