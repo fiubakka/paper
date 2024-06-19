@@ -8,14 +8,16 @@ jobs:
     steps:
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Compile file
         uses: xu-cheng/latex-action@v3
         with:
           root_file: src/main.tex
           args: |
-            -output-directory=../target -jobname=informe          
+            -pdf -cd -output-directory=../target -view=none -jobname=informe src/main.tex
+        env:
+          TEXINPUTS: ".:../assets//:"
 
       - name: Upload to Google Drive folder
         uses: adityak74/google-drive-upload-git-action@main
