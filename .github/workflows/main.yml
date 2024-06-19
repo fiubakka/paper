@@ -8,17 +8,14 @@ jobs:
     steps:
 
       - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install texlive-full texlive-latex-extra texlive-lang-spanish latexmk procps
+        uses: actions/checkout@v4
 
       - name: Compile file
-        run: |
-          latexmk -pdf -cd -output-directory=../target -view=none -jobname=informe src/main.tex
-          
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: src/main.tex
+          args: |
+            -output-directory=../target -jobname=informe          
 
       - name: Upload to Google Drive folder
         uses: adityak74/google-drive-upload-git-action@main
