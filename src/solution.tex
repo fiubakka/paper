@@ -114,6 +114,10 @@ En resumidas cuentas, los eventos masivos se procesan de la siguiente manera:
 
 \subsubsection{Mensajes de Kafka}
 
+Como fue explicado anteriormente, para la comunicación de eventos utilizamos Kafka mediante actores especializados para la
+lectura y escritura llamados \textbf{Consumidores} y \textbf{Productores} respectivamente. Dichos actores operan sobre
+mensajes que contienen información relacionada a un evento. Para serializar los mensajes de una forma eficiente usamos
+la herramienta Protobuf, explicada en detalle en la sección 8.4.
 
 \subsection{Frontend: cliente Godot}
 
@@ -242,6 +246,9 @@ manejo de mensajes.
 Para la recepción implementamos un \textbf{ServerConsumer} que se encarga de recibir los paquetes 
 del Servidor, parsea el mensaje completo (ver sección Protocol buffers) y según qué mensaje recibió, 
 invoca al \textit{handler} correspondiente para actualizar el estado del juego del lado del Cliente.
+Este \textbf{ServerConsumer} se ejecuta en un thread aparte, para no bloquear el thread principal mientras
+esperamos recibir un mensaje. Sin embargo, luego de parsear un mensaje recibido, el \textit{handler}
+correspondiente se ejecuta en el thread principal.
 
 Es análogo el envío de mensajes en el sentido desde el Cliente hacia el Servidor: algún input de un 
 usuario dispara una \textit{signal} que el \textbf{ServerProducer} recibe, este se encarga de crear 
@@ -250,49 +257,6 @@ al Servidor a través de la conexión TCP.
 
 \subsection{Comunicación entre cliente y servidor}
 
-
-
-\subsubsection{Protocol buffers}
-
-\noindent La comunicación entre Cliente y Servidor requirió que definamos un protocolo de mensajes propio para 
-el envío de acciones del Cliente y las correspondientes actualizaciones del Servidor.
-Para esto no solo necesitamos definir un protocolo de mensajes, sino que además sea rápido y eficiente, 
-para mantener al mínimo la latencia entre mensajes.
-Es por esto que decidimos usar \textit{Protocol buffers} (o \textit{protobufs}). Los 
-\textit{Protocol buffers} son un mecanismo para serializar datos estructurados, ajeno completamente 
-a algún lenguaje. El propósito es definir los mensajes del protocolo una sola vez y reutilizarlos 
-tanto en el Cliente como el Servidor.
-Por ejemplo, veamos el siguiente mensaje que definimos para el movimiento de un usuario:
-\begin{verbatim}
-    message PBPlayerVelocity {
-        required float x = 1;
-        required float y = 2;
-    }
-
-    message PBPlayerPosition {
-        required float x = 1;
-        required float y = 2;
-    }
-
-    message PBPlayerMovement {
-        required PBPlayerVelocity velocity = 1;
-        required PBPlayerPosition position = 2;
-    }
-\end{verbatim}
-
-El mensaje que el Cliente enviará es \textbf{PBPlayerMovement}, que se compone de otros dos mensajes: 
-\textbf{PBPlayerVelocity} y \textbf{PBPlayerPosition}, ambos vectores bidimensionales representados 
-por sus coordenadas en \textbf{x} e \textbf{y}. De esta forma cuando el usuario controla y mueve a 
-su personaje, el Cliente se lo comunica al Servidor creando una instancia de \textbf{PBPlayerMovement} 
-con los valores correspondientes, serializandolo y finalmente enviandolo.
-
-
-La totalidad de los mensajes que definimos en nuestro protocolo está en el Anexo \ref{apendix:protobuf}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=1.0\textwidth]{../assets/protobuf.png}
-\end{figure}
 
 \subsubsection{Lógica del juego: movimiento y colisiones}
 \noindent Otro de nuestros problemas iniciales fue decidir cómo implementaríamos el movimiento del 
@@ -343,3 +307,64 @@ arrastrar las cartas en caso de que desee jugarlas o volver a colocarla en la ma
 solo volver a arrastrarla a su zona original y una interfaz que muestre los cantos disponibles; 
 un cartel que aparezca para avisarle al jugador que su oponente realizó un canto y que luego 
 desaparezca, indicadores de a qué jugador le corresponde realizar una jugada, entre otras cosas.
+
+
+\subsection{Protocol buffers}
+
+\noindent Tanto la comunicación por TCP entre Cliente y Servidor, como el envío de eventos con Kafka
+requirió que definamos un protocolo de mensajes propio. Además de definir dicho protocolo, necesitamos
+que sea rápido y eficiente, para mantener al mínimo la latencia entre mensajes y poder manejar
+una alta cantidad de mensajes.
+Es por esto que decidimos usar \textit{Protocol buffers} (o \textit{protobufs}), un mecanismo desarrollado
+por Google para serializar datos estructurados, ajeno completamente a cualquier lenguaje.
+El propósito es definir los mensajes del protocolo una sola vez y reutilizarlos tanto en el Cliente como el Servidor.
+Otra de las razones por la cual elegimos usar esta herramienta fue que cuenta con soporte tanto para Scala como para Godot.
+Esto nos permitió que, una vez definidos los mensajes en sus correspondientes archivos \textit{.proto}, podamos usarlos
+directamente en el código como si fueran objetos y la herramienta se encarga automáticamente de la serializacion, ya sea para enviar
+el mensaje por TCP o para encolarlo en Kafka.
+
+\noindent El formato de todos los mensajes consiste en una sección de metadata y otra sección que contiene el contenido del mensaje específico,
+más dos campos de 4 bytes cada uno que indican el largo (en bytes) total del mensaje y el de la sección de metadata.
+El campo de metadata contiene a su vez dos campos: uno con el largo del contenido y otro con el tipo del mensaje.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/protobuf.png}
+\end{figure}
+
+Para enviar un mensaje, el flujo es el siguiente: Creamos un objeto que tenga el formato correspondiente a alguno de los
+mensajes definidos. Luego, lo serializamos con el método correspondiente de protobuf (según estemos en Scala o Godot) y
+calculamos la cantidad de bytes que contiene. Armamos tambien el objeto de metadata, incluyendo el largo calculado y el tipo
+del contenido y lo serializamos. Luego, calculamos su largo y calculamos el largo total del mensaje y lo incluimos al principio
+del mensaje.
+
+Para leer un mensaje recibido el flujo es el contrario: Leemos los primeros 4 bytes que nos indican el largo
+total del mensaje. Luego, leemos los 4 bytes con la cantidad de bytes de metadata. Con esta información, podemos leer
+el campo de metadata, que a su vez nos indica el tipo y el largo del contenido. Finalmente, al saber el tipo del contenido, lo
+deserializamos para luego poder manejarlo correctamente.
+
+Los mensajes de contenido están definidos en archivos \textit{.proto}. Por ejemplo, veamos el siguiente
+mensaje que definimos para el movimiento de un usuario:
+\begin{verbatim}
+    message PBPlayerVelocity {
+        required float x = 1;
+        required float y = 2;
+    }
+
+    message PBPlayerPosition {
+        required float x = 1;
+        required float y = 2;
+    }
+
+    message PBPlayerMovement {
+        required PBPlayerVelocity velocity = 1;
+        required PBPlayerPosition position = 2;
+    }
+\end{verbatim}
+
+El mensaje que el Cliente enviará es \textbf{PBPlayerMovement}, que incluye otros dos mensajes:
+\textbf{PBPlayerVelocity} y \textbf{PBPlayerPosition}, ambos vectores bidimensionales representados
+por sus coordenadas en \textbf{x} e \textbf{y}. De esta forma cuando el usuario controla y mueve a
+su personaje, el Cliente se lo comunica al Servidor creando una instancia de \textbf{PBPlayerMovement}
+con los valores correspondientes, serializandolo y finalmente enviándolo.
+
+La totalidad de los mensajes que definimos en nuestro protocolo está en el Anexo \ref{apendix:protobuf}
