@@ -39,14 +39,21 @@ RGBA8 en la VRAM, dependiendo de las dimensiones de resolución de la imágen. E
 tenemos una imágen \textit{spritesheet} por cada variante de cada cosmético posible de jugadores,
 contábamos con más de 100 imágenes de más de 2048 x 2048 pixeles cada una. 
 
-% TODO: imagen de la tabla de godot: 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-docs-images.png}
+    \caption{Cuadro comparativo del tamaño que ocupa una imágen en VRAM según la resolución
+             de la misma y el modo de compresión utilizado.}
+\end{figure}
 % https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_images.html
 
 Usando de referencia la tabla de la documentación, y considerando que nuestras imágenes superaban
 los 2048 x 2048 pixeles, la memoria en VRAM requerida para nuestro juego tuvo una cota mínima de 
 2.24 GB:
 
-21.33 MiB / imágen * 100 imágenes = 2.24 GB
+\[
+\frac{21.33 \, MiB}{imagen} \times 100 \, imagenes = 2.24 \, GB
+\]
 
 Para máquinas sin una placa de video dedicada, en lugar de alocar este espacio en VRAM, se aloca
 en memoria principal RAM, generando los problemas anteriormente mencionados.
@@ -62,3 +69,6 @@ aplicamos 2 soluciones:
     \textit{pixel art} como lo es nuestro juego, al cambiar el modo y volver a correr el juego
     no se notaron defectos ni \textit{artifacts} visuales.
 \end{itemize}
+
+Tras haber implementado estos cambios, logramos reducir la memoria requerida por una instancia
+del juego a menos de 1 GB.
