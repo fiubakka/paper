@@ -358,9 +358,12 @@ como por ejemplo C o C++.
 
 \subsubsection{Estructura de proyecto}
 
-\noindent Para este proyecto, definimos una Escena \textbf{Main} donde se instancian las escenas más importantes 
-del juego, necesarias para el funcionamiento del mismo, como el Menú Principal (\textbf{MainMenu}),
-las pantallas de login (\textbf{Login} y \textbf{Register}) y los nodos necesarios para la conexión 
+\noindent A continuación detallamos nuestra implementación del frontend utilizando las herramientas descriptas
+anteriormente, cómo las aplicamos y los motivantes.
+
+Para este proyecto, definimos una Escena \textbf{Main} donde se instancian las escenas más importantes 
+del juego, necesarias para el funcionamiento del mismo. Por ejemplo, es en este nodo donde se instancian
+escenas como el Menú Principal (\textbf{MainMenu}), las pantallas de login (\textbf{Login} y \textbf{CharacterCreation}) y los nodos necesarios para la conexión 
 con el Servidor (\textbf{ServerConsumer}, \textbf{ServerProducer}, entre otros).
 Los niveles propiamente dichos no se instancian al iniciar el juego, sino una vez que el jugador 
 se haya conectado al servidor y luego a medida que se mueve por las distintas zonas del juego.
@@ -368,8 +371,35 @@ De esta forma, encapsulamos todas las escenas activas en un mismo lugar y
 no desperdiciamos recursos instanciandolas a la vez, solo se instancian las escenas que
 se van a usar.
 
-Además hacemos uso de los \textbf{Autoloads} de Godot, que funcionan igual que el patrón \textbf{Singleton}. 
-Se definieron ciertas Escenas y scripts que son necesarios en un scope global como Autoloads.
+Cuando un jugador ejecuta por primera vez el juego, lo primero que verá es la escena del menú principal, 
+o \textbf{MainMenu}. Luego de elegir el idioma del juego, tendrá dos opciones diaponibles: ingresar al juego
+con un usuario existente desde el \textbf{Login} o crear un personaje y un usuario en \textbf{CharacterCreation}.
+
+% TODO: imagen MainMenu
+
+Si el usuario opta por ingresar al juego a través de \textbf{Login}, deberá ingresar con un nombre de usuario
+y contraseña existentes. En caso de haber algún error de login, se mostrará por pantalla según el error 
+correspondiente, como por ejemplo credenciales inválidas. Como el sistema de autenticación de usuario no
+fue el foco de este proyecto, no es posible recuperar la contraseña de un usuario ni tampoco darlo de baja.
+
+% TODO: imagen Login
+
+Por otro lado, si se tratase de un nuevo jugador o si uno existente desea crear otro personaje, el usuario
+puede entrar a la pantalla de registro (o \textbf{CharacterCreation}) donde podrá ingresar sus nuevas
+credenciales de usuario y también personalizar la apariencia de su nuevo personaje. En esta pantalla
+se visualiza del lado izquierdo un \textit{sprite} del personaje que será creado y a la derecha una
+lista de selectores para los distintos cosméticos que componen al \textit{sprite}. El usuario podrá elegir
+agregar, combinar e incluso quitar los cosméticos de su personaje a su gusto. Una vez que haya hecho su elección
+e ingrese sus credenciales, se crea el usuario correspondiente.
+
+% TODO: imagen CharacterCreation
+
+Además hacemos uso de los \textbf{Autoloads} de Godot, que funcionan igual que clases \textbf{Singleton}
+del patrón de diseño del mismo nombre. Estos Autoloads se cargan en el arbol de escenas desde el comienzo
+y están siempre disponibles sin importar cual es la escena actualmente corriendo. Un detalle importante es que
+estos Autoloads simplemente \textit{actúan} como Singletons, pero no son realmente Singletons (podrían instanciarse
+más de una vez cada uno).
+Se definieron ciertas clases (scripts) que son necesarios en un scope global como Autoloads.
 Por ejemplo, para el manejo, carga y borrado de escenas, hacemos uso de un \textbf{SceneManager}, 
 que es un script Autoload que permite transicionar entre niveles dentro del juego. En general, 
 se implementaron Singletons de tipo \textit{Manager} para acceder a distintos comportamientos y 
@@ -386,6 +416,134 @@ configuraciones globales (información del jugador, cambio de escenas, control d
     \includegraphics[width=0.4\textwidth]{../assets/godot-scene-tree-2.png}
     \caption{Arbol de nodos cuando el jugador está en un nivel del juego}
 \end{figure}
+
+Cada nivel es una instancia de la clase \textbf{Level}. Si bien cada escena de nivel creada es diseñada
+de forma especial para replicar alguna parte de la arquitectura de la Facultad de Ingeniería,
+existen ciertos tipos de nodos que deben usarse en todos los niveles.
+Por ejemplo, para definir la forma, apariencia y estructura de cada nivel, debe tener un TileMap,
+que es un tipo de nodo que a partir de una \textit{SpriteSheet} permite "pintar" sobre
+una grilla predefinida de pixeles, como si fuera un canvas. Además se deben definir las colisiones de las 
+"paredes" de cada nivel, para que el jugador no se pase del límite de la cámara y se vaya 
+\textit{out of bounds}. Esto se logra con nodos del tipo \textbf{StaticBody2D} y \textbf{CollisionShape2D}.
+Otro nodo importante en un nivel es el \textbf{Player}, ya que cada nivel debe incluir su propio jugador.
+Esto quiere decir que no instanciamos un solo nodo \textbf{Player} y lo transferimos entre los distintos 
+\textbf{Levels}, sino que cada \textbf{Level} debe instanciar su propio \textbf{Player}. Esta implementación
+simplifica la transferencia de data necesaria entre niveles.
+También son importantes las puertas o \textbf{Doors} en los niveles, ya que estas cumplen la función de
+permitirles a los jugadores cambiar de nivel y moverse a través de la Facultad.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/levels-tree-nodes.png}
+    \caption{Ejemplos de árboles de nodos para distintas escenas de tipo \textit{Level}. Nótese que
+            comparten ciertos tipos de nodos en común (\textbf{Player}, \textbf{TileMaps},
+            \textbf{CollisionShape2D}, etc.)}
+\end{figure}
+
+Como se mencionó anteriormente, para transicionar entre niveles, es decir, para cargar un nuevo Level
+y remover el actual, implementamos un script Autoload llamado \textbf{SceneManager}.
+Este SceneManager encapsula la responsabilidad de manejar el cambio de niveles de forma natural para 
+el usuario. El proceso para cambiar de un Level a otro es:
+\begin{itemize}
+    \item Mostrar una escena de pantalla de carga (\textbf{LoadingScreen}).
+    \item Cargar de memoria la nueva escena en un hilo separado.
+    \item Una vez cargada la escena nueva, montarla en el arbol de escenas.
+    \item Antes de remover la escena actual, transferir cualquier tipo de data relevante de un nive la otro,
+    como por ejemplo el equipamiento del jugador.
+    \item Remover la escena actual.
+    \item Remover la \textbf{LoadingScreen}.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-loading-screen.png}
+    \caption{Pantalla de carga.}
+\end{figure}
+
+Un \textbf{Player} o jugador es una escena donde se encapsulan tanto la vista como el comportamiento del
+personaje que controla el usuario. Está compuesto tanto de \textbf{CompositeSprites} para la visualización
+de los cosméticos elegidos en la pantalla de creación del personaje, como de \textbf{CollisionShape2D} para
+la detección de colisiones con las paredes u otros objetos del nivel donde se encuentre.
+Además es esta escena la que contiene una \textbf{Camera2D}, que representa la vista que el usuario tendrá
+del juego en el textit{viewport} de su pantalla. Al ser un subnodo del \textbf{Player}, logramos un efecto donde la
+cámara sigue al jugador a donde sea que vaya, como es usual en este tipo de juegos. Cabe destacar que se 
+definieron coordenadas límites para la cámara (o \textit{bounds}) para evitar que se muestre regiones por
+fuera del perímetro de cada mapa.
+Otro nodo notable es el \textbf{AnimationPlayer}, el cual permite definir animaciones para el jugador
+(por ejemplo, \textit{idle} o \textit{walking}) definiendo cuál \textit{Sprite} debe mostrarse en cada
+\textit{frame} de la animación.
+
+Dos escenas muy similares al \textbf{Player} son las \textbf{Entities} y los \textbf{NPCs}.
+Ambos cuentan con los mismos nodos que un \textbf{Player} (\textbf{CompositeSprites}, \textbf{CollisionShape2D},
+\textbf{AnimationPlayer}), pero la principal diferencia es que estas escenas no son controladas por el jugador.
+Una \textbf{Entity} es el personaje de otro jugador conectado. Un \textbf{NPC} es un personaje no jugable
+(o \textit{Non-Playable Character}). El jugador puede interactuar con ambos de distintas formas.
+
+Una vez dentro de la Facultad, el jugador podrá moverse a través del nivel usando las cuatro flechas teclas
+direccionales del teclado o \textbf{WASD}.
+También podrá acceder a un inventario presionando la tecla \textbf{I}.
+Dentro de este inventario verá listados los objetos que tenga disponible, ya sean objetos personales u otros
+cosméticos. En el caso de los cosméticos, podrá optar por equipar o desesquiparselos, modificando la
+apariencia de su personaje.
+Además al presionar la tecla \textbf{TAB} abrirá una ventana de chat, donde podrá intercambiar mensajes con
+todos los otros jugadores que estén conectados en la misma región de la Facultad. Mientras esté chateando,
+el jugador no podrá moverse y tendrá cerrar la ventana de chat presionando \textbf{TAB} nuevamente.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-inventory.png}
+    \caption{Inventario de items.}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-chat.png}
+    \caption{Chat.}
+\end{figure}
+
+Uno de los principales features del juego es la posibilidad de desafiar a otros jugadores a una partida de 
+Truco. El Truco es un juego de cartas argentino que se juega con naipes españoles. El objetivo del juego
+es obtener 30 puntos antes que el oponente, ganando las manos y haciendo disitntas jugadas con cantos.
+Para desafiar a otro jugador a una partida de Truco, el usuario solo debe hacer click derecho sobre cualquier
+otro personaje que vea en su pantalla. Eso habilitará un submenú con un botón para jugar al Truco.
+El otro jugador recibirá una notificación que puede aceptar o rechazar. Al aceptarla, ambos jugadores
+verán la pantalla de Truco y la partida comienza.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-truco-menu.png}
+    \caption{Submenú de jugador. A partir de este menú se puede desafiar a otro jugador al Truco.}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-truco-notification.png}
+    \caption{Notificación de Truco. El jugador puede rechazarla o aceptarla y empezar la partida inmediatamente.}
+\end{figure}
+
+Los jugadores verán las cartas de su mano en la región inferior de la pantalla, así como también las opciones
+de cantos disponibles en dicho turno. Para hacer un canto, solo deben clickear el botón correspondiente
+y esperar la respuesta del oponente. Para jugar un carta, el jugador que corresponda podrá arrastrarla con el
+mouse desde su mano y soltarla sobre la mesa en la región que corresponda al turno que está transcurriendo,
+haciendo \textit{drag and drop}. El otro jugador va a ver la carta jugada por su oponente y se le hailitará
+que juegue su turno, si aún no terminó la ronda.
+La partida termina cuando un jugador llega a acumular 30 puntos o en caso de que alguno abandone, ya sea 
+voluntariamente o en caso de alguna desconexión.
+Todas las reglas del Truco así como también el control del transcurso de la partida y del \textit{game state}
+están implementadas en el Servidor. El Cliente solo funciona a modo de \textit{frontend} para que los
+usuarios puedan jugar.
+
+% TODO: dejar 1 sola captura indicando con recuadros que significa cada parte de la UI
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../assets/godot-truco-1.png}
+    \includegraphics[width=0.8\textwidth]{../assets/godot-truco-2.png}
+    \caption{Pantalla de Truco durante una partida en transcurso. Las cartas y los cantos dispnibles se
+            ven en la región inferior y las cartas se juegan sobre la mesa.}
+\end{figure}
+ 
+% TODO: poner en algun lado como se mueve el jugador (controles)
+Todos los controles del juego están detallados en el apéndice.
 
 
 \subsubsection{Comunicación con el servidor}
