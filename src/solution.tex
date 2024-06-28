@@ -352,6 +352,32 @@ ya que las entidades suelen tener un estado asociado que necesita ser recuperabl
 Como base de datos para la persistencia tanto del estado de los actores como de otros registros de información utilizamos
 \textbf{PostgreSQL}. Otras opciones que Akka Persistence soporta nativamente son Cassandra y MongoDB.
 
+\subsection{Akka Streams}
+
+El último componente principal de Akka que utilizamos es uno que mencionamos en el resumen de la arquitectura, Akka Streams.
+Se trata de una implementación de la iniciativa de Reactive Streams, un estándar para el procesamiento de datos de forma asincrónica y no bloqueante.
+Conceptualmente, se trata de un \textit{pipeline} de procesamiento de datos, donde tenemos tres componentes principales: el \textbf{Source},
+el \textbf{Flow} y el \textbf{Sink}. El Source es la fuente de los datos, el Flow es una etapa interna del pipeline que transforma los datos, y el
+Sink es el consumidor final. Todo Stream tiene al menos un Source y un Sink, y puede tener cualquier cantidad (o ningún) Flow entremedio.
+
+Un Stream es un maquetado o \textit{blueprint} de cómo los datos van a ser procesados. La acción de construir el Stream y ejecutarlo se denomina
+\textit{materializar} el Stream. El Stream puede ser materializado una única vez, ya que la fuente de datos (Source) puede ser consumida una única vez.
+
+Se trata de una herramienta particularmente útil para procesar grandes cantidades de datos de forma eficiente. Cada etapa del Stream puede ser procesada
+concurrentemente en distintos threads, lo que garantiza un alto \textit{throughput}. Es posible construir pipelines extremadamente complejos de forma relativamente
+sencilla, y cuenta con muchos operadores nativos que facilitan la construcción de los mismos. Es una herramienta que no apunta a la simplicidad de uso, pero que provee todos los elementos
+básicos necesarios sobre los cuales puede construirse prácticamente cualquier solución.
+
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/akka-stream-example.png}
+    \caption{Ejemplo de un Stream lineal con N Flows, un Source y un Sink}
+\end{figure}
+
+TODO continue
+
 \subsubsection{Introducción a Akka}
 
 \subsubsection{Arquitectura}
