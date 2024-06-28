@@ -95,16 +95,177 @@ En resumidas cuentas, los eventos masivos se procesan de la siguiente manera:
     \item Cada uno de los demás jugadores del nodo recibe el evento a través del \textit{stream}.
 \end{itemize}
 
-// TODO
+// TODO agregar diagrama de lo descripto
+
+Este diagrama resume el corazón de la arquitectura desarrollada. Es importante recordar que lo descrito corresponde a un único nodo del sistema.
+La clave de la escalabilidad de la aplicación es que podemos replicarlo en N nodos, donde cada uno de ellos es responsable de un subconjunto de los actores del juego,
+y la comunicación entre los actores de cada nodo es transparente, dando la ilusión de que la ejecución está contenida en un único nodo.
+
+Afortunadamente, Akka cuenta con varias herramientas para conseguir esto. A continuación realizaremos un análisis de dichas herramientas y que papel juegan en la aplicación.
+
+\subsection{Akka Actors Typed}
+
+El corazón de Akka es el modelo de actores y, consecuentemente, el principal componente de Akka es la biblioteca
+de actores. Históricamente Akka implementaba a los actores como clases de Scala que heredan de una clase \textbf{Actor}.
+La clase luego debe definir un método \textit{receive} que se encarga de definir el comportamiento del actor según el mensaje recibido.
+Dicho método recibe el mensaje como argumento del mismo, y el mensaje puede \textbf{ser cualquier tipo de dato de Scala}.
+Mediante Pattern Matching, un feature nativo de Scala, se define el comportamiento del actor según el tipo de mensaje recibido.
+El problema con esta metodología es que se pierde todo tipo de chequeo de tipos en tiempo de compilación.
+
+Como respuesta a esta problemática, Akka introdujo una nueva versión de la biblioteca de actores llamada \textit{Akka Actors Typed}.
+Esta nueva versión introduce el concepto de tipado para los mensajes que pueden recibir los actores, y además mantiene intercompatibbilidad
+con los actores de la versión anterior, renombrada a \textit{Akka Actors Classic}.
+
+A continuación se muestra una comparación entre la definición de un actor en la versión clásica y su análogo en la versión tipada de actores.
+
+\newpage
+
+\begin{lstlisting}[language=Scala, caption={\textbf{Ejemplo de Actor en Akka Actors Classic}}]
+    import akka.actor.{Actor, ActorSystem, Props}
+
+    // Define the messages
+    case object Increment
+    case object Decrement
+    case object Print
+    
+    // Define the Counter actor
+    class Counter extends Actor {
+      var count = 0
+    
+      def receive = {
+        case Increment => count += 1
+        case Decrement => count -= 1
+        case Print     => println(s"Current count is $count")
+      }
+    }
+\end{lstlisting}
+
+\begin{lstlisting}[language=Scala, caption={\textbf{Ejemplo de Actor en Akka Actors Typed}}]
+    import akka.actor.typed.scaladsl.Behaviors
+    import akka.actor.typed.{ActorSystem, Behavior}
+    
+    // Define the messages
+    sealed trait Command
+    case object Increment extends Command
+    case object Decrement extends Command
+    case object Print extends Command
+    
+    // Define the Counter actor
+    object Counter {
+      def apply(): Behavior[Command] = counter(0)
+    
+      private def counter(count: Int): Behavior[Command] = {
+        Behaviors.receiveMessage {
+            case Increment =>
+                counter(count + 1)
+            case Decrement =>
+                counter(count - 1)
+            case Print =>
+                println(s"Current count is $count")
+                Behaviors.same // Reuses the current behavior
+        }
+      }
+    }
+\end{lstlisting}
+
+Como se puede observar, Akka Classic tiene un enfoque orientado a objetos para los actores.
+El estado del actor se mantiene en variables de instancia y el comportamiento del actor se define en la función
+\textit{receive} heredada de la clase \textit{Actor}. En cambio, Akka Typed tiene un enfoque funcional, donde el comportamiento
+del actor se define mediante la función \textit{Behaviors.receiveMessage}, que es una \textit{factory} de comportamientos.
+En Akka Typed un actor se define por su \textit{behavior}, el cual es una función que determina el comportamiento del actor
+frente a todos los distintos mensajes que acepta. Luego de procesar cada mensaje debe devolverse el siguiente comportamiento.
+El estado del actor se mantiene en los argumentos de la función comportamiento, y no en variables de la instancia.
+
+Nuestro servidor de \textit{Fiubakka} hace uso exclusivo de la nueva API de Akka Typed, pero es importante estar al tanto
+de la versión Akka Classic, ya que muchos proyectos existentes todavía la utilizan.
+
+\subsection{Akka Cluster}
+
+Anteriormente mencionamos que existen implementaciones del modelo de actores para distintas tecnologías. Si nos retringieramos
+únicamente a utilizar el componente de actores de Akka no habría un motivo diferencial, más allá de la preferencia de lenguaje
+o recursos disponibles en la web, para elegirlo sobre otras implementaciones. Akka Cluster es el primer motivo, y el más importante,
+de por qué usamos Akka para implementar nuestro videojuego.
+
+Akka Cluster extiende el modelo de actores de \textbf{forma transparente a la aplicación} para poder formar un \textit{cluster} de nodos de Akka,
+comunicados entre sí, donde los actores pueden enviarse mensajes entre ellos sin importar el nodo en el que residan. Esto posibilita agregar
+más poder de cómputo de forma \textbf{horizontal} al sistema. Siempre y cuando el problema que estemos resolviendo en Akka se beneficie de mayor
+concurrencia y paralelismo, podemos agregar más nodos al cluster para distribuir la carga y conseguir mejores resultados en lugar
+de tener que mejorar el hardware del sistema que tuviese que ejecutar la aplicación.
+
+Para visualizar lo sencillo que es inicializar un cluster de Akka, esta es la configuración de \textit{Fiubakka}
+para el ambiente local de desarrollo:
+
+\newpage
+
+\begin{lstlisting}[language=applicationconf, caption={\textbf{Configuración de Akka Cluster Fiubakka}}]
+    cluster {
+        downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
+        shutdown-after-unsuccessful-join-seed-nodes = 60s
+        seed-nodes = ["akka://fiubakka-server@127.0.0.1:2020"]
+
+        sharding {
+            number-of-shards = 100
+            least-shard-allocation-strategy.rebalance-absolute-limit = 20
+            buffer-size = 300000
+            updating-state-timeout = 15 s
+        }
+    }
+\end{lstlisting}
+
+Para el ambiente local se utilizan lo que se denomina como \textit{seed nodes}, que son nodos que se encargan de iniciar el cluster.
+Al iniciar un nodo de Akka el mismo verifica si su dirección corresponde a un seed node. Si es así, se encargará de escuchar futuras
+conexiones de otros nodos de Akka que busquen unirse al cluster, y siempre que un nodo de Akka no seed se inicie intentará conectarse a los seed nodes especificados
+en la configuración. Por supuesto, este método únicamente funciona si las direcciones de los nodos son estáticas y conocidas de antemano.
+Para ambientes dinámicos como Kubernetes existen otros métodos de descubrimiento de nodos que describiremos más adelante.
+
+La sección de \textit{sharding} incluida en la configuración nos lleva a nuestro siguiente componente de Akka del que \textit{Fiubakka}
+hace uso: \textbf{Akka Cluster Sharding}, una extensión de las funcionalidades que Akka Cluster provee.
+
+\subsubsection{Akka Cluster Sharding}
+
+Una problemática que surge al utilizar Akka Cluster es que si bien los actores pueden comunicarse entre sí sin importar en qué nodo
+se encuentren, el problema es conseguir en primera instancia la referencia a actores que residen en otros nodos ajenos al propio. En principio
+pueden utilizarse llamados remotos a los demás nodos y conseguir como respuesta las direcciones de los actores que nos interesan para poder
+crear la referencia a los mismos, pero no es ideal. Por otro lado, una propiedad deseable en los sistemas distribuidos es la capacidad
+de esparcir la carga entre los distintos nodos \textbf{elásticamente}, esto es, que el incremento y decremento de nodos en el cluster
+resulte en un balanceo uniforme de la carga total.
+
+Akka Cluster Sharding es, entre otras cosas, una respuesta a ambos puntos. Permite crear \textbf{entidades} que pueden ejecutarse en cualquier nodo
+del cluster y que pueden ser referenciadas desde cualquier nodo por medio de un identificador único, para poder comunicarnos con las mismas.
+Podemos pensar a una entidad como un actor que reside en un único nodo del cluster en todo momento, y al cual podemos conseguir una referencia sin saber
+en qué nodo se encuentra, utilizando su identificador.
+
+Además, Sharding nos permite definir una \textbf{estrategia de balanceo} de las entidades al momento de creación de las mismas,
+y de \textbf{rebalanceo} modificarse la composición de los nodos del cluster. Nuevamente, para nuestra aplicación, estos balanceos son
+completamente transparentes. Si un nodo se cae, las entidades que residían en el mismo son automáticamente reubicadas en otros nodos del cluster,
+y los distintos actores que estuviesen comunicandose con dichas entidades no se enterarán del cambio.
+
+Sin adentrarnos demasiado en los detalles, Cluster Sharding consigue implementar esto de la siguiente forma.
+En primer lugar, cada entidad tendrá definido por cada tipo de entidad lo que se conoce como un \textit{Shard Coordinator}, un actor singleton
+que residirá en el nodo líder del Akka Cluster y será el responsable de determinar en que nodos del cluster residirá
+un \textit{shard}. Los shards son conjuntos de entidades, donde cada entidad tiene un shard asignado mediante un hash calculado sobre su
+identificador único. En este sentido, la mínima unidad asignable por el Shard Coordinator es el shard, y no entidades individuales (de allí su nombre).
+Cada nodo tendrá lo que se denomina un \textit{Shard Region} por cada tipo de entidad, un actor que se encargará de administrar los shards del nodo
+que le hayan sido asignados por el Coordinator, así como resolver, también mediante en el Shard Coordinator en caso de ser necesario, las ubicaciones
+de los shards cuyas entidades sean comunicadas por los actores del nodo.
+
+En el caso de nuestra aplicación \textit{Fiubakka}, cada cliente que se conecta al juego va a generar dos entidades asociadas: una entidad
+\textbf{Player} y otra entidad \textbf{PlayerPersistor}. La ventaja de representar a los jugadores como entidades en lugar de actores es justamente que conseguimos
+referenciar a un jugador sin conocer ni importar el nodo en el que reside, y que además son sujetos a los procesos de balanceo de carga que se hace sobre las entidades.
+Esto nos permite escalar horizontalmente frente al incremento de jugadores en el juego, mediante simplemente agregar más nodos de forma dinámica.
+
+\newpage
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1\textwidth]{../assets/architecture.png}
-    \caption{Diagrama de arquitectura propuesta utilizando el modelo de actores y streams}
+    \includegraphics[width=0.8\textwidth]{../assets/cluster-sharding-example.jpeg}
+    \caption{Ejemplo de Cluster Sharding para la entidad Player}
 \end{figure}
 
-\subsection{Backend: servidor distribuido Akka}
-\index{Desarrollo}
+Es claro entonces la importancia que tiene Cluster Sharding en nuestro modelo, y tiene un papel fundamental, junto con Akka Cluster, en permitirnos desarrollar nuestra arquitectura
+propuesta. Implementaciones del modelo de actores como \textit{Actix} no cuentan con ningún feature similar. Por otro lado, Elixir sí que cuenta con capacidades similares a las de Akka
+Cluster, aunque no 
+
 
 \subsubsection{Introducción a Akka}
 

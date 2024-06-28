@@ -32,9 +32,48 @@
 \usepackage[hyperindex]{hyperref}
 \usepackage{graphicx}
 \usepackage{enumitem}
+\usepackage{caption}
+\usepackage{listings}
 \usepackage{subfiles} % Best loaded last in the preamble
 
+\captionsetup[lstlisting]{labelformat=empty}
 \addto\captionsspanish{\renewcommand{\contentsname}{Tabla de Contenidos}}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=none,
+  language=Scala,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\lstdefinelanguage{applicationconf}{
+  morecomment=[l]{\#},       % comments start with a hash symbol
+  morecomment=[s]{/*}{*/},   % C-style block comments
+  morestring=[b]",           % strings are enclosed in double quotes
+  morestring=[b]',           % strings can also be enclosed in single quotes
+  sensitive=true,            % case sensitive
+  morekeywords={true, false, null}, % keywords
+  morekeywords=[2]{include, reference}, % more specific keywords
+  keywordstyle=\color{blue},
+  keywordstyle=[2]\color{orange},
+  keywordstyle=[3]\color{purple},
+  stringstyle=\color{red},
+  commentstyle=\color{gray}\ttfamily,
+}
 
 \begin{document}
 
