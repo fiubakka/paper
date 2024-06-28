@@ -264,8 +264,93 @@ Esto nos permite escalar horizontalmente frente al incremento de jugadores en el
 
 Es claro entonces la importancia que tiene Cluster Sharding en nuestro modelo, y tiene un papel fundamental, junto con Akka Cluster, en permitirnos desarrollar nuestra arquitectura
 propuesta. Implementaciones del modelo de actores como \textit{Actix} no cuentan con ningún feature similar. Por otro lado, Elixir sí que cuenta con capacidades similares a las de Akka
-Cluster, aunque no 
+Cluster, aunque no las de Cluster Sharding ni las del siguiente componente clave: Akka Persistence.
 
+\subsection{Akka Persistence}
+
+Cluster Sharding nos da la garantía de que las entidades se reinician en caso de error o eliminación de un nodo del cluster, además de rebalancearlas al agregarse un nuevo
+nodo. En principio, únicamente con los componentes de Akka que presentamos hasta ahora, ambos casos resultan en un problema: si la entidad se vuelve a iniciar, estaríamos perdiendo el estado
+de la misma, ya que el estado de los actores está en memoria. Esto resultaría por ejemplo en perder los datos de posición del jugador, o también su inventario o equipamiento.
+En arquitecturas \textit{stateless}, el estado sería persistido en una base de datos externa ante cada cambio sucedido.
+Una propuesta más que válida sería persistir el estado del actor serializado como si se tratase de un objeto. Akka Persistence toma esta idea y la integra nativamente en los actores. 
+
+Existen dos \textit{flavors} o implementaciones de Akka Persistence. La primera es Event Sourcing, la cual se basa en un proceso de replay de eventos. Cada evento sucedido genera en respuesta
+un comando que es procesado por el actor, y el procesamiento de todos los comandos provenientes de los eventos determina el estado final del actor. Lo que se persisten en ese caso son justamente los eventos.
+En caso de que el actor se reinicie, se leen los eventos persistidos y se reenvían los comandos correspondientes al actor para volver al estado en el que se encontraba previo a su caída.
+Lógicamente, dado que en el tiempo pueden acumularse muchos eventos, se introduce un concepto de \textit{snapshot} del estado del actor que actúa como un checkpoint. Cada N cantidad de eventos
+se almacena el snapshot del estado del actor y se reinician los eventos persistidos, tomando ese snapshot como estado inicial del actor previo al reprocesamiento de los eventos. Esto evita que las inicializaciones
+del actor sean muy costosas en tiempo.
+
+Esta primera versión resulta útil en sistemas donde llevar un registro de los sucesos resulte valioso. En el caso de \textit{Fiubakka} no nos interesa entender los eventos
+que llevaron al estado actual de un jugador, únicamente necesitamos el estado del jugador cada ciertos instantes o acciones.
+Afortunadamente, Akka Persistence introdujo en una de sus últimas versiones otra alternativa llamada \textbf{Durable State}.
+
+Durable State permite definir \textit{behaviors} que se caracterizan por generar lo que se denomina un \textit{effect} por cada comando recibido en el actor.
+En la nomenclatura funcional, la cual vimos anteriormente que Akka Typed utiliza, un efecto hace referencia a una acción secundaria al resultado de la función.
+Dado que en Akka Typed todo mensaje que un actor procesa tiene como resultado de la función el nuevo comportamiento, los efectos incluyen acciones como persistir el estado del actor
+en la base de datos o responder al actor que envió el mensaje.
+
+Este modelo de persistencia de actores se ajusta casi perfectamente a lo que buscamos para persistir el estado de los actores de los jugadores.
+El único problema, en la práctica, es que la API de Durable State Behavior es algo limitada. No es posible por ejemplo tener como efecto tanto la persistencia del actor
+como la respuesta al actor que envió el mensaje. Además, en el caso de generar como efecto la peresistencia del estado del actor, el mismo no procesará el siguiente mensaje hasta no haberse
+ejecutado la query de almacenamiento en la base de datos. Dado que la ejecución de queries puede llevar un tiempo no despreciable comparado con la velocidad de los actores en el procesamiento de los mensajes,
+preferimos no utilizar Durable State Behavior directamente sobre los actores \textbf{Player} asociados a cada cliente del juego.
+En cambio, definimos otro actor \textbf{PlayerPersistor} que sí utiliza Durable State Behavior y al cual el Player le envía su estado en un mensaje.
+De esta forma desacoplamos la persistencia del estado del jugador del procesamiento de los eventos que reciba, evitando incrementar la latencia y empeorar la experiencia del juego.
+
+Dado que un jugador puede recibir miles de mensajes por segundo de distintos eventos que van sucediendo en el juego, optamos por enviar el mensaje de persistencia al
+PlayerPersistor cada cierta cantidad de segundos para alivianar la carga en la base de datos. En la práctica perdernos unos segundos de movimiento del jugador es irrelevante, ya que ante eventos
+importantes (por ejemplo cuando el jugador se desconecta) persistimos el estado inmediatamente, por lo que en general el jugador verá su estado de forma correcta
+al reconectarse al juego.
+
+A continuación se muestra la implementación del \textbf{PlayerPersistor}, el actor responsable de persistir el estado del jugador en el servidor.
+
+\begin{lstlisting}[language=Scala, caption={\textbf{Implementación del PlayerPersistor}}]
+object PlayerPersistor {
+    sealed trait Command extends CborSerializable
+    final case class Persist(newState: DurablePlayerState) extends Command
+    final case class GetState(replyTo: ActorRef[GetStateResponse]) extends Command
+    
+    final case class GetStateResponse(state: DurablePlayerState)
+        extends CborSerializable
+    
+    val TypeKey = EntityTypeKey[Command]("PlayerPersistor")
+    
+    def apply(persistenceId: PersistenceId): Behavior[Command] = {
+        DurableStateBehavior[Command, DurablePlayerState](
+        persistenceId,
+        emptyState = DurablePlayerState(
+            "",
+            Position(845, 1730),
+            Equipment(0, 0, 0, 0, 0, 0, 0),
+            0
+        ),
+        commandHandler = commandHandler
+        )
+    }
+    
+    private def commandHandler(
+        state: DurablePlayerState,
+        command: Command
+    ): Effect[DurablePlayerState] = {
+        command match {
+        case Persist(newState) => {
+            Effect.persist(newState)
+        }
+        case GetState(replyTo) => {
+            replyTo ! GetStateResponse(state)
+            Effect.none
+        }
+        }
+    }
+}
+\end{lstlisting}
+
+Nótese como el PlayerPersistor combina el concepto de entidad de Akka Cluster Sharding con el de persistencia de Akka Persistence. En la práctica, ambos están muy relacionados,
+ya que las entidades suelen tener un estado asociado que necesita ser recuperable.
+
+Como base de datos para la persistencia tanto del estado de los actores como de otros registros de información utilizamos
+\textbf{PostgreSQL}. Otras opciones que Akka Persistence soporta nativamente son Cassandra y MongoDB.
 
 \subsubsection{Introducción a Akka}
 
