@@ -38,7 +38,7 @@ más completa y actualizada.
 Llegado a este punto, tenemos que el modelo de actores, y particularmente Akka, nos permite desarrollar un sistema distribuido
 donde nuestra aplicación puede ejecutarse en N nodos de manera transparente, donde los distintos actores que residen en cada nodo
 pueden comunicarse entre sí sin importar en qué nodo se encuentren y desconociendo la ubicación del otro actor con el que se comunican.
-Más adelante entraremos en más detalle sobre el funcionamiento de Akka y los distintos componentes que utilizamos.
+En breve entraremos en más detalle sobre el funcionamiento de Akka y los distintos componentes que utilizamos.
 
 No alcanza sin embargo únicamente con Akka para poder desarrollar la arquitectura de nuestro videojuego.
 El primer punto a resolver con el que nos encontramos es que necesitamos un mecanismo que nos permita comunicar distintos eventos
@@ -471,7 +471,86 @@ procesamiento. Dado que la conexión con el cliente está abstraída en un Akka 
 los \textit{bytes} recibidos y como salida los mensajes internos del actor PlayerHandler. El Sink del Stream es el actor mismo,
 por lo que los mensajes serán enviados al PlayerHandler para su procesamiento.
 
-// TODO diagrama + codigo resumido del procesamiento del Stream
+\begin{lstlisting}[language=Scala, caption={\textbf{Stream de conexión del cliente}}]
+private def clientStreamHandler(
+    ctx: ActorContext[CommandOrPlayerReply],
+    conSource: Source[GeneratedMessage, NotUsed]
+) = {
+    Flow[ByteString]
+    .via(
+        InMessageFlow(PBClientMetadata, ProtocolMessageMap.clientMessageMap)
+    )
+    .throttle(60, 1.second) // 60hz tick rate
+    .map(commandFromClientMessage)
+    .via(
+        Flow.fromSinkAndSourceCoupled(
+            ActorSink.actorRef(
+                ref = ctx.self,
+                onCompleteMessage = ConnectionClosed(),
+                onFailureMessage = (_) => ConnectionClosed()
+            ),
+            conSource.via(
+                OutMessageFlow(
+                (length: Int, `type`: GeneratedEnum) =>
+                    PBServerMetadata(
+                    length,
+                    `type`.asInstanceOf[PBServerMessageType]
+                    ),
+                ProtocolMessageMap.serverMessageMap
+                )
+            )
+        )
+    )
+    .instrumentedPartial(
+        name = "PlayerHandlerConnection",
+        traceable = true,
+        reportByName = true
+    )
+}
+\end{lstlisting}
+
+En particular, la función \textbf{commandFromClientMessage} es la que se encarga de traducir los bytes recibidos
+en mensajes que el PlayerHandler puede recibir. Los mensajes son enviados mediante el \textit{ActorSink.actorRef}, donde
+\textit{ctx.self} es la dirección del actor PlayerHandler.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{../assets/player-handler-client-flow.png}
+    \caption{Flujo de mensajes del cliente al PlayerHandler}
+\end{figure}
+
+\subsubsection{Manejo del jugador del cliente}
+
+Hasta aquí explicamos como se conecta un cliente al servidor y como se reciben los mensajes que el cliente emite.
+Ahora vamos a explicar como se maneja el estado del jugador y como se integra con todos los demás jugadores que pueden estar
+presentes en el juego.
+
+Es necesario aclarar que \textit{Fiubakka} es un \textbf{juego descentralizado} para poder comprender este punto de su estructura. Lo que esto significa es que no existe una
+entidad central que maneje el estado de todos los jugadores o que sea origen único del estado del juego en cualquier momento.
+Si bien en principio la descentralización puede parecer un problema, es en realidad la principal ventaja (y diferencia) que nuestra arquitectura tiene
+frente al modelo monolítico que implementan la mayoría de los videojuegos en línea.
+
+Con el objetivo de disminuir la latencia, evitar bloqueos y dar una mejor experiencia al jugador, todas las acciones que el cliente
+realiza \textbf{no requieren de la aprobación del servidor}. En su lugar, el servidor actúa como un replicador y notificador de la información
+que el cliente le envía. Si, por ejemplo, el jugador se desplaza, eso genera un mensaje hacia el servidor con el desplazamiento realizado y será luego
+responsabilidad del servidor tanto persistir la nueva posición recibida como así también notificar a los demás jugadores del desaplzamiento propio.
+Ese aviso es parte de los eventos del juego que mencionamos que se realizan a través de Kafka.
+
+De esta forma, lo más cercano a la fuente de la verdad del estado del juego resulta la agregación de los estados individuales
+de cada jugador almacenados en los clientes conectados al servidor. Si diseñamos el protocolo de mensajes del videojuego de forma tal
+que no dependa del orden de llegada de los mensajes ni de la garantía de que todos los mensajes se envíen, podemos valernos de que
+el estado de un jugador reportado por el cliente tendrá \textbf{consistencia eventual} en el resto de los jugadores.
+Este diseño es clave para la escalabilidad horizontal de la aplicación y la alta performance. Además, implementamos mensajes frecuentes
+para cada jugador que reportan el estado del mismo a los demás jugadores, para minimizar el tiempo de posibles inconsistencias en caso de que
+sucedieran.
+
+Con todo esto en cuenta es que implementamos la entidad \textbf{Player}. Recordemos de Cluster Sharding que una entidad es un actor que puede residir
+en cualquier nodo del cluster y que es susceptible a los procesos de balanceos de carga. La idea de que el Player sea una entidad y no un actor
+es que siendo uno de los componentes que más carga de cómputo va a tener en el sistema (tanto de tener que procesar los mensajes del cliente como de otros jugadores)
+es necesario que pueda ser reubicado en otros nodos en caso de que la carga sobre el nodo en el que esté residiendo sea elevada.
+Además nos garantiza que al conectarse un nuevo cliente al juego se le asigne el Player en el nodo con mayor disponibilidad de recursos.
+
+// TODO continue
 
 \subsection{Frontend: cliente Godot}
 
