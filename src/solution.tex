@@ -550,7 +550,48 @@ es que siendo uno de los componentes que más carga de cómputo va a tener en el
 es necesario que pueda ser reubicado en otros nodos en caso de que la carga sobre el nodo en el que esté residiendo sea elevada.
 Además nos garantiza que al conectarse un nuevo cliente al juego se le asigne el Player en el nodo con mayor disponibilidad de recursos.
 
-// TODO continue
+La entidad Player maneja el estado del jugador, incluyendo información como su posición, inventario o equipamiento. Recordemos que estos datos no son más que una réplica de lo que
+el cliente le informa, por lo que el estado del Player y del jugador en el cliente podría no ser exactamente el mismo, aunque eventualmente lo serán debido a la consistencia eventual
+que mencionamos anteriormente. Todas las acciones que el cliente realiza o los eventos que van sucediendo en el juego (como pueden ser acciones de otros
+jugadores) serán recibidos y procesados por el Player. En el caso de los eventos externos, el Player se encarga de enviar un mensaje
+al PlayerHandler notificándole del suceso, para que finalmente el PlayerHandler envíe la información al cliente via la conexión TCP que administra.
+
+El siguiente diagrama muestra conceptualmente el flujo de ejecución del movimiento de un jugador. Es importante aclarar que los diagramas de flujo no logran capturar
+el asincronismo del modelo de actores, por lo que el diagrama modela un flujo secuencial. En la realidad el proceso es totalmente asíncrono, ninguno de los procesos esperan
+la respuesta ni que se completen los otros disparados.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/player-movement-example.png}
+    \caption{Diagrama de flujo de movimiento de un jugador}
+\end{figure}
+
+En el diagrama se muestra un componente que mencionamos previamente cuando presentamos el módulo de Akka Persistence: el PlayerPersistor. Se trata la entidad encargada de almacenar (y recuperar) el estado
+del jugador. Hace uso de los \textit{behaviors} de Durable State que Akka Persistence provee. Como comentamos anteriormente, la interacción con la persistencia se delega a esta otra entidad y no propiamente al
+Player por temas de flexibilidad de API y de latencia. Esto por supuesto significa que no existe garantía de que el nuevo estado haya sido persistido, pero al ser el PlayerPersistor una entidad esta sujeto a las garantías
+de Sharding de rebalanceo y recuperabilidad en casos de fallos. En los casos donde haya errores en la persistencia momentáneos podrá recuperarse automáticamente, y dado que el protocolo del juego se basa en mensajes
+que garantizan la consistencia eventual del estado del jugador, esta segregación de la persistencia del estado del jugador no resulta en fallos críticos. En caso de ser necesario garantizar que una acción se haya persistido,
+existen mecanismos dentro de Akka para cerciorarnos de ello.
+
+\subsubsection{Comunicación de los eventos del juego}
+
+Mencionamos en la introducción a la arquitectura de \textit{Fiubakka} que los eventos que deban ser notificados a todos los demás jugadores se realizan mediante mensajes de Kafka.
+La responsabilidad de publicar y consumir estos eventos no recae en sí sobre el Player, sino sobre dos actores que el Player crea al iniciarse: el \textbf{GameEventConsumer} y el \textbf{GameEventProducer}.
+Todo Player cuenta con un GameEventProducer para poder notificar sus acciones a los demás jugadores, y con un GameEventConsumer para poder enterarse de las acciones que otros jugadores han realizado.
+
+Cada vez que el Player deba notificar una acción enviará el mensaje con la acción al GameEventProducer. Este se encargará, mediante un Akka Stream conectado a Kafka, de publicar el mensaje
+en el tópico correspondiente. Cada mapa del juego tiene su propio tópico de Kafka, por lo que el mensaje se publicará únicamente en el tópico que corresponda al mapa en el que se encuentre el jugador que realizó la acción.
+De forma análoga, el GameEventConsumer cuenta con un Akka Stream que tiene como fuente un consumidor del tópico de Kafka correspondiente al mapa en el que el jugador se encuentra. A medida que recibe a través del Stream los
+eventos que fueron siendo publicados en el tópico por los demás jugadores, el GameEventConsumer enviará los eventos como mensajes al Player. Finalmente el Player se los notificará al PlayerHandler, quien terminará enviándolos
+al cliente asignado.
+
+Una consecuencia de este diseño es que los jugadores desconocen en un principio la existencia de los demás. Es únicamente mediante los eventos que van siendo recibidos en el Player provenientes del GameEventConsumer
+que el cliente se entera de la existencia de los demás jugadores. Cada acción que un jugador realiza que generá un cambio en su estado dispara el evento de notificación del nuevo estado. En el momento que los demás jugadores reciben
+el evento y se le envía al cliente, va a ser posible visualizar al jugador. Este mecanismo nos permite delegar la agregación del estado de los jugadores al cliente, disminuyendo sustancialmente el uso de los recuros de memoria del servidor.
+Cada Player almacenará únicamente su propio estado, el estado de los demás jugadores se le reportará al cliente a medida que se reciban pero no se almacenará en el Player en sí.
+Por supuesto, además de en las actualizaciones, se notifica el estado del jugador cada unos pocos segundos de forma constante para evitar que un jugador que nunca realiza una acción sea invisible al resto.
+
+// TODO diagrama de flujo del gameevent consumer, codigo de ejemplo del producer y del consumer 
 
 \subsection{Frontend: cliente Godot}
 
