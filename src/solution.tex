@@ -605,8 +605,7 @@ API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaj
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-engine-showcase.png}
-    \caption{Editor de Godot Engine. 
-            Source: https://docs.godotengine.org/en/stable/getting\_started/introduction/introduction\_to\_godot.html}
+    \caption{Editor de Godot Engine.\cite{ref1}}
 \end{figure}
 
 \textit{GDScript} es un lenguaje de programación de alto nivel y con sintaxis similar a Python. 
@@ -633,7 +632,7 @@ añadir un script, extendiendo y personalizando su comportamiento como sea neces
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-editor.png}
-    \caption{Interfaz gráfica del editor de Godot. Los componentes enumerados son el árbol de nodos (1),
+    \caption{Interfaz gráfica del editor de Godot. Los componentes enumerados son: el árbol de nodos (1),
             el explorador de archivos (2), el editor de la escena (3), el panel de animaciones (4) y el
             inspector del nodo seleccionado (5).}
 \end{figure}
@@ -643,13 +642,16 @@ Un Nodo cualquiera o una Escena personalizada pueden emitir \textit{signals} con
 (incluso con parámetros) para que otros Nodos o Escenas se suscriban a dicha señal. Al suscribirse, los 
 Nodos receptores definen un handler (comúnmente nombrado \textit{\_on\_node\_signal\_name}) para manejar 
 la señal recibida. De esta forma se pueden crear escenas compuestas de múltiples Nodos distintos, con 
-comportamiento más complejo, pero sin acoplar todos los nodos que necesiten comunicarse entre sí.
+comportamiento más complejo, pero sin acoplar todos los nodos que necesiten comunicarse entre sí. En la
+Figura \ref{fig:signals-editor} se ejemplifica cómo se ve una señal en el editor de Godot, mientras que
+la Figura \ref{fig:signals-diagram} ilustra cómo es el flujo al emitirse una señal.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-signals.png}
     \caption{Ejemplo de conexión de una signal. Cuando el nodo LoginUsername emite la signal
             username\_submitted, el nodo Login la recive en su función \_on\_login\_username\_text\_submitted}
+    \label{fig:signals-editor}
 \end{figure}
 
 \begin{figure}[htbp]
@@ -659,6 +661,7 @@ comportamiento más complejo, pero sin acoplar todos los nodos que necesiten com
             en el nodo LoginUsername y se la conecta al nodo Login (que es padre de LoginUsername).
             Al emitirse esta señal, Login la escucha y entonces ejecuta su función handler
             \_on\_login\_username\_text\_submitted}
+    \label{fig:signals-diagram}
 \end{figure}
 
 La filosofía del diseño de Godot es construir escenas reutilizables usando nodos. A estas escenas y 
@@ -682,7 +685,23 @@ Los niveles propiamente dichos no se instancian al iniciar el juego, sino una ve
 se haya conectado al servidor y luego a medida que se mueve por las distintas zonas del juego.
 De esta forma, encapsulamos todas las escenas activas en un mismo lugar y 
 no desperdiciamos recursos instanciandolas a la vez, solo se instancian las escenas que
-se van a usar.
+se van a usar. En las Figuras \ref{fig:node-tree-main-menu} y \ref{fig:node-tree-level} se muestra
+cómo se ve el arbol de nodos en distintos momentos del juego.
+
+% TODO: unir en una sola figura
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.4\textwidth]{../assets/godot-scene-tree-1.png}
+    \caption{Arbol de nodos (Scene Tree) en la pantalla principal del juego}
+    \label{fig:node-tree-main-menu}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.4\textwidth]{../assets/godot-scene-tree-2.png}
+    \caption{Arbol de nodos cuando el jugador está en un nivel del juego}
+    \label{fig:node-tree-level}
+\end{figure}
 
 Cuando un jugador ejecuta por primera vez el juego, lo primero que verá es la escena del menú principal, 
 o \textbf{MainMenu}. Luego de elegir el idioma del juego, tendrá dos opciones diaponibles: ingresar al juego
@@ -712,29 +731,17 @@ del patrón de diseño del mismo nombre. Estos Autoloads se cargan en el arbol d
 y están siempre disponibles sin importar cual es la escena actualmente corriendo. Un detalle importante es que
 estos Autoloads simplemente \textit{actúan} como Singletons, pero no son realmente Singletons (podrían instanciarse
 más de una vez cada uno).
-Se definieron ciertas clases (scripts) que son necesarios en un scope global como Autoloads.
+Se definieron ciertas clases (\textit{scripts}) que son necesarios en un scope global como Autoloads.
 Por ejemplo, para el manejo, carga y borrado de escenas, hacemos uso de un \textbf{SceneManager}, 
 que es un script Autoload que permite transicionar entre niveles dentro del juego. En general, 
 se implementaron Singletons de tipo \textit{Manager} para acceder a distintos comportamientos y 
 configuraciones globales (información del jugador, cambio de escenas, control del audio, entre otros).
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.4\textwidth]{../assets/godot-scene-tree-1.png}
-    \caption{Arbol de nodos (Scene Tree) en la pantalla principal del juego}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.4\textwidth]{../assets/godot-scene-tree-2.png}
-    \caption{Arbol de nodos cuando el jugador está en un nivel del juego}
-\end{figure}
-
 Cada nivel es una instancia de la clase \textbf{Level}. Si bien cada escena de nivel creada es diseñada
 de forma especial para replicar alguna parte de la arquitectura de la Facultad de Ingeniería,
-existen ciertos tipos de nodos que deben usarse en todos los niveles.
-Por ejemplo, para definir la forma, apariencia y estructura de cada nivel, debe tener un TileMap,
-que es un tipo de nodo que a partir de una \textit{SpriteSheet} permite "pintar" sobre
+existen ciertos tipos de nodos que deben usarse en todos los niveles (ver Figura \ref{fig:level-nodes}).
+Por ejemplo, para definir la forma, apariencia y estructura de cada nivel, debe tener un \textbf{TileMap},
+que es un tipo de nodo que a partir de una \textit{Sprite Sheet} permite "pintar" sobre
 una grilla predefinida de pixeles, como si fuera un canvas. Además se deben definir las colisiones de las 
 "paredes" de cada nivel, para que el jugador no se pase del límite de la cámara y se vaya 
 \textit{out of bounds}. Esto se logra con nodos del tipo \textbf{StaticBody2D} y \textbf{CollisionShape2D}.
@@ -751,14 +758,16 @@ permitirles a los jugadores cambiar de nivel y moverse a través de la Facultad.
     \caption{Ejemplos de árboles de nodos para distintas escenas de tipo \textit{Level}. Nótese que
             comparten ciertos tipos de nodos en común (\textbf{Player}, \textbf{TileMaps},
             \textbf{CollisionShape2D}, etc.)}
+    \label{fig:level-nodes}
 \end{figure}
 
 Como se mencionó anteriormente, para transicionar entre niveles, es decir, para cargar un nuevo Level
 y remover el actual, implementamos un script Autoload llamado \textbf{SceneManager}.
 Este SceneManager encapsula la responsabilidad de manejar el cambio de niveles de forma natural para 
 el usuario. El proceso para cambiar de un Level a otro es:
+
 \begin{itemize}
-    \item Mostrar una escena de pantalla de carga (\textbf{LoadingScreen}).
+    \item Mostrar una escena de pantalla de carga \textbf{LoadingScreen} (Figura \ref{fig:loading-screen}).
     \item Cargar de memoria la nueva escena en un hilo separado.
     \item Una vez cargada la escena nueva, montarla en el arbol de escenas.
     \item Antes de remover la escena actual, transferir cualquier tipo de data relevante de un nive la otro,
@@ -771,6 +780,7 @@ el usuario. El proceso para cambiar de un Level a otro es:
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-loading-screen.png}
     \caption{Pantalla de carga.}
+    \label{fig:loading-screen}
 \end{figure}
 
 Un \textbf{Player} o jugador es una escena donde se encapsulan tanto la vista como el comportamiento del
@@ -794,24 +804,26 @@ Una \textbf{Entity} es el personaje de otro jugador conectado. Un \textbf{NPC} e
 
 Una vez dentro de la Facultad, el jugador podrá moverse a través del nivel usando las cuatro flechas teclas
 direccionales del teclado o \textbf{WASD}.
-También podrá acceder a un inventario presionando la tecla \textbf{I}.
+También podrá acceder a un inventario presionando la tecla \textbf{I} (ver Figura \ref{fig:inventory}).
 Dentro de este inventario verá listados los objetos que tenga disponible, ya sean objetos personales u otros
 cosméticos. En el caso de los cosméticos, podrá optar por equipar o desesquiparselos, modificando la
 apariencia de su personaje.
 Además al presionar la tecla \textbf{TAB} abrirá una ventana de chat, donde podrá intercambiar mensajes con
-todos los otros jugadores que estén conectados en la misma región de la Facultad. Mientras esté chateando,
-el jugador no podrá moverse y tendrá cerrar la ventana de chat presionando \textbf{TAB} nuevamente.
+todos los otros jugadores que estén conectados en la misma región de la Facultad (ver Figura \ref{fig:chat}).
+Mientras esté chateando, el jugador no podrá moverse y tendrá cerrar la ventana de chat presionando \textbf{TAB} nuevamente.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-inventory.png}
     \caption{Inventario de items.}
+    \label{fig:inventory}
 \end{figure}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-chat.png}
     \caption{Chat.}
+    \label{fig:chat}
 \end{figure}
 
 Uno de los principales features del juego es la posibilidad de desafiar a otros jugadores a una partida de 
@@ -820,22 +832,25 @@ es obtener 30 puntos antes que el oponente, ganando las manos y haciendo disitnt
 Para desafiar a otro jugador a una partida de Truco, el usuario solo debe hacer click derecho sobre cualquier
 otro personaje que vea en su pantalla. Eso habilitará un submenú con un botón para jugar al Truco.
 El otro jugador recibirá una notificación que puede aceptar o rechazar. Al aceptarla, ambos jugadores
-verán la pantalla de Truco y la partida comienza.
+verán la pantalla de Truco y la partida comienza. (Figuras \ref{fig:truco-submenu} y \ref{fig:truco-notification})
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-truco-menu.png}
     \caption{Submenú de jugador. A partir de este menú se puede desafiar a otro jugador al Truco.}
+    \label{fig:truco-submenu}
 \end{figure}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-truco-notification.png}
     \caption{Notificación de Truco. El jugador puede rechazarla o aceptarla y empezar la partida inmediatamente.}
+    \label{fig:truco-notification}
 \end{figure}
 
 Los jugadores verán las cartas de su mano en la región inferior de la pantalla, así como también las opciones
-de cantos disponibles en dicho turno. Para hacer un canto, solo deben clickear el botón correspondiente
+de cantos disponibles en dicho turno, como se muestra en la Figura \ref{fig:truco-game}.
+Para hacer un canto, solo deben clickear el botón correspondiente
 y esperar la respuesta del oponente. Para jugar un carta, el jugador que corresponda podrá arrastrarla con el
 mouse desde su mano y soltarla sobre la mesa en la región que corresponda al turno que está transcurriendo,
 haciendo \textit{drag and drop}. El otro jugador va a ver la carta jugada por su oponente y se le hailitará
@@ -853,6 +868,7 @@ usuarios puedan jugar.
     \includegraphics[width=0.8\textwidth]{../assets/godot-truco-2.png}
     \caption{Pantalla de Truco durante una partida en transcurso. Las cartas y los cantos dispnibles se
             ven en la región inferior y las cartas se juegan sobre la mesa.}
+    \label{fig:truco-game}
 \end{figure}
  
 % TODO: poner en algun lado como se mueve el jugador (controles)
@@ -888,23 +904,25 @@ el mensaje correspondiente con los parámetros correctos, lo serializa y envía 
 al Servidor a través de la conexión TCP.
 
 \subsection{Comunicación entre cliente y servidor}
-
+Aún habiendo definido el protocolo de estándar de comunicación que utilizaríamos para conectar al Cliente y Servidor,
+fue necesario tomar ciertas decisiones y definir otros protocolos a la hora de definir los mensajes
+concretos que intercambiarían el frontend con el backend.
 
 \subsubsection{Lógica del juego: movimiento y colisiones}
 \noindent Otro de nuestros problemas iniciales fue decidir cómo implementaríamos el movimiento del 
-jugador. Al tratarse de un juego online, lo ideal era que la lógica fuera mayormente implementada del 
+jugador. Al tratarse de un juego online, lo ideal sería que la lógica fuera mayormente implementada del 
 lado del servidor y así garantizar que los jugadores no pudieran realizar movimientos prohibidos, como 
 ir a zonas que no estuvieran permitidas u obtener algún tipo de ventaja. Con este acercamiento del 
 problema, Godot no debería hacer más que enviar los inputs de la dirección a la que se desea mover el 
-jugador del jugador, y dejar que el 
-servidor se encargara de verificar que se tratase de un input válido, calcular el efecto de este 
-input en la posición y enviar a Godot la nueva dirección para que se viera reflejada en el juego.
+jugador y dejar que el servidor se encargara de verificar que se tratase de un input válido y calcular 
+el efecto de este input en la nueva posición. Luego el servidor respondería enviandole a Godot la nueva
+dirección para que se viera reflejada en el juego.
 
 Este acercamiento sirvió en un inicio donde el juego era un prototipo donde no teníamos definidos 
 mapas con un perímetro definido, sin embargo empezaron a verse las faltas en esta solución cuando 
 se comenzó a implementar las colisiones del jugador con los mapas y los objetos dentro de sus límites.
 
-Se decidió ceder la mayor parte de la lógica del movimiento a Godot debido a que este provee 
+Se decidió entonces ceder la mayor parte de la lógica del movimiento a Godot debido a que este provee 
 su propio sistema de colisiones, aprovechando las herramientas que provee sin reinventar un sistema 
 colisiones. Este acercamiento nos hacía renunciar a que el input fuera 
 verificado con cada movimiento, pero facilitaba de forma significativa la implementación del 
@@ -912,13 +930,13 @@ movimiento y las colisiones. Debido a que nuestro juego no muestra ninguna venta
 en la modificación del movimiento del jugador, decidimos perder parte de las verificaciones en 
 favor a la facilidad de desarrollo provista por Godot.
 
-% algoritmos de colisiones son resolubles en el backend, era reiventar la rueda, ya tenemos godot <3
+% TODO: algoritmos de colisiones son resolubles en el backend, era reiventar la rueda, ya tenemos godot <3
 % y no sabíamos cómo iba a ir el tema de performance.
 
 \subsubsection{Juego de cartas: Truco}
-\noindent A modo de muestra del tipo de funcionalidades que se pueden desarrollar en conjunto de 
-Godot y el modelo de actores, hemos implementado el juego de cartas \textbf{Truco}, específicamente 
-en su versión argentina.
+\noindent Como se mencionó anteriormente y a modo de muestra del tipo de funcionalidades que se pueden
+desarrollar en conjunto entre Godot y el modelo de actores, hemos implementado el juego de cartas \textbf{Truco},
+específicamente en su versión de reglas argentinas.
 
 Al igual que con el movimiento del jugador y las colisiones, debimos decidir qué 
 responsabilidades recaerían tanto para el frontend como para el backend. En la sección 

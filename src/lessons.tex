@@ -16,6 +16,36 @@ dificultaron el progreso o bien imposibilitaron el desarrollo de ciertas partes.
 
 \subsection{Shelved game features}
 
+Si bien se lograron implementar tanto la arquitectura del Servidor distribuido que es el objeto
+de estudio de este Trabajo así como también el juego que funciona como interfaz de aplicación
+para los usuarios, existen algunos \textit{features} para el juego que fueron inicialmente
+planeados pero por restricciones de tiempo no fue posible completarlos. Estos \textit{features}
+son los siguientes.
+
+\subsubsection{Sistema de \textit{in-game currency} y \textit{item shop}}
+Así como existen muchos cosméticos para la creación del personaje y además es posible cambiarlos dentro del
+juego, no existe para los jugadores alguna forma de obtener nuevos cosméticos además de los que poseen en sus
+inventarios.
+
+Entonces surgió la idea de agregar un tipo de moneda o \textit{currency} del juego para poder comprar nuevos
+objetos equipables. Estos objetos podrían comprarse en una tienda ubicada en el \textbf{Level} del \textbf{Comedor}.
+
+Por otro lado, esta funcionalidad puede estar relacionada al \textbf{Truco}, ya que la adquisición de esta moneda
+podría ser ganando partidas de \textbf{Truco}.
+
+\subsubsection{Foro de consultas}
+Teniendo en mente la temática de una facultad, donde uno suele juntarse con profesores y/o compañeros de clase
+para intercambiar ideas o hacer consultas, también se pensó en implementar un foro de consultas donde un usuario
+podría realizar un \textit{post} a modo de consulta y los demás usuarios podrían responder a la misma. Tanto el \textit{post}
+original como las respuestas podrían recibir votos positivos o negativos de parte de cualquier usuario, con el fin
+de poder votar la "mejor respuesta". Este \textit{feature} se inspira en foros y páginas de consulta como lo es por ejemplo
+\textit{StackOverflow}.
+
+Para realizar una consulta dentro del juego, un jugador podría hacerla acercandose a una pizarra y creando el \textit{post}.
+Si bien el chat es una forma de comunicación por texto entre jugadores, carece de la persistencia necesaria que necesitaría
+una consulta que puede ser respondida luego de mucho tiempo, ya que el log de mensajes del chat se borra cuando el jugador
+cierra el juego.
+
 \subsection{Godot Editor}
 
 \subsection{Godot: Optimización de imágenes}
@@ -27,14 +57,16 @@ funcionalidades con por lo menos dos instancias del juego corriendo, esto dificu
 imposibilitó para algunos integrantes continuar normalmente con el desarrollo. Este requerimiento
 de RAM no tenía sentido, ya que la suma del espacio requerido en disco de todos los 
 \textit{assets} de nuestro proyecto no superaba los 100 MB.
+
 Luego de investigar más a fondo el problema y entender cómo estábamos cargando los archivos de imágenes,
 entendimos mejor cómo las importa Godot y qué implica eso.
+
 Al agregar una imágen al proyecto, Godot genera un archivo con el mismo nombre y extensión 
 \textit{.import}, con metadata sobre cómo importar el archivo. Para el caso de las imágenes, 
 Godot las importa con un modo de compresión \textbf{Lossless} por defecto. Si bien este modo
 tiene la ventaja de que no genera \textit{artifacts} visuales en las imágenes usadas, usa 
 considerablemente más memoria VRAM (\textit{Video Random Access Memory}) para almacenar la textura o
-imágen importada. La documentación de Godot provee un estimado del espacio que ocupa una sola textura
+imágen importada. La documentación de Godot\cite{ref2} provee un estimado del espacio que ocupa una sola textura
 RGBA8 en la VRAM, dependiendo de las dimensiones de resolución de la imágen. En nuestro caso, como
 tenemos una imágen \textit{spritesheet} por cada variante de cada cosmético posible de jugadores,
 contábamos con más de 100 imágenes de más de 2048 x 2048 pixeles cada una. 
@@ -45,20 +77,18 @@ contábamos con más de 100 imágenes de más de 2048 x 2048 pixeles cada una.
     \caption{Cuadro comparativo del tamaño que ocupa una imágen en VRAM según la resolución
              de la misma y el modo de compresión utilizado.}
 \end{figure}
-% https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_images.html
 
 Usando de referencia la tabla de la documentación, y considerando que nuestras imágenes superaban
-los 2048 x 2048 pixeles, la memoria en VRAM requerida para nuestro juego tuvo una cota mínima de 
-2.24 GB:
+los 2048 x 2048 pixeles, la memoria en VRAM requerida para nuestro juego alcanzó una cota mínima de 
+\textbf{2.24 GB}:
 
 \[
 \frac{21.33 \, MiB}{imagen} \times 100 \, imagenes = 2.24 \, GB
 \]
 
-Para máquinas sin una placa de video dedicada, en lugar de alocar este espacio en VRAM, se aloca
-en memoria principal RAM, generando los problemas anteriormente mencionados.
-Habiendo hecho este descubrimiento, ahora entendíamos la causa del problema. Para solventarlo,
-aplicamos 2 soluciones:
+Para computadoras sin una placa de gráficos dedicada, en lugar de alocar este espacio en VRAM,
+se aloca en memoria principal RAM, generando los problemas anteriormente mencionados.
+Habiendo hecho este descubrimiento, aplicamos 2 soluciones para solventarlo:
 
 \begin{itemize}
     \item Reducir el tamaño de las imágenes recortándolas, ya que en realidad usamos solo
