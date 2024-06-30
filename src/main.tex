@@ -75,6 +75,18 @@
   commentstyle=\color{gray}\ttfamily,
 }
 
+\lstdefinelanguage{protobuf}{
+  keywords={syntax, message, optional, required, repeated, enum, import, package, option, true, false},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  string=[b]",
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{green}\itshape,
+  stringstyle=\color{red},
+  basicstyle=\ttfamily\small,
+}
+
 \begin{document}
 
 \title{\textbf{FIUBAkka} \\ \large \textbf{Juego multijugador online con Akka}}

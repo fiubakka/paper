@@ -103,13 +103,13 @@ y la comunicación entre los actores de cada nodo es transparente, dando la ilus
 
 \subsection{Introducción a Akka}
 
-Akka cuenta con varias herramientas para conseguir implementar la arquitectura mostrada previamente. Para poder entender los distintos componentes de nuestro servidor
+\noindent Akka cuenta con varias herramientas para conseguir implementar la arquitectura mostrada previamente. Para poder entender los distintos componentes de nuestro servidor
 es necesario primero introducir cada tecnología de Akka que utilizamos y dar una breve pero clara explicación de sus usos y funcionalidades.
 Comenzamos por lo central: la implementación del modelo de actores en Akka. 
 
 \subsubsection{Akka Actors Typed}
 
-El corazón de Akka es el modelo de actores. Es su principal componente y sobre el cual se construyen todos los demás.
+\noindent El corazón de Akka es el modelo de actores. Es su principal componente y sobre el cual se construyen todos los demás.
 Históricamente Akka implementaba a los actores como clases de Scala que heredan de una clase \textbf{Actor}.
 La clase luego debe definir un método \textit{receive} que se encarga de definir el comportamiento del actor según el mensaje recibido.
 Dicho método recibe el mensaje como argumento del mismo, y el mensaje puede \textbf{ser cualquier tipo de dato de Scala}.
@@ -185,7 +185,7 @@ de la versión Akka Classic, ya que muchos proyectos existentes todavía la util
 
 \subsubsection{Akka Cluster}
 
-Anteriormente mencionamos que existen implementaciones del modelo de actores para distintas tecnologías. Si nos retringieramos
+\noindent Anteriormente mencionamos que existen implementaciones del modelo de actores para distintas tecnologías. Si nos retringieramos
 únicamente a utilizar el componente de actores de Akka no habría un motivo diferencial, más allá de la preferencia de lenguaje
 o recursos disponibles en la web, para elegirlo sobre otras implementaciones. Akka Cluster es el primer motivo, y el más importante,
 de por qué usamos Akka para implementar nuestro videojuego.
@@ -231,7 +231,7 @@ hace uso: \textbf{Akka Cluster Sharding}, una extensión de las funcionalidades 
 
 \subsubsection{Akka Cluster Sharding}
 
-Una problemática que surge al utilizar Akka Cluster es que si bien los actores pueden comunicarse entre sí sin importar en qué nodo
+\noindent Una problemática que surge al utilizar Akka Cluster es que si bien los actores pueden comunicarse entre sí sin importar en qué nodo
 se encuentren, el problema es conseguir en primera instancia la referencia a actores que residen en otros nodos ajenos al propio. En principio
 pueden utilizarse llamados remotos a los demás nodos y conseguir como respuesta las direcciones de los actores que nos interesan para poder
 crear la referencia a los mismos, pero no es ideal. Por otro lado, una propiedad deseable en los sistemas distribuidos es la capacidad
@@ -274,7 +274,7 @@ Cluster, aunque no las de Cluster Sharding ni las del siguiente componente clave
 
 \subsubsection{Akka Persistence}
 
-Cluster Sharding nos da la garantía de que las entidades se reinician en caso de error o eliminación de un nodo del cluster, además de rebalancearlas al agregarse un nuevo
+\noindent Cluster Sharding nos da la garantía de que las entidades se reinician en caso de error o eliminación de un nodo del cluster, además de rebalancearlas al agregarse un nuevo
 nodo. En principio, únicamente con los componentes de Akka que presentamos hasta ahora, ambos casos resultan en un problema: si la entidad se vuelve a iniciar, estaríamos perdiendo el estado
 de la misma, ya que el estado de los actores está en memoria. Esto resultaría por ejemplo en perder los datos de posición del jugador, o también su inventario o equipamiento.
 En arquitecturas \textit{stateless}, el estado sería persistido en una base de datos externa ante cada cambio sucedido.
@@ -360,7 +360,7 @@ Como base de datos para la persistencia tanto del estado de los actores como de 
 
 \subsubsection{Akka Streams}
 
-El último componente principal de Akka que utilizamos es uno que mencionamos en el resumen de la arquitectura, Akka Streams.
+\noindent El último componente principal de Akka que utilizamos es uno que mencionamos en el resumen de la arquitectura, Akka Streams.
 Se trata de una implementación de la iniciativa de Reactive Streams, un estándar para el procesamiento de datos de forma asincrónica y no bloqueante.
 Conceptualmente, se trata de un \textit{pipeline} de procesamiento de datos, donde tenemos tres componentes principales: el \textbf{Source},
 el \textbf{Flow} y el \textbf{Sink}. El Source es la fuente de los datos, el Flow es una etapa interna del pipeline que transforma los datos, y el
@@ -408,13 +408,13 @@ runnableGraph.run()
 
 \subsection{Arquitectura de Fiubakka}
 
-Con todos los componentes de Akka presentados, podemos ahora proceder al detalle de nuestra implementación y los distintos componentes
+\noindent Con todos los componentes de Akka presentados, podemos ahora proceder al detalle de nuestra implementación y los distintos componentes
 que la conforman. Haremos una descripción de arriba hacia abajo de la arquitectura, para enteder el flujo completo del procesamiento de
 los jugadores en el juego.
 
 \subsubsection{Conexión de los clientes}
 
-Comenzamos entonces por el punto de entrada de conexión del cliente. El servidor está configurado para exponer un \textit{listener} de TCP en el puerto 2020.
+\noindent Comenzamos entonces por el punto de entrada de conexión del cliente. El servidor está configurado para exponer un \textit{listener} de TCP en el puerto 2020.
 Este listener es manejado por el actor \textbf{PlayerAccepter} mediante la creación de un Akka Stream que recibe como elementos
 conexiones TCP entrantes que corresponden a los clientes del juego. En el caso de que haya múltiples nodos de la aplicación ejecutados (es decir, un Akka Cluster
 formado) tendremos un actor PlayerAccepter en cada nodo del juego, y los clientes podrían conectarse a cualquiera de los nodos para comenzar a jugar.
@@ -465,7 +465,7 @@ el procesado de los mensajes que reciba y la notificación al cliente de los eve
 \end{figure}
 
 Los clientes envían información al servidor vía la conexión TCP establecida, y será el actor PlayerHandler quien deba procesar
-los mensajes. El protocolo de comunicación entre el cliente y el servidor será explciado más adelante, en este punto alcanza con entender
+los mensajes. El protocolo de comunicación entre el cliente y el servidor será explicado más adelante, en este punto alcanza con entender
 que el PlayerHandler realiza la traducción de los datos serializados enviados por el cliente a mensajes internos del actor para su posterior
 procesamiento. Dado que la conexión con el cliente está abstraída en un Akka Stream, introducimos un Flow entremedio que tiene como entrada
 los \textit{bytes} recibidos y como salida los mensajes internos del actor PlayerHandler. El Sink del Stream es el actor mismo,
@@ -521,7 +521,7 @@ en mensajes que el PlayerHandler puede recibir. Los mensajes son enviados median
 
 \subsubsection{Manejo del jugador del cliente}
 
-Hasta aquí explicamos como se conecta un cliente al servidor y como se reciben los mensajes que el cliente emite.
+\noindent Hasta aquí explicamos como se conecta un cliente al servidor y como se reciben los mensajes que el cliente emite.
 Ahora vamos a explicar como se maneja el estado del jugador y como se integra con todos los demás jugadores que pueden estar
 presentes en el juego.
 
@@ -575,7 +575,7 @@ existen mecanismos dentro de Akka para cerciorarnos de ello.
 
 \subsubsection{Comunicación de los eventos del juego}
 
-Mencionamos en la introducción a la arquitectura de \textit{Fiubakka} que los eventos que deban ser notificados a todos los demás jugadores se realizan mediante mensajes de Kafka.
+\noindent Mencionamos en la introducción a la arquitectura de \textit{Fiubakka} que los eventos que deban ser notificados a todos los demás jugadores se realizan mediante mensajes de Kafka.
 La responsabilidad de publicar y consumir estos eventos no recae en sí sobre el Player, sino sobre dos actores que el Player crea al iniciarse: el \textbf{GameEventConsumer} y el \textbf{GameEventProducer}.
 Todo Player cuenta con un GameEventProducer para poder notificar sus acciones a los demás jugadores, y con un GameEventConsumer para poder enterarse de las acciones que otros jugadores han realizado.
 
@@ -591,7 +591,199 @@ el evento y se le envía al cliente, va a ser posible visualizar al jugador. Est
 Cada Player almacenará únicamente su propio estado, el estado de los demás jugadores se le reportará al cliente a medida que se reciban pero no se almacenará en el Player en sí.
 Por supuesto, además de en las actualizaciones, se notifica el estado del jugador cada unos pocos segundos de forma constante para evitar que un jugador que nunca realiza una acción sea invisible al resto.
 
-// TODO diagrama de flujo del gameevent consumer, codigo de ejemplo del producer y del consumer 
+\begin{figure}[htpb]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../assets/game-event-consumer-example.png}
+    \caption{Diagrama de flujo de eventos del juego para un Player}
+\end{figure}
+
+Al igual que antes, el diagrama de flujo no captura el asincronismo del modelo de actores. Por otro lado, se observa lo que explicamos respecto a que el estado de los demás jugadores no es persisitido de ninguna forma en el PlayerPersistor,
+sino que se delega su manejo al cliente. Es responsabilidad de este mantener el estado del juego en base a los eventos que va recibiendo.
+
+Otro detalle es que cada GameEventConsumer y GameEventProducer de un nodo del cluster de \textit{Fiubakka} interactúan con un único consumidor y productor de Kafka. El consumidor de Kafka lee los eventos de todas las particiones y los envía por el
+Akka Stream correspondiente, donde luego dependiendo el mapa en el que se encuentre el jugador el GameEventConsumer únicamente conectará su Akka Stream al pipeline correspondiente. Para el productor de Kafka no es necesario este mecanismo de multiplexación
+ya que puede el tópico en el que debe publicar el mensaje es parte de la metadata del mismo, por lo que el Sink del Stream es común a todos. Este modelo de procesado resultó en la práctico en considerablemente mejor
+performance que tener un consumidor dedicado tanto para cada jugador como para cada mapa, debido a los altos recursos que implica instanciar consumidores y productores de Kafka. En este sentido, la posibilidad que nos da Akka Streams de armar pipelines no lineales
+resultó extremadamente beneficiosa.
+
+\begin{figure}[htpb]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/kafka-consumer-flow.png}
+    \caption{Pipeline de procesamiento de eventos del juego}
+\end{figure}
+
+A continuación se provee una implementación resumida de los actores GameEventConsumer y GameEventProducer.
+
+\begin{lstlisting}[language=Scala, caption={\textbf{Implementación del actor GameEventConsumer}}]
+object GameEventConsumer {
+    sealed trait Command extends CborSerializable
+    
+    def apply(
+        player: ActorRef[Player.Command],
+        partition: Int
+    ): Behavior[Command] = {
+        Behaviors.setup(ctx => {
+            implicit val mat = Materializer(ctx)
+            val playerId =
+                player.path.name // The Player Entity Id is its Actor's name
+        
+            val playerSink: Sink[Player.Command, NotUsed] =
+                ActorSink.actorRef(
+                ref = player,
+                onCompleteMessage = Player.GameEventConsumerFailure(
+                    ctx.self,
+                    "Stream completed when it's not supposed to"
+                ),
+                onFailureMessage = (error) =>
+                    Player.GameEventConsumerFailure(ctx.self, error.getMessage())
+                )
+        
+            KafkaConsumer(partition)
+                .buffer(1024, OverflowStrategy.dropHead)
+                .filter(record => {
+                    (record.key == null || record.key != playerId)
+                }) // Ignore messages from myself
+                .map { record =>
+                    ByteString(record.value)
+                }
+                .via(
+                    InMessageFlow(
+                        PBEventMetadata,
+                        ProtocolMessageMap.eventConsumerMessageMap
+                    )
+                )
+                .map { msg =>
+                    Player.GameEventConsumerCommand(
+                        eventCommandFromEventMessage(msg),
+                        ctx.self
+                    )
+                }
+                .instrumentedRunWith(playerSink)(
+                    name = "GameEventConsumer",
+                    reportByName = true
+                )
+        
+            Behaviors.empty
+        })
+    }
+}
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=Scala, caption={\textbf{Implementación del actor GameEventProducer}}]
+object GameEventProducer {
+    sealed trait Command
+    final case class PlayerStateUpdate(playerState: PlayerState) extends Command
+    final case class AddMessage(msg: String) extends Command
+    // This is actually also used anytime the Player should disappear from the map (ie. when starting a Truco match)
+    final case class PlayerDisconnect() extends Command
+    
+    def apply(playerId: String, partition: Int): Behavior[Command] = {
+        Behaviors.setup(ctx => {
+            implicit val mat = Materializer(ctx)
+            val gameZoneTopic =
+                ctx.system.settings.config.getString("game.kafka.topic")
+        
+            val config = ctx.system.settings.config.getConfig("akka.kafka-producer")
+            val producerSettings =
+                ProducerSettings(config, new StringSerializer, new ByteArraySerializer)
+                .withProducer(KafkaProducer())
+        
+            val (conQueue, conSource) = Source
+                .queue[GeneratedMessage](1024, OverflowStrategy.dropHead)
+                .preMaterialize()
+        
+            conSource
+                .via(
+                    OutMessageFlow(
+                        (length: Int, `type`: GeneratedEnum) =>
+                        PBEventMetadata(length, `type`.asInstanceOf[PBEventMessageType]),
+                        ProtocolMessageMap.eventProducerMessageMap
+                    )
+                )
+                .map(_.toArray)
+                .map(value =>
+                    new ProducerRecord(gameZoneTopic, partition, playerId, value)
+                )
+                .instrumentedRunWith(Producer.plainSink(producerSettings))(
+                    name = "GameEventProducer",
+                    reportByName = true
+                )
+        }
+    }
+}
+\end{lstlisting}
+
+\subsection{Protocolo de comunicación}
+
+\noindent Tanto la comunicación por TCP entre cliente y servidor así como el envío de eventos con Kafka
+requirió que definamos un protocolo de mensajes propio. Este protocolo lo diseñamos con el objetivo de
+que sea rápido y eficiente, para mantener al mínimo la latencia entre mensajes y poder maximizar el \textit{throughput}.
+Es por esto que decidimos usar \textit{Protocol buffers} (o \textit{protobufs}), un formato de serialización de data estructurada
+desarrollado por Google que se caracteriza por su bajo consumo de memoria y eficiencia de serialización.
+Cuenta con un lenguaje propio para definir los mensajes e implementaciones ya desarrolladas por la comunidad para su integración
+con diversos lenguajes y tecnologías.
+
+Los mensajes del protocolo los definimos en un repositorio central que es consumido por el cliente y el servidor, por lo que cualquier cambio
+en la estructura del mensaje genera el recompilado correspondiente en cada uno.
+Otra de las razones por la cual elegimos usar esta herramienta fue que cuenta con soporte tanto para Scala como para Godot.
+Esto nos permitió que, una vez definidos los mensajes en sus correspondientes archivos \textit{.proto}, podamos usarlos
+directamente en el código como si fueran objetos y al momento de compilar la apliación se los serializa automáticamente.
+
+El formato de todos los mensajes consiste en una sección de metadata y otra sección que contiene el contenido del mensaje específico,
+más dos campos de 4 bytes cada uno que indican el largo (en bytes) total del mensaje y el de la sección de metadata.
+La metadata contiene dos valores: el largo del contenido, en 4 bytes, y el tipo de mensaje enviado.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/protobuf.png}
+    \caption{Estructura de un mensaje serializado}
+\end{figure}
+
+\newpage
+
+Todo mensaje enviado pasa por el siguiente proceso. En primer lugar, creamos un objeto que tenga el formato correspondiente a alguno de los
+mensajes definidos. Luego, lo serializamos con el método correspondiente de protobuf (según estemos en Scala o Godot) y
+calculamos la cantidad de bytes que ocupa el mensaje serializado. En base al tipo de mensaje y su tamaño serializado es que formamos el objeto de metadata, incluyendo el largo calculado y el tipo.
+Finalmente, serializamos la metadata, le concatenamos el mensaje serializado original y anteponemos tanto el largo del mensaje total como el de la metadata.
+Llegado este punto ya tenemos la totalidad del mensaje serializado y estamos listos para enviarlo por el canal correspondiente.
+
+Para leer un mensaje recibido el flujo es el contrario. Leemos los primeros 4 bytes que nos indican el largo
+total del mensaje. Luego, leemos los 4 bytes que nos indican el tamaño que ocupa la metadata. Con esta información, podemos leer
+el campo de metadata, que a su vez nos indica el tipo y el largo del contenido del mensaje en sí. Finalmente, al saber el tipo del contenido, lo
+deserializamos para luego poder manejarlo correctamente.
+
+Los mensajes de contenido están definidos en archivos \textit{.proto}. Por ejemplo, veamos el siguiente
+mensaje que definimos para el movimiento de un jugador:
+
+\begin{lstlisting}[language=protobuf]
+syntax = "proto2";
+
+package protobuf.client.movement;
+
+message PBPlayerVelocity {
+    required float x = 1;
+    required float y = 2;
+}
+
+message PBPlayerPosition {
+    required float x = 1;
+    required float y = 2;
+}
+
+message PBPlayerMovement {
+    required PBPlayerVelocity velocity = 1;
+    required PBPlayerPosition position = 2;
+}
+\end{lstlisting}
+
+El mensaje que el cliente enviará es \textbf{PBPlayerMovement}, que incluye otros dos mensajes:
+\textbf{PBPlayerVelocity} y \textbf{PBPlayerPosition}, ambos vectores bidimensionales representados
+por sus coordenadas en \textbf{x} e \textbf{y}. De esta forma cuando el usuario controla y mueve a
+su personaje, el cliente se lo comunica al servidor creando una instancia de \textbf{PBPlayerMovement}
+con los valores correspondientes, serializandolo y finalmente enviándolo.
+
+La totalidad de los mensajes que definimos en nuestro protocolo pueden encontrarse en el Anexo \ref{apendix:protobuf}.
 
 \subsection{Frontend: cliente Godot}
 
@@ -940,63 +1132,3 @@ solo volver a arrastrarla a su zona original y una interfaz que muestre los cant
 un cartel que aparezca para avisarle al jugador que su oponente realizó un canto y que luego 
 desaparezca, indicadores de a qué jugador le corresponde realizar una jugada, entre otras cosas.
 
-
-\subsection{Protocol buffers}
-
-\noindent Tanto la comunicación por TCP entre Cliente y Servidor, como el envío de eventos con Kafka
-requirió que definamos un protocolo de mensajes propio. Además de definir dicho protocolo, necesitamos
-que sea rápido y eficiente, para mantener al mínimo la latencia entre mensajes y poder manejar
-una alta cantidad de mensajes.
-Es por esto que decidimos usar \textit{Protocol buffers} (o \textit{protobufs}), un mecanismo desarrollado
-por Google para serializar datos estructurados, ajeno completamente a cualquier lenguaje.
-El propósito es definir los mensajes del protocolo una sola vez y reutilizarlos tanto en el Cliente como el Servidor.
-Otra de las razones por la cual elegimos usar esta herramienta fue que cuenta con soporte tanto para Scala como para Godot.
-Esto nos permitió que, una vez definidos los mensajes en sus correspondientes archivos \textit{.proto}, podamos usarlos
-directamente en el código como si fueran objetos y la herramienta se encarga automáticamente de la serializacion, ya sea para enviar
-el mensaje por TCP o para encolarlo en Kafka.
-
-\noindent El formato de todos los mensajes consiste en una sección de metadata y otra sección que contiene el contenido del mensaje específico,
-más dos campos de 4 bytes cada uno que indican el largo (en bytes) total del mensaje y el de la sección de metadata.
-El campo de metadata contiene a su vez dos campos: uno con el largo del contenido y otro con el tipo del mensaje.
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=1.0\textwidth]{../assets/protobuf.png}
-\end{figure}
-
-Para enviar un mensaje, el flujo es el siguiente: Creamos un objeto que tenga el formato correspondiente a alguno de los
-mensajes definidos. Luego, lo serializamos con el método correspondiente de protobuf (según estemos en Scala o Godot) y
-calculamos la cantidad de bytes que contiene. Armamos tambien el objeto de metadata, incluyendo el largo calculado y el tipo
-del contenido y lo serializamos. Luego, calculamos su largo y calculamos el largo total del mensaje y lo incluimos al principio
-del mensaje.
-
-Para leer un mensaje recibido el flujo es el contrario: Leemos los primeros 4 bytes que nos indican el largo
-total del mensaje. Luego, leemos los 4 bytes con la cantidad de bytes de metadata. Con esta información, podemos leer
-el campo de metadata, que a su vez nos indica el tipo y el largo del contenido. Finalmente, al saber el tipo del contenido, lo
-deserializamos para luego poder manejarlo correctamente.
-
-Los mensajes de contenido están definidos en archivos \textit{.proto}. Por ejemplo, veamos el siguiente
-mensaje que definimos para el movimiento de un usuario:
-\begin{verbatim}
-    message PBPlayerVelocity {
-        required float x = 1;
-        required float y = 2;
-    }
-
-    message PBPlayerPosition {
-        required float x = 1;
-        required float y = 2;
-    }
-
-    message PBPlayerMovement {
-        required PBPlayerVelocity velocity = 1;
-        required PBPlayerPosition position = 2;
-    }
-\end{verbatim}
-
-El mensaje que el Cliente enviará es \textbf{PBPlayerMovement}, que incluye otros dos mensajes:
-\textbf{PBPlayerVelocity} y \textbf{PBPlayerPosition}, ambos vectores bidimensionales representados
-por sus coordenadas en \textbf{x} e \textbf{y}. De esta forma cuando el usuario controla y mueve a
-su personaje, el Cliente se lo comunica al Servidor creando una instancia de \textbf{PBPlayerMovement}
-con los valores correspondientes, serializandolo y finalmente enviándolo.
-
-La totalidad de los mensajes que definimos en nuestro protocolo está en el Anexo \ref{apendix:protobuf}
