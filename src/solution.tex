@@ -38,7 +38,7 @@ más completa y actualizada.
 Llegado a este punto, tenemos que el modelo de actores, y particularmente Akka, nos permite desarrollar un sistema distribuido
 donde nuestra aplicación puede ejecutarse en N nodos de manera transparente, donde los distintos actores que residen en cada nodo
 pueden comunicarse entre sí sin importar en qué nodo se encuentren y desconociendo la ubicación del otro actor con el que se comunican.
-Más adelante entraremos en más detalle sobre el funcionamiento de Akka y los distintos componentes que utilizamos.
+En breve entraremos en más detalle sobre el funcionamiento de Akka y los distintos componentes que utilizamos.
 
 No alcanza sin embargo únicamente con Akka para poder desarrollar la arquitectura de nuestro videojuego.
 El primer punto a resolver con el que nos encontramos es que necesitamos un mecanismo que nos permita comunicar distintos eventos
@@ -101,12 +101,16 @@ Este diagrama resume el corazón de la arquitectura desarrollada. Es importante 
 La clave de la escalabilidad de la aplicación es que podemos replicarlo en N nodos, donde cada uno de ellos es responsable de un subconjunto de los actores del juego,
 y la comunicación entre los actores de cada nodo es transparente, dando la ilusión de que la ejecución está contenida en un único nodo.
 
-Afortunadamente, Akka cuenta con varias herramientas para conseguir esto. A continuación realizaremos un análisis de dichas herramientas y que papel juegan en la aplicación.
+\subsection{Introducción a Akka}
 
-\subsection{Akka Actors Typed}
+Akka cuenta con varias herramientas para conseguir implementar la arquitectura mostrada previamente. Para poder entender los distintos componentes de nuestro servidor
+es necesario primero introducir cada tecnología de Akka que utilizamos y dar una breve pero clara explicación de sus usos y funcionalidades.
+Comenzamos por lo central: la implementación del modelo de actores en Akka. 
 
-El corazón de Akka es el modelo de actores y, consecuentemente, el principal componente de Akka es la biblioteca
-de actores. Históricamente Akka implementaba a los actores como clases de Scala que heredan de una clase \textbf{Actor}.
+\subsubsection{Akka Actors Typed}
+
+El corazón de Akka es el modelo de actores. Es su principal componente y sobre el cual se construyen todos los demás.
+Históricamente Akka implementaba a los actores como clases de Scala que heredan de una clase \textbf{Actor}.
 La clase luego debe definir un método \textit{receive} que se encarga de definir el comportamiento del actor según el mensaje recibido.
 Dicho método recibe el mensaje como argumento del mismo, y el mensaje puede \textbf{ser cualquier tipo de dato de Scala}.
 Mediante Pattern Matching, un feature nativo de Scala, se define el comportamiento del actor según el tipo de mensaje recibido.
@@ -179,7 +183,7 @@ El estado del actor se mantiene en los argumentos de la función comportamiento,
 Nuestro servidor de \textit{Fiubakka} hace uso exclusivo de la nueva API de Akka Typed, pero es importante estar al tanto
 de la versión Akka Classic, ya que muchos proyectos existentes todavía la utilizan.
 
-\subsection{Akka Cluster}
+\subsubsection{Akka Cluster}
 
 Anteriormente mencionamos que existen implementaciones del modelo de actores para distintas tecnologías. Si nos retringieramos
 únicamente a utilizar el componente de actores de Akka no habría un motivo diferencial, más allá de la preferencia de lenguaje
@@ -192,10 +196,14 @@ más poder de cómputo de forma \textbf{horizontal} al sistema. Siempre y cuando
 concurrencia y paralelismo, podemos agregar más nodos al cluster para distribuir la carga y conseguir mejores resultados en lugar
 de tener que mejorar el hardware del sistema que tuviese que ejecutar la aplicación.
 
-Para visualizar lo sencillo que es inicializar un cluster de Akka, esta es la configuración de \textit{Fiubakka}
-para el ambiente local de desarrollo:
+Otro problema que Akka permite resolver mayormente de forma transparente es la serialización de los mensajes de los actores. Cuando los actores que se comunican
+residen en distintos nodos es necesario serializar los mensajes para poder enviarlos a través de la red, ya sea via TCP o UDP. Por defecto, Akka utiliza conexiones
+TCP entre los nodos para la comunicación de los mensajes de los actores, aunque es posible configurar la conexión vía UDP (como es el caso de la configuración de nuestro proyecto).
+Independientemente del procotolo de comunicación es necesario serializar los mensajes, y Akka provee una dependencia que nos permite definir a los mensajes como extensiones
+de un \textit{trait} o interfaz de Scala, y luego automáticamente se encarga de serializar y deserializar los mensajes en caso de que necesiten viajar por la red.
 
-\newpage
+Inicializar un cluster de Akka es sencillo. A modo de ejemplo, esta es la configuración de \textit{Fiubakka}
+para el ambiente local de desarrollo:
 
 \begin{lstlisting}[language=applicationconf, caption={\textbf{Configuración de Akka Cluster Fiubakka}}]
     cluster {
@@ -254,8 +262,6 @@ En el caso de nuestra aplicación \textit{Fiubakka}, cada cliente que se conecta
 referenciar a un jugador sin conocer ni importar el nodo en el que reside, y que además son sujetos a los procesos de balanceo de carga que se hace sobre las entidades.
 Esto nos permite escalar horizontalmente frente al incremento de jugadores en el juego, mediante simplemente agregar más nodos de forma dinámica.
 
-\newpage
-
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.8\textwidth]{../assets/cluster-sharding-example.jpeg}
@@ -266,7 +272,7 @@ Es claro entonces la importancia que tiene Cluster Sharding en nuestro modelo, y
 propuesta. Implementaciones del modelo de actores como \textit{Actix} no cuentan con ningún feature similar. Por otro lado, Elixir sí que cuenta con capacidades similares a las de Akka
 Cluster, aunque no las de Cluster Sharding ni las del siguiente componente clave: Akka Persistence.
 
-\subsection{Akka Persistence}
+\subsubsection{Akka Persistence}
 
 Cluster Sharding nos da la garantía de que las entidades se reinician en caso de error o eliminación de un nodo del cluster, además de rebalancearlas al agregarse un nuevo
 nodo. En principio, únicamente con los componentes de Akka que presentamos hasta ahora, ambos casos resultan en un problema: si la entidad se vuelve a iniciar, estaríamos perdiendo el estado
@@ -352,7 +358,7 @@ ya que las entidades suelen tener un estado asociado que necesita ser recuperabl
 Como base de datos para la persistencia tanto del estado de los actores como de otros registros de información utilizamos
 \textbf{PostgreSQL}. Otras opciones que Akka Persistence soporta nativamente son Cassandra y MongoDB.
 
-\subsection{Akka Streams}
+\subsubsection{Akka Streams}
 
 El último componente principal de Akka que utilizamos es uno que mencionamos en el resumen de la arquitectura, Akka Streams.
 Se trata de una implementación de la iniciativa de Reactive Streams, un estándar para el procesamiento de datos de forma asincrónica y no bloqueante.
@@ -365,10 +371,8 @@ Un Stream es un maquetado o \textit{blueprint} de cómo los datos van a ser proc
 
 Se trata de una herramienta particularmente útil para procesar grandes cantidades de datos de forma eficiente. Cada etapa del Stream puede ser procesada
 concurrentemente en distintos threads, lo que garantiza un alto \textit{throughput}. Es posible construir pipelines extremadamente complejos de forma relativamente
-sencilla, y cuenta con muchos operadores nativos que facilitan la construcción de los mismos. Es una herramienta que no apunta a la simplicidad de uso, pero que provee todos los elementos
+sencilla, y cuenta con muchos operadores nativos que facilitan la construcción de los mismos. No apunta a la simplicidad de uso, sino a proveer todos los elementos
 básicos necesarios sobre los cuales puede construirse prácticamente cualquier solución.
-
-\newpage
 
 \begin{figure}[htbp]
     \centering
@@ -376,20 +380,218 @@ básicos necesarios sobre los cuales puede construirse prácticamente cualquier 
     \caption{Ejemplo de un Stream lineal con N Flows, un Source y un Sink}
 \end{figure}
 
-TODO continue
+Akka Streams cuenta nativamente con implementaciones para distintos tipos de fuentes de datos, por ejemplo para el manejo de conexiones UDP o TCP.
+Las conexiones de nuestro servidor con los clientes son manejadas mediante Akka Streams en lugar de usar explícitamente las primitivas de sockets,
+como uno típicamente haría en un servidor convencional. No solo eso, sino que siempre y cuando uno tenga definido un Source o un Sink
+para \textbf{cualquier} fuente de datos, automáticamente pasamos a poder procesar los datos de una única forma agnóstica al protocolo que produce o consume
+los datos. Si bien es posible definir uno mismo su propio Source o Sink en caso de necesitarlo, existen implementaciones de casi cualquier tipo que uno puede
+pensar. Una implementación ya existente para Kafka se provee dentro de la biblioteca de \textbf{Alpakka}, que agrupa conectores de Akka Streams (Source y Sink)
+para una gran variedad de tecnologías. Lógicamente, para la comunicación de eventos del juego entre los actores vía Kafka que explicamos al comienzo, hacemos
+uso también de Akka Streams. Los conectores provistos por Alpakka para Kafka encapsulan las primitivas de Consumidor y Productor que Kafka define,
+por lo que desde la perspectiva de nuestra aplicación simplemente definimos un Source y un Sink como corresponda y nos abstraemos de los detalles de implementación.
 
-\subsubsection{Introducción a Akka}
+\begin{lstlisting}[language=Scala, caption={\textbf{Ejemplo de un Akka Stream}}]
+// A source of integers from 1 to 10.
+val source = Source(1 to 10)
 
-\subsubsection{Arquitectura}
+// A flow that multiplies each element by 2.
+val flow = Flow[Int].map(_ * 2)
 
-\subsubsection{Diagramas}
+// A sink that prints each element.
+val sink = Sink.foreach[Int](println)
 
-\subsubsection{Mensajes de Kafka}
+val runnableGraph = source.via(flow).to(sink)
 
-Como fue explicado anteriormente, para la comunicación de eventos utilizamos Kafka mediante actores especializados para la
-lectura y escritura llamados \textbf{Consumidores} y \textbf{Productores} respectivamente. Dichos actores operan sobre
-mensajes que contienen información relacionada a un evento. Para serializar los mensajes de una forma eficiente usamos
-la herramienta Protobuf, explicada en detalle en la sección 8.4.
+// Run the graph. Here we are materializing the Stream.
+runnableGraph.run()
+\end{lstlisting}
+
+\subsection{Arquitectura de Fiubakka}
+
+Con todos los componentes de Akka presentados, podemos ahora proceder al detalle de nuestra implementación y los distintos componentes
+que la conforman. Haremos una descripción de arriba hacia abajo de la arquitectura, para enteder el flujo completo del procesamiento de
+los jugadores en el juego.
+
+\subsubsection{Conexión de los clientes}
+
+Comenzamos entonces por el punto de entrada de conexión del cliente. El servidor está configurado para exponer un \textit{listener} de TCP en el puerto 2020.
+Este listener es manejado por el actor \textbf{PlayerAccepter} mediante la creación de un Akka Stream que recibe como elementos
+conexiones TCP entrantes que corresponden a los clientes del juego. En el caso de que haya múltiples nodos de la aplicación ejecutados (es decir, un Akka Cluster
+formado) tendremos un actor PlayerAccepter en cada nodo del juego, y los clientes podrían conectarse a cualquiera de los nodos para comenzar a jugar.
+
+\begin{lstlisting}[language=Scala, caption={\textbf{Actor PlayerAccepter}}]
+object PlayerAccepter {
+    sealed trait Command
+    final case class Accept(connection: Tcp.IncomingConnection) extends Command
+
+    def apply(): Behavior[Command] = {
+        Behaviors.setup(ctx => {
+            implicit val mat = Materializer(ctx)
+
+            val connections
+                : Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
+                Tcp(ctx.system).bind(
+                "0.0.0.0",
+                ctx.system.settings.config.getInt("game.player-accepter.port")
+                )
+            connections.runForeach { connection =>
+                ctx.self ! Accept(connection)
+            }
+
+            Behaviors.receiveMessage {
+                case Accept(connection: Tcp.IncomingConnection) => {
+                    ctx.spawn(
+                        PlayerHandler(connection),
+                        s"PlayerHandler-${connection.remoteAddress
+                            .getAddress()
+                            .getHostAddress()}-${connection.remoteAddress.getPort()}"
+                    )
+                    Behaviors.same
+                }
+            }
+        })
+    }
+}
+\end{lstlisting}
+
+Cada conexión recibida en el servidor se procesa a través del mensaje \textbf{PlayerAccepter.Accept}.
+Se crea un nuevo actor \textbf{PlayerHandler} que será el encargado de administrar la conexión con el cliente recibido, incluyendo
+el procesado de los mensajes que reciba y la notificación al cliente de los eventos que sucedan en el juego.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../assets/player-accepter.png}
+    \caption{Flujo del actor PlayerAccepter}
+\end{figure}
+
+Los clientes envían información al servidor vía la conexión TCP establecida, y será el actor PlayerHandler quien deba procesar
+los mensajes. El protocolo de comunicación entre el cliente y el servidor será explciado más adelante, en este punto alcanza con entender
+que el PlayerHandler realiza la traducción de los datos serializados enviados por el cliente a mensajes internos del actor para su posterior
+procesamiento. Dado que la conexión con el cliente está abstraída en un Akka Stream, introducimos un Flow entremedio que tiene como entrada
+los \textit{bytes} recibidos y como salida los mensajes internos del actor PlayerHandler. El Sink del Stream es el actor mismo,
+por lo que los mensajes serán enviados al PlayerHandler para su procesamiento.
+
+\begin{lstlisting}[language=Scala, caption={\textbf{Stream de conexión del cliente}}]
+private def clientStreamHandler(
+    ctx: ActorContext[CommandOrPlayerReply],
+    conSource: Source[GeneratedMessage, NotUsed]
+) = {
+    Flow[ByteString]
+    .via(
+        InMessageFlow(PBClientMetadata, ProtocolMessageMap.clientMessageMap)
+    )
+    .throttle(60, 1.second) // 60hz tick rate
+    .map(commandFromClientMessage)
+    .via(
+        Flow.fromSinkAndSourceCoupled(
+            ActorSink.actorRef(
+                ref = ctx.self,
+                onCompleteMessage = ConnectionClosed(),
+                onFailureMessage = (_) => ConnectionClosed()
+            ),
+            conSource.via(
+                OutMessageFlow(
+                (length: Int, `type`: GeneratedEnum) =>
+                    PBServerMetadata(
+                    length,
+                    `type`.asInstanceOf[PBServerMessageType]
+                    ),
+                ProtocolMessageMap.serverMessageMap
+                )
+            )
+        )
+    )
+    .instrumentedPartial(
+        name = "PlayerHandlerConnection",
+        traceable = true,
+        reportByName = true
+    )
+}
+\end{lstlisting}
+
+En particular, la función \textbf{commandFromClientMessage} es la que se encarga de traducir los bytes recibidos
+en mensajes que el PlayerHandler puede recibir. Los mensajes son enviados mediante el \textit{ActorSink.actorRef}, donde
+\textit{ctx.self} es la dirección del actor PlayerHandler.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{../assets/player-handler-client-flow.png}
+    \caption{Flujo de mensajes del cliente al PlayerHandler}
+\end{figure}
+
+\subsubsection{Manejo del jugador del cliente}
+
+Hasta aquí explicamos como se conecta un cliente al servidor y como se reciben los mensajes que el cliente emite.
+Ahora vamos a explicar como se maneja el estado del jugador y como se integra con todos los demás jugadores que pueden estar
+presentes en el juego.
+
+Es necesario aclarar que \textit{Fiubakka} es un \textbf{juego descentralizado} para poder comprender este punto de su estructura. Lo que esto significa es que no existe una
+entidad central que maneje el estado de todos los jugadores o que sea origen único del estado del juego en cualquier momento.
+Si bien en principio la descentralización puede parecer un problema, es en realidad la principal ventaja (y diferencia) que nuestra arquitectura tiene
+frente al modelo monolítico que implementan la mayoría de los videojuegos en línea.
+
+Con el objetivo de disminuir la latencia, evitar bloqueos y dar una mejor experiencia al jugador, todas las acciones que el cliente
+realiza \textbf{no requieren de la aprobación del servidor}. En su lugar, el servidor actúa como un replicador y notificador de la información
+que el cliente le envía. Si, por ejemplo, el jugador se desplaza, eso genera un mensaje hacia el servidor con el desplazamiento realizado y será luego
+responsabilidad del servidor tanto persistir la nueva posición recibida como así también notificar a los demás jugadores del desaplzamiento propio.
+Ese aviso es parte de los eventos del juego que mencionamos que se realizan a través de Kafka.
+
+De esta forma, lo más cercano a la fuente de la verdad del estado del juego resulta la agregación de los estados individuales
+de cada jugador almacenados en los clientes conectados al servidor. Si diseñamos el protocolo de mensajes del videojuego de forma tal
+que no dependa del orden de llegada de los mensajes ni de la garantía de que todos los mensajes se envíen, podemos valernos de que
+el estado de un jugador reportado por el cliente tendrá \textbf{consistencia eventual} en el resto de los jugadores.
+Este diseño es clave para la escalabilidad horizontal de la aplicación y la alta performance. Además, implementamos mensajes frecuentes
+para cada jugador que reportan el estado del mismo a los demás jugadores, para minimizar el tiempo de posibles inconsistencias en caso de que
+sucedieran.
+
+Con todo esto en cuenta es que implementamos la entidad \textbf{Player}. Recordemos de Cluster Sharding que una entidad es un actor que puede residir
+en cualquier nodo del cluster y que es susceptible a los procesos de balanceos de carga. La idea de que el Player sea una entidad y no un actor
+es que siendo uno de los componentes que más carga de cómputo va a tener en el sistema (tanto de tener que procesar los mensajes del cliente como de otros jugadores)
+es necesario que pueda ser reubicado en otros nodos en caso de que la carga sobre el nodo en el que esté residiendo sea elevada.
+Además nos garantiza que al conectarse un nuevo cliente al juego se le asigne el Player en el nodo con mayor disponibilidad de recursos.
+
+La entidad Player maneja el estado del jugador, incluyendo información como su posición, inventario o equipamiento. Recordemos que estos datos no son más que una réplica de lo que
+el cliente le informa, por lo que el estado del Player y del jugador en el cliente podría no ser exactamente el mismo, aunque eventualmente lo serán debido a la consistencia eventual
+que mencionamos anteriormente. Todas las acciones que el cliente realiza o los eventos que van sucediendo en el juego (como pueden ser acciones de otros
+jugadores) serán recibidos y procesados por el Player. En el caso de los eventos externos, el Player se encarga de enviar un mensaje
+al PlayerHandler notificándole del suceso, para que finalmente el PlayerHandler envíe la información al cliente via la conexión TCP que administra.
+
+El siguiente diagrama muestra conceptualmente el flujo de ejecución del movimiento de un jugador. Es importante aclarar que los diagramas de flujo no logran capturar
+el asincronismo del modelo de actores, por lo que el diagrama modela un flujo secuencial. En la realidad el proceso es totalmente asíncrono, ninguno de los procesos esperan
+la respuesta ni que se completen los otros disparados.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/player-movement-example.png}
+    \caption{Diagrama de flujo de movimiento de un jugador}
+\end{figure}
+
+En el diagrama se muestra un componente que mencionamos previamente cuando presentamos el módulo de Akka Persistence: el PlayerPersistor. Se trata la entidad encargada de almacenar (y recuperar) el estado
+del jugador. Hace uso de los \textit{behaviors} de Durable State que Akka Persistence provee. Como comentamos anteriormente, la interacción con la persistencia se delega a esta otra entidad y no propiamente al
+Player por temas de flexibilidad de API y de latencia. Esto por supuesto significa que no existe garantía de que el nuevo estado haya sido persistido, pero al ser el PlayerPersistor una entidad esta sujeto a las garantías
+de Sharding de rebalanceo y recuperabilidad en casos de fallos. En los casos donde haya errores en la persistencia momentáneos podrá recuperarse automáticamente, y dado que el protocolo del juego se basa en mensajes
+que garantizan la consistencia eventual del estado del jugador, esta segregación de la persistencia del estado del jugador no resulta en fallos críticos. En caso de ser necesario garantizar que una acción se haya persistido,
+existen mecanismos dentro de Akka para cerciorarnos de ello.
+
+\subsubsection{Comunicación de los eventos del juego}
+
+Mencionamos en la introducción a la arquitectura de \textit{Fiubakka} que los eventos que deban ser notificados a todos los demás jugadores se realizan mediante mensajes de Kafka.
+La responsabilidad de publicar y consumir estos eventos no recae en sí sobre el Player, sino sobre dos actores que el Player crea al iniciarse: el \textbf{GameEventConsumer} y el \textbf{GameEventProducer}.
+Todo Player cuenta con un GameEventProducer para poder notificar sus acciones a los demás jugadores, y con un GameEventConsumer para poder enterarse de las acciones que otros jugadores han realizado.
+
+Cada vez que el Player deba notificar una acción enviará el mensaje con la acción al GameEventProducer. Este se encargará, mediante un Akka Stream conectado a Kafka, de publicar el mensaje
+en el tópico correspondiente. Cada mapa del juego tiene su propio tópico de Kafka, por lo que el mensaje se publicará únicamente en el tópico que corresponda al mapa en el que se encuentre el jugador que realizó la acción.
+De forma análoga, el GameEventConsumer cuenta con un Akka Stream que tiene como fuente un consumidor del tópico de Kafka correspondiente al mapa en el que el jugador se encuentra. A medida que recibe a través del Stream los
+eventos que fueron siendo publicados en el tópico por los demás jugadores, el GameEventConsumer enviará los eventos como mensajes al Player. Finalmente el Player se los notificará al PlayerHandler, quien terminará enviándolos
+al cliente asignado.
+
+Una consecuencia de este diseño es que los jugadores desconocen en un principio la existencia de los demás. Es únicamente mediante los eventos que van siendo recibidos en el Player provenientes del GameEventConsumer
+que el cliente se entera de la existencia de los demás jugadores. Cada acción que un jugador realiza que generá un cambio en su estado dispara el evento de notificación del nuevo estado. En el momento que los demás jugadores reciben
+el evento y se le envía al cliente, va a ser posible visualizar al jugador. Este mecanismo nos permite delegar la agregación del estado de los jugadores al cliente, disminuyendo sustancialmente el uso de los recuros de memoria del servidor.
+Cada Player almacenará únicamente su propio estado, el estado de los demás jugadores se le reportará al cliente a medida que se reciban pero no se almacenará en el Player en sí.
+Por supuesto, además de en las actualizaciones, se notifica el estado del jugador cada unos pocos segundos de forma constante para evitar que un jugador que nunca realiza una acción sea invisible al resto.
+
+// TODO diagrama de flujo del gameevent consumer, codigo de ejemplo del producer y del consumer 
 
 \subsection{Frontend: cliente Godot}
 
