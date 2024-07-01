@@ -415,12 +415,12 @@ los jugadores en el juego.
 \subsubsection{Conexión de los clientes}
 
 \noindent Comenzamos entonces por el punto de entrada de conexión del cliente. El servidor está configurado para exponer un \textit{listener} de TCP en el puerto 2020.
-Este listener es manejado por el actor \textbf{PlayerAccepter} mediante la creación de un Akka Stream que recibe como elementos
+Este listener es manejado por el actor \textbf{PlayerAcceptor} mediante la creación de un Akka Stream que recibe como elementos
 conexiones TCP entrantes que corresponden a los clientes del juego. En el caso de que haya múltiples nodos de la aplicación ejecutados (es decir, un Akka Cluster
-formado) tendremos un actor PlayerAccepter en cada nodo del juego, y los clientes podrían conectarse a cualquiera de los nodos para comenzar a jugar.
+formado) tendremos un actor PlayerAcceptor en cada nodo del juego, y los clientes podrían conectarse a cualquiera de los nodos para comenzar a jugar.
 
-\begin{lstlisting}[language=Scala, caption={\textbf{Actor PlayerAccepter}}]
-object PlayerAccepter {
+\begin{lstlisting}[language=Scala, caption={\textbf{Actor PlayerAcceptor}}]
+object PlayerAcceptor {
     sealed trait Command
     final case class Accept(connection: Tcp.IncomingConnection) extends Command
 
@@ -432,7 +432,7 @@ object PlayerAccepter {
                 : Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
                 Tcp(ctx.system).bind(
                 "0.0.0.0",
-                ctx.system.settings.config.getInt("game.player-accepter.port")
+                ctx.system.settings.config.getInt("game.player-acceptor.port")
                 )
             connections.runForeach { connection =>
                 ctx.self ! Accept(connection)
@@ -454,14 +454,14 @@ object PlayerAccepter {
 }
 \end{lstlisting}
 
-Cada conexión recibida en el servidor se procesa a través del mensaje \textbf{PlayerAccepter.Accept}.
+Cada conexión recibida en el servidor se procesa a través del mensaje \textbf{PlayerAcceptor.Accept}.
 Se crea un nuevo actor \textbf{PlayerHandler} que será el encargado de administrar la conexión con el cliente recibido, incluyendo
 el procesado de los mensajes que reciba y la notificación al cliente de los eventos que sucedan en el juego.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{../assets/player-accepter.png}
-    \caption{Flujo del actor PlayerAccepter}
+    \includegraphics[width=0.8\textwidth]{../assets/player-acceptor.png}
+    \caption{Flujo del actor PlayerAcceptor}
 \end{figure}
 
 Los clientes envían información al servidor vía la conexión TCP establecida, y será el actor PlayerHandler quien deba procesar
@@ -519,7 +519,7 @@ en mensajes que el PlayerHandler puede recibir. Los mensajes son enviados median
     \caption{Flujo de mensajes del cliente al PlayerHandler}
 \end{figure}
 
-\subsubsection{Manejo del jugador del cliente}
+\subsubsection{Manejo del jugador}
 
 \noindent Hasta aquí explicamos como se conecta un cliente al servidor y como se reciben los mensajes que el cliente emite.
 Ahora vamos a explicar como se maneja el estado del jugador y como se integra con todos los demás jugadores que pueden estar
@@ -713,6 +713,80 @@ object GameEventProducer {
     }
 }
 \end{lstlisting}
+
+\subsubsection{Bots}
+
+\noindent Para poder simular la presencia de múltiples jugadores en el juego y con el objetivo de hacer pruebas de carga es que
+desarrollamos un actor \textbf{Bot}. Un bot, en la jerga de los videojuegos, es un \textit{mock} de un jugador que es en realidad controlado
+por la computadora en lugar de una persona. En nuestro caso, el actor Bot reemplaza al actor PlayerHandler. Cuando el servidor se inicializa
+lee la configuración de la cantidad de bots que debe iniciar y se encarga de crearlos. Una vez creado, el Bot crea su correspondiente entidad Player
+y comienza a simular movimientos cada unos 16ms, lo que en la práctica es la máxima carga permitida por un jugador real.
+
+Los movimientos realizados por los bots no siguen ningún tipo de patrón real, únicamente nos interesa que generen carga máxima sobre el sistema.
+En el futuro, es posible implementarles lógica más compleja para simular comportamientos más realistas o hacer pruebas de carga más específicas.
+En nuestros análisis de performance no nos interesamos tanto por los tipos de mensajes generados sino por la cantidad de actores y de mensajes que se estuvieran
+procesando en un momento dado.
+
+La implementación del Bot es sencilla. A continuación se muestra un extracto resumido de ella.
+
+\begin{lstlisting}[language=Scala, caption={\textbf{Implementación del actor Bot}}]
+object Bot {
+    sealed trait Command
+    private type CommandOrPlayerReply = Command | Player.ReplyCommand
+    
+    final case class RandomMove() extends Command
+    final case class Heartbeat() extends Command
+    
+    final case class State(
+        playerBot: EntityRef[Player.Command],
+        position: Position
+    )
+    
+    def runningBehavior(
+        state: State
+    ): Behavior[CommandOrPlayerReply] = {
+        Behaviors.receive { (ctx, msg) =>
+            msg match {
+                case RandomMove() => {
+                    // Generate random velocity with magnitude 1
+                    val randVelocity = Velocity(2, 0)
+                    val newPosition = Position(
+                        state.position.x + randVelocity.x,
+                        state.position.y + randVelocity.y
+                    )
+                    state.playerBot ! Player.Move(
+                        velocity = randVelocity,
+                        position = newPosition
+                    )
+                    runningBehavior(state.copy(position = newPosition))
+                }
+
+                case Heartbeat() => {
+                    state.playerBot ! Player.Heartbeat(ctx.self)
+                    Behaviors.same
+                }
+        
+                case _ => Behaviors.same
+            }
+        }
+    }
+}
+\end{lstlisting}
+
+\subsubsection{Resumen de la arquitectura}
+
+\noindent En las anteriores secciones ahondamos en los distintos componentes que forman \textit{Fiubakka} y las relaciones entre ellos. Partimos de los conceptos escenciales
+de Akka y mostramos que papel juega cada uno en nuestra aplicación. A modo de resumen y para tener una vista más panorámica de la arquitectura, el siguiente diagrama engloba
+todos los conceptos explicados hasta ahora. Si bien \textit{Fiubakka} cuenta con algunos features más que mostraremos en las posteriores secciones, lo descrito hasta ahora es el
+núcleo de la aplicación.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/fiubakka-architecture.png}
+    \caption{Arquitectura núcleo de Fiubakka}
+\end{figure}
+
+\newpage
 
 \subsection{Protocolo de comunicación}
 
