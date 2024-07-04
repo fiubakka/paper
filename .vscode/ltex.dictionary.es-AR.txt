@@ -2,3 +2,5 @@ paralelizar
 Akka
 Kafka
 rebalancearlas
+pasivadas
+rebalanceo
