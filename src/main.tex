@@ -36,12 +36,16 @@
 \usepackage{caption}
 \usepackage{listings}
 \usepackage{hyperref}
-\usepackage{subfiles} % Best loaded last in the preamble
 \usepackage{tabularx}
 \usepackage{multirow}
+\usepackage{etoolbox}
+\usepackage{adjustbox}
+\usepackage{subfiles} % Best loaded last in the preamble
 
 \captionsetup[lstlisting]{labelformat=empty}
 \addto\captionsspanish{\renewcommand{\contentsname}{Tabla de Contenidos}}
+
+\patchcmd{\thebibliography}{\section*{\refname}}{}{}{} % Removes References title
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -193,6 +197,5 @@
 \section{Anexos}
 
 \subfile{appendix.tex}
-
 
 \end{document}

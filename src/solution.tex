@@ -265,7 +265,7 @@ Esto nos permite escalar horizontalmente frente al incremento de jugadores en el
 Las entidades definidas tienen una diferencia muy marcada con los actores y es que son automáticamente iniciadas siempre que reciban un mensaje. Dado que pueden ser referenciadas
 desde cualquier actor (u otra entidad) en el cluster, el actor que envía el mensaje desconoce si la entidad está funcionando o no. Debido a esto Akka Cluster Sharding implementa como mecanismo
 la inicialización automática de las entidades al recibir un mensaje, cualquiera sea el tipo u origen del mismo. Este mecanismo, sin embargo, introduce una problemática. Si las entidades pueden iniciarse
-en cualquier momento, tendríamos que implementar algun proceso que se encargue periódicamente de detener a las entidades cuando no se estén utilizando para liberar los recursos.
+en cualquier momento, tendríamos que implementar algún proceso que se encargue periódicamente de detener a las entidades cuando no se estén utilizando para liberar los recursos.
 
 Afortunadamente Cluster Sharding toma esto en cuenta también, y lo soluciona mediante un mecanismo automático de \textbf{pasivación} cada cierta cantidad de tiempo (valor configurable, por defecto
 son 2 minutos). La pasivación se trata de detener a todas aquellas entidades que no hayan recibido ningún mensaje en el tiempo de \textit{timeout} definido. Esto garantiza que no se malgastan recursos
@@ -542,7 +542,7 @@ frente al modelo monolítico que implementan la mayoría de los videojuegos en l
 Con el objetivo de disminuir la latencia, evitar bloqueos y dar una mejor experiencia al jugador, todas las acciones que el cliente
 realiza \textbf{no requieren de la aprobación del servidor}. En su lugar, el servidor actúa como un replicador y notificador de la información
 que el cliente le envía. Si, por ejemplo, el jugador se desplaza, eso genera un mensaje hacia el servidor con el desplazamiento realizado y será luego
-responsabilidad del servidor tanto persistir la nueva posición recibida como así también notificar a los demás jugadores del desaplzamiento propio.
+responsabilidad del servidor tanto persistir la nueva posición recibida como así también notificar a los demás jugadores del desplazamiento propio.
 Ese aviso es parte de los eventos del juego que mencionamos que se realizan a través de Kafka.
 
 De esta forma, lo más cercano a la fuente de la verdad del estado del juego resulta la agregación de los estados individuales
@@ -734,7 +734,7 @@ lo consiga. En la práctica estos casos únicamente comienzan a suceder cuando e
 
 Por otro lado, el PlayerHandler deberá esperar también a que la entidad Player esté lista para poder confirmarle al cliente que la inicialización se completó correctamente. Al momento de su creación, el actor PlayerHandler
 envía un mensaje a la entidad Player del tipo \textbf{Init}. Dado que Player es una entidad de Cluster Sharding, al recibir el mensaje se inicializará y realizará la sincronización correspondiente con el PlayerPersistor. En cuanto
-obtenga tanto el estado incial como realizado la creación de sus correspondientes GameEventProducer y GameEventConsumer, contestará entonces al PlayerHandler el mensaje de \textbf{InitReady}, el cuál completará la sincronización inicial
+obtenga tanto el estado inicial como realizado la creación de sus correspondientes GameEventProducer y GameEventConsumer, contestará entonces al PlayerHandler el mensaje de \textbf{InitReady}, el cual completará la sincronización inicial
 del cliente con su jugador en el servidor.
 
 \newpage
@@ -768,7 +768,7 @@ siguen activos. Su uso es extremadamente común en los sistemas distribuidos, po
 \textit{etcd} es una base de datos distribuida que también lo emplea.
 
 En nuestro caso, el PlayerHandler envía un mensaje de tipo \textbf{Heartbeat} hacia el Player cada un par segundos. Cuando el Player recibe el mensaje actualiza un valor de su estado que indica el último \textit{timestamp}
-en el que recibó el mensaje de Heartbeat. Adicionalmente, el Player se envía mensajes a sí mismo de forma periódica cada unos 5 segundos donde verifica si la diferencia entre el \textit{timestamp} actual y el almacenado en su estado
+en el que recibió el mensaje de Heartbeat. Adicionalmente, el Player se envía mensajes a sí mismo de forma periódica cada unos 5 segundos donde verifica si la diferencia entre el \textit{timestamp} actual y el almacenado en su estado
 supera los 10 segundos. En caso de que así sea, el Player automáticamente da por perdida la conexión y se detiene, garantizando que los recursos se liberen.
 
 \begin{figure}[htbp]
@@ -949,7 +949,7 @@ por sus coordenadas en \textbf{x} e \textbf{y}. De esta forma cuando el usuario 
 su personaje, el cliente se lo comunica al servidor creando una instancia de \textbf{PBPlayerMovement}
 con los valores correspondientes, serializandolo y finalmente enviándolo.
 
-La totalidad de los mensajes que definimos en nuestro protocolo pueden encontrarse en el Anexo \ref{apendix:protobuf}.
+% La totalidad de los mensajes que definimos en nuestro protocolo pueden encontrarse en el Anexo \ref{apendix:protobuf}.
 
 \subsection{Frontend: cliente Godot}
 

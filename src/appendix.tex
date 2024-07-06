@@ -1,7 +1,9 @@
 % En caso de ser necesario agregar toda información relevante en uno o varios anexos.
 
-\subsubsection{Player controls}
-Los controles del jugador dentro del juego son los siguientes:
+\subsubsection{Controles del jugador}
+
+\noindent Los controles del jugador dentro del juego son los siguientes:
+
 \begin{longtable}{|l|l|}
     \hline
     \textbf{Input} & \textbf{Control}\\
@@ -24,13 +26,14 @@ Los controles del jugador dentro del juego son los siguientes:
 
 \subsubsection{Mensajes de Protocol Buffers}
 
-A continuación listamos todos los mensajes \textit{protobuf} definidos:
+\noindent A continuación listamos todos los mensajes \textit{protobuf} definidos
+en la comunicación entre el cliente y el servidor:
 
 \label{apendix:protobuf}
-\begin{longtable}{|l|l|l|}
+\begin{longtable}{|p{0.35\textwidth}|p{0.45\textwidth}|p{0.1\textwidth}|}
     \hline
     \textbf{Mensaje} & \textbf{Atributos} & \textbf{Quién lo envía} \\
-    \hline
+    % \hline
     PBPlayerMovement & required float x & Cliente \\
                         & required float y & \\
     \hline
@@ -174,92 +177,5 @@ A continuación listamos todos los mensajes \textit{protobuf} definidos:
                     & required int32 points & \\
     \hline
 
-    \caption{Mensajes Protobuf}\\    
+    \caption{Mensajes Protobuf} \\
 \end{longtable}
-
-\begin{longtable}{|l|l|l|}
-    \hline
-    \textbf{Nombre} & \textbf{Valores} & \textbf{Usado en} \\
-    \hline
-    PBClientMessageType & PBPlayerLogin = 0 & PBClientMetadata \\
-                        & PBPlayerRegister = 1 & \\
-                        & PBPlayerMovement = 2 & \\
-                        & PBPlayerMessage = 3 & \\
-                        & PBPlayerChangeMap = 4 & \\
-                        & PBPlayerUpdateEquipment = 5 & \\
-                        & PBTrucoMatchChallenge = 6 & \\
-                        & PBTrucoMatchChallengeReply = 7 & \\
-                        & PBTrucoPlay = 8 & \\
-                        & PBTrucoPlayAck = 9 & \\
-                        & PBTrucoDisconnect = 10 & \\
-    \hline
-    PBItemType & hair = 0 & PBINewnventoryItem \\
-                & outfit = 1 & \\
-                & facial\_hair = 2 & \\
-                & glases = 3 & \\
-                & hats = 4 & \\
-    \hline
-    PBTrucoMatchChallengeReplyEnum & ACCEPTED = 0 & PBTrucoMatchChallengeReply \\
-                                    & REJECTED = 1 & \\
-    \hline
-    PBTrucoPlayType & CARD = 0 & PBTrucoPlay \\
-                    & SHOUT = 1 & \\
-                    & UPDATE = 2 & \\
-    \hline
-    PBTrucoShout & ENVIDO = 0 & PBTrucoPlay \\
-                    & REAL\_ENVIDO = 1 & \\
-                    & FALTA\_ENVIDO = 2 & \\
-                    & ENVIDO\_QUIERO = 3 & \\
-                    & ENVIDO\_NO\_QUIERO = 4 & \\
-                    & TRUCO = 5 & \\
-                    & RETRUCO = 6 & \\
-                    & VALE\_CUATRO = 7 & \\
-                    & TRUCO\_QUIERO = 8 & \\
-                    & TRUCO\_NO\_QUIERO = 9 & \\
-                    & MAZO = 10 & \\
-    \hline
-    PBServerMessageType & PBGameEntityState = 0 & PBServerMetadata \\
-                        & PBPlayerMessage = 1 & \\
-                        & PBPlayerInitError = 2 & \\
-                        & PBPlayerInitSuccess = 3 & \\
-                        & PBPlayerChangeMapReady = 4 & \\
-                        & PBGameEntityDisconnect = 5 & \\
-                        & PBTrucoMatchChallengeRequest = 6 & \\
-                        & PBTrucoMatchChallengeDenied = 7 & \\
-                        & PBTrucoPlay = 8 & \\
-                        & PBTrucoAllowPlay = 9 & \\
-    \hline
-    PBPlayerInitErrorCode & UNKNOWN = 0 & PBPlayerInitError \\
-                            & INVALID\_PLAYER\_CREDENTIALS = 1 & \\
-                            & PLAYER\_ALREADY\_EXISTS = 2 & \\
-    \hline
-    PBInventoryItemType & hair = 0 & PBInventoryItem \\
-                        & outfit = 1 & \\
-                        & facial\_hair = 2 & \\
-                        & glases = 3 & \\
-                        & hats = 4 & \\
-    \hline
-    PBTrucoPlayType & CARD = 0 & PBTrucoPlay \\
-                    & SHOUT = 1 & \\
-                    & UPDATE = 2 & \\
-    \hline
-    PBTrucoCardSuit & CUPS = 0 & PBTrucoCard \\
-                    & SWORDS = 1 & \\
-                    & COINS = 2 & \\
-                    & CLUBS = 3 & \\
-    \hline
-    PBTrucoShout & ENVIDO = 0 & PBTrucoPlay \\
-                    & REAL\_ENVIDO = 1 & \\
-                    & FALTA\_ENVIDO = 2 & \\
-                    & ENVIDO\_QUIERO = 3 & \\
-                    & ENVIDO\_NO\_QUIERO = 4 & \\
-                    & TRUCO = 5 & \\
-                    & RETRUCO = 6 & \\
-                    & VALE\_CUATRO = 7 & \\
-                    & TRUCO\_QUIERO = 8 & \\
-                    & TRUCO\_NO\_QUIERO = 9 & \\
-                    & MAZO = 10 & \\
-    \hline
-    \caption{Enums Protobuf}\\
-\end{longtable}
-

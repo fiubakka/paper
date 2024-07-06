@@ -4,3 +4,5 @@ Kafka
 rebalancearlas
 pasivadas
 rebalanceo
+notificador
+pasivada
