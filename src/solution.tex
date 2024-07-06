@@ -878,7 +878,34 @@ núcleo de la aplicación.
 en nuestro videojuego (como puede ser la sala de chat, las transiciones entre distintos mapas o la posibilidad de cambiarse el equipamiento mediante el inventario) el \textit{feature} principal
 que implementamos es el \textit{Truco}, el juego de cartas más famoso de Argentina.
 
-TODO
+La arquitectura utilizada en el desarrollo del Truco puede ser aplicada a cualquier otro juego de cartas entre cualquier cantidad de personas dentro de \textit{Fiubakka}.
+A diferencia de los eventos del juego, los cuales son transmitidos a través de Kafka y recibidos por el GameEventConsumer de cada Player, los mensajes del Truco son enviados directamente entre las entidades
+y actores involucrados en el juego. Esto se debe a que son mensajes que únicamente le son de interés a un número muy reducido de actores, por lo que no se trata de eventos masivos y no es necesario enviarlos por Kafka.
+
+\subsubsection{Inicio de partida de Truco}
+
+\noindent En primer lugar el cliente debe solicitar al servidor que desea iniciar una partida de Truco con otro jugador. En el mensaje de solicitud es únicamente requerido como argumento el nombre de usuario del jugador
+con el que desea entablar una partida. Esa información es siempre enviada al cliente cuando se procesan los eventos del juego, por lo que ya la tiene disponible. En el momento en el que el servidor recibe la solicitud de inicio
+de partida, le envía al cliente del jugador desafiado un mensaje de notificación mostrándole quién lo desafió y dándole la opción de aceptar o rechazar el desafío. En caso de que el jugador desafiado rechace el desafío,
+se desestima la partida. Si, por otro lado, el desafío fue aceptado, se procede de la siguiente forma.
+
+El Player que aceptó el desafío crea un actor \textbf{TrucoManager} que se encargará de administrar la lógica de la partida y notificar a los jugadores involucrados. El TrucoManager enviará un mensaje de tipo
+\textbf{SyncTrucoMatchStart} a ambas entidades Player que participan en la partida. Este mensaje recibirá como respuesta un \textbf{PlayerSyncedTrucoMatchStart} con el nombre del jugador que ya está listo para comenzar a jugar.
+Una vez que ambos jugadores estén listos, comienza la partida.
+
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/truco-match-init.png}
+    \caption{Sincronización inicial de partida de Truco}
+\end{figure}
+
+En la figura anterior no se muestran los PlayerHandler para simplificar el flujo, pero por supuesto siempre están presentes como capa media entre el cliente y su correspondiente entidad Player.
+
+\subsubsection{Protocolo de comunicación del Truco}
+
+
 
 \subsection{Protocolo de comunicación}
 
