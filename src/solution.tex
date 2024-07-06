@@ -905,7 +905,38 @@ En la figura anterior no se muestran los PlayerHandler para simplificar el flujo
 
 \subsubsection{Protocolo de comunicación del Truco}
 
+\noindent Una vez comenzada la partida de Truco el TrucoManager inicializa los modelos de dominio del Truco, los cuales manejarán la lógica de actualizaciones del juego y mantendrán el estado central
+de la partida. A diferencia de la arquitectura \textit{core} de \textit{Fibuakka}, que vimos que es descentralizada, el estado del Truco se encuentra centralizado en una clase \textbf{TrucoMatch}, que es
+administrado por el actor TrucoManager. El motivo por el que el estado de la partida de Truco debe ser centralizado se debe principalmente a los siguientes puntos:
 
+\begin{itemize}
+    \item Dado que una partida de Truco típica se compone por dos jugadores, mantener una copia del juego en cada jugador podría resultar en desincronizaciones entre ambos que no habría forma de conciliar.
+    \item Mantener estado centralizado en el servidor evita posibles trampas, esencial en juegos competitivos.
+    \item No hay ventajas prácticas en descentralizar el estado de la partida.
+\end{itemize}
+
+Dado que el estado se encuentra centralizado en el servidor es necesario asegurarnos que los jugadores tengan el estado correcto reflejado en cada cliente para poder avanzar correctamente con el desarrollo de la partida.
+Además debemos tomar en cuenta que todo mensaje enviado por el cliente al servidor o viceversa puede perderse, debido a la naturaleza del modelo de actores. En general, esta característica del modelo de actores no resulta
+un problema en el resto del juego porque justamente está diseñado alrededor de la consistencia eventual y el tipo de juego desarrollado no requiere sincronización entre todos los clientes para funcionar correctamente. Para el caso
+del Truco (o cualquier otro juego de cartas) es necesaria la \textbf{consistencia inmediata}, es decir, no podemos avanzar en el juego hasta tanto no nos hayan confirmado todos los jugadores que estén sincronizados con el último estado del juego.
+
+Para garantizar la sincronización constante entre los clientes y el estado del Truco en el servidor decidimos utilizar un protocolo de \textit{acknowledgements} ante cada cambio de estado de la partida. Cada cambio de estado de la partida,
+como por ejemplo al realizar una jugada o al transicionar de ronda, se le asocia un identificador numérico incremental llamado \textbf{playId} y se envía la actualización a los clientes. Esta notificación se realiza periódicamente para evitar problemas devenidos por la
+pérdida de mensajes inherente en los actores. Cuando el cliente recibe la notificación de cambio de estado, revisa si el \textbf{playId} recibido es el siguiente al almacenado por él. En caso de serlo, aplica la actualización a su partida y envía
+un mensaje de \textit{acknowledgement} al servidor con el \textbf{playId} recibido. El servidor esperará a recibir la confirmación de ambos jugadores para poder pasar a la siguiente jugada o estado del juego, según correspondiese.
+
+Si el servidor determina que es el turno de alguno de los jugadores en hacer una jugada, les enviará un mensaje de notificación indicándoles que es su turno de jugar y que está a la espera de su jugada. Lógicamente, este mensaje también se enviará
+periódicamente hasta que reciba la jugada del jugador correspondiente. El cliente, al recibir el mensaje de habilitación de jugada, enviará la jugada realizada también de forma periódica hasta que reciba el mensaje de actualización del juego desde el servidor,
+con el \textbf{playId} siguiente que corresponda.
+
+Este protocolo garantiza que ambos clientes estén sincronizados con el estado del juego en todo momento, evitando problemas ocasionados por la pérdida de mensajes u orden de los mensajes recibidos. Garantizar la sincronización constante nos permite además optimizar el tamaño
+de los mensajes enviados, ya que solo necesitamos notificar el cambio (por ejemplo, carta jugada por el rival) en lugar de notificar el estado completo de la partida ante cada cambio. 
+
+TODO diagrama que muestra este flujo
+
+\subsubsection{Fin de partida de Truco}
+
+\noindent TODO
 
 \subsection{Protocolo de comunicación}
 

@@ -6,3 +6,5 @@ pasivadas
 rebalanceo
 notificador
 pasivada
+desincronizaciones
+transicionar
