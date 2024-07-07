@@ -54,10 +54,9 @@ consigna mas compleja.
 % TODO: Como íbamos a mandar el codigo? Me suena que era con Kafka, pero nose si ya habiamos encontrado una herramienta
 % para analizar el codigo submiteado
 
-
 \subsection{Godot Editor}
 
-\subsection{Godot: Optimización de imágenes}
+\subsubsection{Godot: Optimización de imágenes}
 
 En cierto punto del desarrollo, nos encontramos con que cargar el proyecto en el editor de Godot
 requería alrededor de 3 GB de memoria RAM y levantar una sola instancia del juego requería además
@@ -113,3 +112,51 @@ Habiendo entendido la causa de la problemática, aplicamos 2 soluciones para sol
 
 Tras haber implementado estos cambios, logramos reducir la memoria requerida por una instancia
 del juego a menos de 1 GB.
+
+\subsubsection{Control de versiones}
+
+Uno de esos problemas está relacionado al control de versiones. Cada escena o nodo creado posee 
+un archivo autogenerado por Godot en el cual se ven reflejados los cambios que realizamos desde 
+el motor de videojuegos. No es usual que este archivo sea modificado manualmente, sino que toda 
+modificación se realiza a través de la interfaz de Godot. Al realizar un merge con Github, si 
+varias personas modificaron una misma escena o nodo, podría ocurrir que hubieran conflictos en 
+dichos archivos autogenerados y al modificarlos manualmente, se eliminaran o modificaran líneas 
+que terminaban ocasionando comportamientos no deseados en el juego.
+
+Por ejemplo, para satisfacer los conflictos de un archivo podría haberse eliminado una signal 
+que activaba alguna funcionalidad al presionarse un botón, y al no considerar que este botón 
+podría dejar de funcionar al realizar el merge de Github, este error era descubierto una 
+vez que deseáramos presionar el botón. Debido a que el error fue introducido en un merge y 
+no momentos antes de presionar dicho botón, la búsqueda del error podía tornarse complicada 
+o confusa. Para prevenir estos problemas, observamos con más detenimiento los archivos 
+autogenerados al momento de realizar merges y al momento de realizar code reviews, 
+incluso dejando comentarios en los pull request preguntando si realizar dichos cambios 
+es el comportamiento que el dueño del pull request está buscando.
+
+\subsubsection{Uso de signals}
+
+Otro problema fue el acoplamiento de las escenas y los nodos. Durante gran parte del proyecto, 
+la mayoría de los nodos se comunicaban con sus nodos hijos de la siguiente manera:
+
+\begin{lstlisting}
+    $nodo.metodo()
+\end{lstlisting}
+
+En un inicio, esta forma parecía resultar cómoda para poder llamar a los métodos de los nodos 
+hijos, pero poseía un problema y era que el código se volvía difícil de reutilizar y refactorizar. 
+Al utilizar signals en lugar de llamar a los métodos de los hijos de esta forma, no es necesario 
+que el nodo padre y los nodos hijos conozcan detalles de la implementación del otro, aumenta 
+la modularización, se puede intercambiar a los hijos de un nodo sin necesidad de modificar el 
+código del padre, mejora la escalabilidad, por mencionar algunas ventajas.
+
+\subsubsection{Convención en el nombramiento de callbacks}
+
+Relacionado al uso de señales, otro de los problemas que surgió es no seguir la convención de 
+Godot al nombrar los callbacks creados manualmente para conectar a las señales:
+
+\begin{lstlisting}
+    _on_<nombre_del_nodo>_<nombre_de_la_signal>()
+\end{lstlisting}
+
+Al no saber qué nodo va a responder a una señal emitida, utilizar esta convención hace más 
+fácil la búsqueda en el código.
