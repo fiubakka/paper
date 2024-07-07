@@ -1,2 +1,3 @@
 {"rule":"COMMA_PARENTHESIS_WHITESPACE","sentence":"^\\Q.\\E$"}
 {"rule":"PREP_VERB","sentence":"^\\QComenzamos con la prueba mas simple, un único nodo del cluster de Fiubakka en idle, esto es, sin ningún jugador conectado.\\E$"}
+{"rule":"AGREEMENT_PARTICIPLE_NOUN","sentence":"^\\QComo aclaración previa a las pruebas, el cluster de Kubernetes utilizado cuenta con un nodo con una CPU aproximadamente el doble de rápida que los otros dos nodos.\\E$"}

@@ -12,12 +12,60 @@ servidor en una misma máquina.
 Como aclaración previa a las pruebas, el cluster de Kubernetes utilizado cuenta con un nodo con una CPU aproximadamente el doble de rápida que los otros dos nodos.
 Todas las pruebas que involucren menos de la totalidad de los nodos únicamente utilizarán los nodos más lentos para mantener uniformidad en los resultados.
 Igualmente, a los efectos del resultado esperado, es esperable que dada una utilización de CPU \textit{x} en un nodo del servidor, se reduzca aproximadamente a
-$\frac{x}{n}$ donde \textit{n} es la cantidad de nodos del Akka cluster. Esta proporción es independiente de los recursos de cada nodo de Kubernetes.
+$\frac{x}{n}$ donde \textit{n} es la cantidad de nodos del Akka cluster. Esta proporción es independiente de los recursos de cada nodo de Kubernetes. Por otro lado,
+otro de los nodos cuenta con 4GiB de memoria RAM a diferencia de los otros dos nodos, que cuentan con 8GiB. A continuación se detalla un cuadro con los recursos disponbiles
+de cada nodo.
+
+\begin{center}
+    \begin{tabular}{|c|c|c|c|}
+    \hline
+    \textbf{Nodo} & \textbf{Núcleos del procesador} & \textbf{Velocidad del procesador} & \textbf{Memoria RAM} \\
+    \hline
+    raspberrypi1 & 4 & 1.8GHz & 8GiB \\
+    \hline
+    raspberrypi2 & 4 & 1.8GHz & 4GiB \\
+    \hline
+    raspberrypi3 & 4 & 2.4GHz & 8GiB \\
+    \hline
+\end{tabular}
+\end{center}
+
+Lógicamente, para cada prueba realizada se adjuntará el nodo de Kubernetes en el que se ejecutó el \textit{pod}, para poner en referencia los recursos utilizados.
 
 \subsection{Recursos utilizados por un nodo de \textit{Fiubakka}}
 
 \noindent Comenzamos con la prueba más simple, un único nodo del cluster de \textit{Fiubakka} en \textit{idle}, esto es, sin ningún jugador conectado.
+Para obtener las métricas de recursos utilizados por la aplicación debemos observar los recursos reportados por el \textbf{pod} en Kubernetes.
+Es importante tener en cuenta que Kubernetes reporta el consumo de CPU en \textit{millicores}. Por ejemplo, 1000m representa 1000 \textit{millicores}, equivalente
+a 1 core de la CPU del nodo de Kubernetes en el que se encuentre el pod. Kubernetes es agnóstico a la velocidad del procesador en sí, en la práctica lo que tiende a suceder
+es que nodos más rápidos que otros reportan un consumo de CPU menor para la misma tarea.
 
+\noindent El resultado obtenido es el siguiente:
+
+\begin{center}
+\begin{tabular}{|c|c|c|}
+    \hline
+    \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
+    \hline
+    raspberrypi1 & 269m & 244Mi \\
+    \hline
+\end{tabular}
+\end{center}
+
+\noindent Para demostrar el punto anterior sobre el consumo de CPU en nodos más rápidos, este es el resultado para el nodo \textbf{raspberrypi3}:
+
+\begin{center}
+    \begin{tabular}{|c|c|c|}
+    \hline
+    \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
+    \hline
+    raspberrypi3 & 118m & 274Mi \\
+    \hline
+\end{tabular}
+\end{center}
+
+\noindent Vemos que es aproximadamente la mitad del consumo de CPU respecto al nodo \textbf{raspberrypi1}. Esto es coherente con lo mostrado en el cuadro de recursos de cada
+nodo.
 
 
 \subsection{Resultados esperados}
