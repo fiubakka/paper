@@ -43,8 +43,15 @@ en dos grupos de dos integrantes cada uno. Ivan y Marcos con Akka, Franco y Nico
 familiarizarse con la tecnología correspondiente y ir haciendo pruebas de concepto relacionadas al proyecto. Por ejemplo, para Akka 
 comenzamos a modelar un jugador, agregando los mensajes necesarios para la lógica del movimiento. Por otro lado, en Godot, en lo que primero
 se trabajó tambien fue el movimiento, sumado a como mostrar al personaje con graficos acordes a su orientación.
+Llegó un punto donde el cliente empezó a necesitar mas trabajo que el servidor, por lo que la separación en grupos se fue desarmando y
+todos desarrollabamos en donde era requerido.
 
-%Server de python para simular el server
+Como se explica en la sección 6.6.1, durante los primeros Sprints de desarrollo, el cliente enviaba los inputs de movimiento al servidor y esperaba una respuesta con la
+la posición resultante de ese movimiento. Como en ese momento el servidor no estaba completamente funcional, decidimos crear una especie de servidor
+\textit{mock} para simular el comportamiento del real. Este servidor fue desarrollado en Python, y se encargaba simplemente de escuchar mensajes por TCP
+y devolver una respuesta. Esto permitió que el grupo que trabajaba en Godot no quedara bloqueado en el desarrollo del movimiento del jugador
+hasta que el servidor en Akka llegase a un estado funcional.
+
 %Repo de protobug
 
 
