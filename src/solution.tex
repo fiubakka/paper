@@ -1311,8 +1311,7 @@ usuarios puedan jugar.
             ven en la región inferior y las cartas se juegan sobre la mesa.}
     \label{fig:truco-game}
 \end{figure}
- 
-% TODO: poner en algun lado como se mueve el jugador (controles)
+
 Todos los controles del juego están detallados en el apéndice.
 
 
@@ -1399,3 +1398,21 @@ solo volver a arrastrarla a su zona original y una interfaz que muestre los cant
 un cartel que aparezca para avisarle al jugador que su oponente realizó un canto y que luego 
 desaparezca, indicadores de a qué jugador le corresponde realizar una jugada, entre otras cosas.
 
+\subsection{Juego ejecutable}
+\noindent Otro aspecto importante del proyecto frontend es poder generar un archivo ejecutable con el juego,
+para disponibilizar a los usuarios.
+Si bien una forma de poder correrlo es clonando el código fuente y levantando el proyecto con el editor
+de Godot, esta forma no es recomendable por dos razones:
+\begin{itemize}
+    \item No es muy práctico ni amigable para el usuario no técnico hacerlo clonar un repositorio de código y además
+    hacerle descargar y usar otro programa que no sea el juego en si.
+    \item Al disponibilizar el código fuente, cualquier usuario podría correr una versión modificada del 
+    frontend del juego y conectarse de todas formas al servidor.
+\end{itemize}
+Es por esto que debemos generar un archivo ejecutable con el juego.
+
+Godot provee una forma muy fácil y sencilla de exportar el juego a un ejecutable para distintas plataformas.
+Solo es necesario descargar los \textit{templates} correspondientes a la plataforma destino, que pueden ser
+distintos sistemas operativos como Windows, Linux o MacOS, así como también otras plataformas, como dispositivos
+Android o incluso aplicaciones web.
+Para nuestro proyecto generamos ejecutables funcionales para sistemas operativos Windows y Linux.
