@@ -726,11 +726,11 @@ object GameEventProducer {
 \subsubsection{Sincronización inicial del jugador}
 
 \noindent Mencionamos anteriormente que por motivos de practicidad y performance decidimos separar la persistencia del estado de la entidad Player en otro actor PlayerPersistor, el cual
-es el que hace uso de los \textit{behaviors} de Durable State provistos en el módulo de Akka Persistence. Esta decisión conlleva que al momento de iniciar el Player no dispongamos ya del estado
+es el que hace uso de los \textit{behaviors} de Durable State provistos en el módulo de Akka Persistence. Esta decisión conlleva que al momento de iniciar el Player no dispongamos inmediatamente del estado
 inicial del jugador, sino que debemos esperar a que el PlayerPersistor nos lo envíe. Para manejar esta situación, el Player envía un mensaje al PlayerPersistor solicitando su estado inicial.
-Se configura un \textit{timeout} esperado (al momento de este informe es de 30 segundos) como límite de tiempo para recibir la respuesta. En caso de error desde el PlayerPersitor o que la respuesta no
+Se configura un \textit{timeout} de 30 segundos (cuyo valor es configurable) como límite de tiempo para recibir la respuesta. En caso de error desde el PlayerPersitor o que la respuesta no
 nos llegue en el tiempo esperado, el Player se detendrá y notificará al PlayerHandler del error. El PlayerHandler luego notifica al cliente, y el cliente deberá reintentar iniciar sesión hasta que eventualmente
-lo consiga. En la práctica estos casos únicamente comienzan a suceder cuando el sistema está bajo muchísima carga.
+lo consiga. En la práctica estos casos únicamente comienzan a suceder cuando el sistema está bajo una carga excesiva.
 
 Por otro lado, el PlayerHandler deberá esperar también a que la entidad Player esté lista para poder confirmarle al cliente que la inicialización se completó correctamente. Al momento de su creación, el actor PlayerHandler
 envía un mensaje a la entidad Player del tipo \textbf{Init}. Dado que Player es una entidad de Cluster Sharding, al recibir el mensaje se inicializará y realizará la sincronización correspondiente con el PlayerPersistor. En cuanto
@@ -757,18 +757,18 @@ Vemos que ya no se hace un pedido del estado al PlayerPeristor dado que el estad
 
 \subsubsection{\textit{Heartbeats} del Player}
 
-\noindent Se explicó en la sección de Cluster Sharding que las entidades de Akka son automáticamente pasivadas cada cierta cantidad de tiempo en el que no reciban ningún mensaje.
+\noindent Se explicó en la sección de Cluster Sharding que las entidades de Akka son automáticamente terminadas cada cierta cantidad de tiempo en el que no reciban ningún mensaje.
 La intención detrás de este mecanismo es liberar recursos, dado que las entidades, a diferencia de los actores, son reiniciadas siempre que reciben un mensaje, por lo que no es práctico estar
 deteniéndolas manualmente cuando no se las necesita. Una problemática que introduce nuestra arquitectura por el uso de entidades para el Player es que en caso de que la conexión con el cliente se corte y el Player
-no reciba el mensaje correspondiente, la pasivación automática de Akka no entrará nunca en efecto. Esto se debe a que el GameEventConsumer continuará leyendo los distintos eventos que reciba desde Kafka, y seguirá enviándoselos
-al Player. Dado que el Player nunca dejaría de recibir mensajes, la pasivación nunca se activaría. En la práctica, esto se conoce coloquialmente como un \textit{leak} de recursos.
+no reciba el mensaje correspondiente, la terminación automática de Akka no entrará nunca en efecto. Esto se debe a que el GameEventConsumer continuará leyendo los distintos eventos que reciba desde Kafka, y seguirá enviándoselos
+al Player. Dado que el Player nunca dejaría de recibir mensajes, la terminación nunca se activaría. En la práctica, esto se conoce coloquialmente como un \textit{leak} de recursos.
 
 Para solucionar este problema implementamos una técnica conocida como \textit{heartbeats}. Se trata de un mecanismo de mensajes periódicos entre los nodos de un sistema distribuido para asegurarse de que los componentes del sistema
 siguen activos. Su uso es extremadamente común en los sistemas distribuidos, por ejemplo, Kubernetes lo utiliza para conocer el estado de los distintos nodos del cluster. Akka hace exactamente lo mismo para sus propios nodos del Akka Cluster.
 \textit{etcd} es una base de datos distribuida que también lo emplea.
 
-En nuestro caso, el PlayerHandler envía un mensaje de tipo \textbf{Heartbeat} hacia el Player cada un par segundos. Cuando el Player recibe el mensaje actualiza un valor de su estado que indica el último \textit{timestamp}
-en el que recibió el mensaje de Heartbeat. Adicionalmente, el Player se envía mensajes a sí mismo de forma periódica cada unos 5 segundos donde verifica si la diferencia entre el \textit{timestamp} actual y el almacenado en su estado
+En nuestro caso, el PlayerHandler envía un mensaje de tipo \textbf{Heartbeat} hacia el Player cada 2 segundos. Cuando el Player recibe el mensaje actualiza un valor de su estado que indica el último \textit{timestamp}
+en el que recibió el mensaje de Heartbeat. Adicionalmente, el Player se envía mensajes a sí mismo de forma periódica cada 5 segundos donde verifica si la diferencia entre el \textit{timestamp} actual y el almacenado en su estado
 supera los 10 segundos. En caso de que así sea, el Player automáticamente da por perdida la conexión y se detiene, garantizando que los recursos se liberen.
 
 \begin{figure}[htbp]
@@ -777,13 +777,13 @@ supera los 10 segundos. En caso de que así sea, el Player automáticamente da p
     \caption{Flujo de \textit{heartbeats} del Player}
 \end{figure}
 
-Si la pasivación vía \textit{heartbeats} del Player se activa se envía además un mensaje de tipo \textbf{Stop} al PlayerHandler para que cierre la conexión. En la práctica este mensaje esta más por si acaso, dado que lo más probable
+Si se activa la terminación del Player vía \textit{heartbeats}, se envía además un mensaje de tipo \textbf{Stop} al PlayerHandler para que cierre la conexión. En la práctica este mensaje se envía de forma preventiva, dado que lo más probable
 es que el PlayerHandler ya esté detenido si no recibimos ningún \textit{heartbeat} en los últimos 10 segundos.
 
 \subsubsection{Rebalanceo del Player en el Akka Cluster}
 
-\noindent Vimos que de las ventajas de usar Akka Cluster Sharding es que permite el rebalanceo de entidades automáticamente al alterarse la composición de los nodos del Akka Cluster. Si bien es cierto que Akka se encargará de eliminar a una
-entidad de un nodo e iniciarla nuevamente en otro, toda la lógica de sincronización de la capa de negocio es algo que debemos definir y manejar nosotros. Para el caso del Player, esto implica que al realizarse un reinicio de la entidad debemos 
+\noindent Como vimos anteriormente, una de las ventajas de usar Akka Cluster Sharding es que permite el rebalanceo de entidades automáticamente al alterarse la composición de los nodos del Akka Cluster. Si bien es cierto que Akka se encargará de eliminar a una
+entidad de un nodo e iniciarla nuevamente en otro, toda la lógica de sincronización de la capa de reglas de negocio es algo que debemos definir y manejar nosotros. Para el caso del Player, esto implica que al realizarse un reinicio de la entidad debemos 
 volver a realizar la sincronización inicial del jugador. La diferencia principal que tenemos con el caso mostrado en la anterior sección es que el PlayerHandler no se entera de este rebalanceo, sino que sigue comunicandose con el Player normalmente.
 
 Para poder recuperar el estado del Player únicamente debemos plantear un flujo distinto para la sincronización con el PlayerHandler. Al recibir cualquier mensaje del PlayerHandler el Player volverá a iniciarse (debido a las garantías de Cluster Sharding)
@@ -791,7 +791,7 @@ y volverá a solicitar su estado al PlayerPeristor e inicializar a su consumidor
 Sin embargo, el PlayerHandler desconoce que el Player necesita nuevamente su dirección, y sin su dirección el Player no puede enviarle un mensaje como para comunicarle lo que necesita.
 
 Es por esto que el mensaje de tipo \textbf{Heartbeat} contiene como argumento la dirección del PlayerHandler. Dado que sabemos que el PlayerHandler se encarga de enviar este mensaje periódicamente, tenemos la garantía de que eventualmente lo recibiremos.
-El Player, en caso de recibir el mensaje de Heartbeat y está en el \textit{behavior} de inicialización, almacenará la dirección del PlayerHandler en su estado y procederá a completar su inicialización. De aquí en adelante hemos recuperado el estado del Player
+El Player, en caso de recibir el mensaje de Heartbeat y estar en el \textit{behavior} de inicialización, almacenará la dirección del PlayerHandler en su estado y procederá a completar su inicialización. En este punto hemos recuperado el estado del Player
 correctamente y el flujo de mensajes entre el Player y el PlayerHandler se reestablece.
 
 Debido a que la fuente de la verdad del estado del jugador proviene del cliente, la próxima actualización de estado recibida garantizará la consistencia que se perdió durante el rebalanceo del Player.
@@ -804,11 +804,11 @@ hizo (por ejemplo, quedarse quieto en lugar de moverse).
 desarrollamos un actor \textbf{Bot}. Un bot, en la jerga de los videojuegos, es un \textit{mock} de un jugador que es en realidad controlado
 por la computadora en lugar de una persona. En nuestro caso, el actor Bot reemplaza al actor PlayerHandler. Cuando el servidor se inicializa
 lee la configuración de la cantidad de bots que debe iniciar y se encarga de crearlos. Una vez creado, el Bot crea su correspondiente entidad Player
-y comienza a simular movimientos cada unos 16ms, lo que en la práctica es la máxima carga permitida por un jugador real.
+y comienza a simular movimientos periódicamente cada 16ms aproximadamente (60 movimientos por segundo), lo que en la práctica es la máxima carga permitida por un jugador real.
 
 Los movimientos realizados por los bots no siguen ningún tipo de patrón real, únicamente nos interesa que generen carga máxima sobre el sistema.
 En el futuro, es posible implementarles lógica más compleja para simular comportamientos más realistas o hacer pruebas de carga más específicas.
-En nuestros análisis de performance no nos interesamos tanto por los tipos de mensajes generados sino por la cantidad de actores y de mensajes que se estuvieran
+En nuestros análisis de performance no nos interesan tanto los tipos de mensajes generados sino la cantidad de actores y de mensajes que se estuvieran
 procesando en un momento dado.
 
 La implementación del Bot es sencilla. A continuación se muestra un extracto resumido de ella.
@@ -859,8 +859,8 @@ object Bot {
 
 \subsubsection{Resumen de la arquitectura}
 
-\noindent En las anteriores secciones ahondamos en los distintos componentes que forman \textit{Fiubakka} y las relaciones entre ellos. Partimos de los conceptos escenciales
-de Akka y mostramos que papel juega cada uno en nuestra aplicación. A modo de resumen y para tener una vista más panorámica de la arquitectura, el siguiente diagrama engloba
+\noindent En las anteriores secciones ahondamos en los distintos componentes que componen el proyecto \textit{Fiubakka} y las relaciones entre ellos. Partimos de los conceptos escenciales
+de Akka y mostramos qué papel juega cada uno en nuestra aplicación. A modo de resumen y para tener una vista más panorámica de la arquitectura, el siguiente diagrama engloba
 todos los conceptos explicados hasta ahora. Si bien \textit{Fiubakka} cuenta con algunos features más que mostraremos en las posteriores secciones, lo descrito hasta ahora es el
 núcleo de la aplicación.
 
@@ -874,7 +874,7 @@ núcleo de la aplicación.
 
 \subsection{Truco: un minijuego dentro de Fiubakka}
 
-\noindent Hasta aquí llega la explicación de la arquitectura \textit{core} de \textit{Fiubakka}. Si bien implementamos varios features dentro de Fiubakka para jugar con lo que es posible hacer
+\noindent Hasta aquí llega la explicación de la arquitectura \textit{core} de \textit{Fiubakka}. Si bien implementamos varios features dentro de Fiubakka para experimentar con lo que es posible hacer
 en nuestro videojuego (como puede ser la sala de chat, las transiciones entre distintos mapas o la posibilidad de cambiarse el equipamiento mediante el inventario) el \textit{feature} principal
 que implementamos es el \textit{Truco}, el juego de cartas más famoso de Argentina.
 
@@ -901,12 +901,12 @@ Una vez que ambos jugadores estén listos, comienza la partida.
     \caption{Sincronización inicial de partida de Truco}
 \end{figure}
 
-En la figura anterior no se muestran los PlayerHandler para simplificar el flujo, pero por supuesto siempre están presentes como capa media entre el cliente y su correspondiente entidad Player.
+En la figura anterior no se muestran los PlayerHandler para simplificar el flujo, pero por supuesto siempre están presentes como capa intermedia entre el cliente y su correspondiente entidad Player.
 
 \subsubsection{Protocolo de comunicación del Truco}
 
 \noindent Una vez comenzada la partida de Truco el TrucoManager inicializa los modelos de dominio del Truco, los cuales manejarán la lógica de actualizaciones del juego y mantendrán el estado central
-de la partida. A diferencia de la arquitectura \textit{core} de \textit{Fibuakka}, que vimos que es descentralizada, el estado del Truco se encuentra centralizado en una clase \textbf{TrucoMatch}, que es
+de la partida. A diferencia de la arquitectura \textit{core} de \textit{Fiubakka}, que vimos que es descentralizada, el estado del Truco se encuentra centralizado en una clase \textbf{TrucoMatch}, que es
 administrado por el actor TrucoManager. El motivo por el que el estado de la partida de Truco debe ser centralizado se debe principalmente a los siguientes puntos:
 
 \begin{itemize}
@@ -920,7 +920,7 @@ Además debemos tomar en cuenta que todo mensaje enviado por el cliente al servi
 un problema en el resto del juego porque justamente está diseñado alrededor de la consistencia eventual y el tipo de juego desarrollado no requiere sincronización entre todos los clientes para funcionar correctamente. Para el caso
 del Truco (o cualquier otro juego de cartas) es necesaria la \textbf{consistencia inmediata}, es decir, no podemos avanzar en el juego hasta tanto no nos hayan confirmado todos los jugadores que estén sincronizados con el último estado del juego.
 
-Para garantizar la sincronización constante entre los clientes y el estado del Truco en el servidor decidimos utilizar un protocolo de \textit{acknowledgements} ante cada cambio de estado de la partida. Cada cambio de estado de la partida,
+Para garantizar la sincronización constante entre los clientes y el estado del Truco en el servidor decidimos utilizar un protocolo de \textit{acknowledgements} ante cada cambio de estado de la partida. A cada uno de estos cambios en el estado,
 como por ejemplo al realizar una jugada o al transicionar de ronda, se le asocia un identificador numérico incremental llamado \textbf{playId} y se envía la actualización a los clientes. Esta notificación se realiza periódicamente para evitar problemas devenidos por la
 pérdida de mensajes inherente en los actores. Cuando el cliente recibe la notificación de cambio de estado, revisa si el \textbf{playId} recibido es el siguiente al almacenado por él. En caso de serlo, aplica la actualización a su partida y envía
 un mensaje de \textit{acknowledgement} al servidor con el \textbf{playId} recibido. El servidor esperará a recibir la confirmación de ambos jugadores para poder pasar a la siguiente jugada o estado del juego, según correspondiese.
