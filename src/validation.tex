@@ -2,13 +2,23 @@
 % resultado final del proyecto y verificación del mismo. 
 % Las mismas podrán ser ajustadas más adelante.
 
-\noindent Se considerará como validación final del trabajo poder conectar a múltiples jugadores 
-concurrentemente al juego y permitirles interactuar entre sí. Se realizarán pruebas de 
-calidad a medida que se avance con el proyecto, procurando tanto el correcto funcionamiento 
-del juego así como también de la arquitectura en conjunto. Estas pruebas se harán corriendo 
-el juego como si fuera un usuario. Además, debido a la dificultad de hacer una prueba real 
-con una gran cantidad de jugadores simultáneos, realizaremos pruebas de estrés sobre los 
-componentes del servidor, para validar y mantener la alta disponibilidad del mismo.
+\noindent Inicialmente, partimos de la premisa de que nuestra arquitectura distribuida era naturalmente más escalable horizontalmente
+que una arquitectura monolítica. En esta sección realizaremos diversas pruebas con distintas configuraciones de nodos del servidor y cantidad
+de jugadores conectados para validar esta hipótesis. Para facilitar estas pruebas y hacerlas reproducibles, utilizaremos los Bots desarrollados
+en la sección \ref{sec:Bots}. Las pruebas fueron realizadas en el entorno de Kubernetes descrito en la sección TODO, que es actualmente el entorno
+productivo de \textit{Fiubakka}, pero es posible realizar estas pruebas sin necesidad de un ambiente de Kubernetes, mediante múltiples instancias del
+servidor en una misma máquina.
+
+Como aclaración previa a las pruebas, el cluster de Kubernetes utilizado cuenta con un nodo con una CPU aproximadamente el doble de rápida que los otros dos nodos.
+Todas las pruebas que involucren menos de la totalidad de los nodos únicamente utilizarán los nodos más lentos para mantener uniformidad en los resultados.
+Igualmente, a los efectos del resultado esperado, es esperable que dada una utilización de CPU \textit{x} en un nodo del servidor, se reduzca aproximadamente a
+$\frac{x}{n}$ donde \textit{n} es la cantidad de nodos del Akka cluster. Esta proporción es independiente de los recursos de cada nodo de Kubernetes.
+
+\subsection{Recursos utilizados por un nodo de \textit{Fiubakka}}
+
+\noindent Comenzamos con la prueba más simple, un único nodo del cluster de \textit{Fiubakka} en \textit{idle}, esto es, sin ningún jugador conectado.
+
+
 
 \subsection{Resultados esperados}
 

@@ -1,1 +1,2 @@
 {"rule":"COMMA_PARENTHESIS_WHITESPACE","sentence":"^\\Q.\\E$"}
+{"rule":"PREP_VERB","sentence":"^\\QComenzamos con la prueba mas simple, un único nodo del cluster de Fiubakka en idle, esto es, sin ningún jugador conectado.\\E$"}
