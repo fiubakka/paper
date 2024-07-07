@@ -932,11 +932,31 @@ con el \textbf{playId} siguiente que corresponda.
 Este protocolo garantiza que ambos clientes estén sincronizados con el estado del juego en todo momento, evitando problemas ocasionados por la pérdida de mensajes u orden de los mensajes recibidos. Garantizar la sincronización constante nos permite además optimizar el tamaño
 de los mensajes enviados, ya que solo necesitamos notificar el cambio (por ejemplo, carta jugada por el rival) en lugar de notificar el estado completo de la partida ante cada cambio. 
 
-TODO diagrama que muestra este flujo
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/truco-state-update.png}
+    \caption{Diagrama de flujo de jugada en el Truco}
+\end{figure}
 
 \subsubsection{Fin de partida de Truco}
 
-\noindent TODO
+\noindent Una vez que la partida de Truco finaliza, ya sea porque uno de los jugadores cumplió con el objetivo de puntos o abandonó, es necesario notificar a ambos clientes que la partida ha terminado y retornar el estado del Player al previo a comenzar la partida de Truco.
+En el caso de que la partida termine porque uno de los jugadores ganó, el TrucoManager lo indicará en el mensaje de actualización de estado del juego a ambos clientes. Al recibirlo, el cliente enviará el mensaje de tipo \textbf{TrucoDisconnect}. La entidad Player volverá
+al comportamiento normal de procesar eventos del juego y se lo notificará al cliente mediante el mensaje \textbf{TrucoDisconnectAck}, el cual es un mensaje de \textit{acknowledgement} de desconexión del Truco. El cliente deberá reenviar el mensaje de desconexión periódicamente hasta
+que reciba dicho mensaje de confirmación, esto evita situaciones de desincronización entre el cliente y el servidor.
+
+En el caso de que la partida termine porque uno de los jugadores abandonó, el TrucoManager lo detectará y enviará un mensaje de tipo \textbf{TrucoPlayerDisconnected} al jugador que todavía está en la partida, de forma periódica al igual que en el caso anterior. Al recibir este mensaje,
+el cliente enviará el mensaje de \textbf{TrucoDisconnect} y se repite el flujo descrito para el anterior caso. De esta forma logramos volver al juego principal y mantener al cliente sincronizado con el servidor.
+
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/truco-disconnection.png}
+    \caption{Diagrama de desconexión de partida de Truco al abandonar un jugador}
+\end{figure}
 
 \subsection{Protocolo de comunicación}
 
