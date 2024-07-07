@@ -59,25 +59,27 @@ consigna mas compleja.
 
 \subsection{Godot: Optimización de imágenes}
 
-En cierto punto del desarrollo, nos topamos con que cargar nuestro proyecto en el editor de Godot
-requería alrededor de 3 GB de memoria RAM y levantar una sola instancia del juego requería también
-arriba de 3 GB de memoria principal. En un entorno de desarrollo donde es necesario testear
-funcionalidades con por lo menos dos instancias del juego corriendo, esto dificultó e incluso
+En cierto punto del desarrollo, nos encontramos con que cargar el proyecto en el editor de Godot
+requería alrededor de 3 GB de memoria RAM y levantar una sola instancia del juego requería además
+otros 3 GB extra en memoria principal. En un entorno de desarrollo donde es necesario testear
+funcionalidades teniendo por lo menos dos instancias del juego corriendo a la vez, esto dificultó e incluso
 imposibilitó para algunos integrantes continuar normalmente con el desarrollo. Este requerimiento
-de RAM no tenía sentido, ya que la suma del espacio requerido en disco de todos los 
+de RAM no parecía tener sentido, ya que la suma del espacio requerido en disco de todos los 
 \textit{assets} de nuestro proyecto no superaba los 100 MB.
 
 Luego de investigar más a fondo el problema y entender cómo estábamos cargando los archivos de imágenes,
-entendimos mejor cómo las importa Godot y qué implica eso.
+entendimos mejor el mecanismo que usa Godot para importar imágenes y qué implica eso.
 
-Al agregar una imágen al proyecto, Godot genera un archivo con el mismo nombre y extensión 
-\textit{.import}, con metadata sobre cómo importar el archivo. Para el caso de las imágenes, 
-Godot las importa con un modo de compresión \textbf{Lossless} por defecto. Si bien este modo
-tiene la ventaja de que no genera \textit{artifacts} visuales en las imágenes usadas, usa 
+Al agregar una imágen al proyecto, Godot genera autmáticamente un archivo con el mismo nombre y extensión 
+\textit{.import}, con metadata y configuraciones del archivo. 
+Por ejemplo, para el caso de las imágenes, es posible configurar el modo de compresión, generación de 
+\textit{mipmaps}, entre otras opciones. Godot un modo de compresión \textbf{Lossless} por defecto. 
+Si bien este modo tiene la ventaja de que no genera \textit{artifacts} visuales en las imágenes importadas, usa 
 considerablemente más memoria VRAM (\textit{Video Random Access Memory}) para almacenar la textura o
-imágen importada. La documentación de Godot\cite{ref2} provee un estimado del espacio que ocupa una sola textura
-RGBA8 en la VRAM, dependiendo de las dimensiones de resolución de la imágen. En nuestro caso, como
-tenemos una imágen \textit{spritesheet} por cada variante de cada cosmético posible de jugadores,
+imágen importada, en comparación con otras opciones de compresión disponible.
+La documentación de Godot\cite{ref2} provee un estimado del espacio que ocupa una sola textura
+RGBA8 en la VRAM, dependiendo de las dimensiones de resolución de la imágen y del método de compresión utilizado.
+En nuestro caso, como tenemos una imágen \textit{spritesheet} por cada variante de cada cosmético posible para los jugadores,
 contábamos con más de 100 imágenes de más de 2048 x 2048 pixeles cada una. 
 
 \begin{figure}[htbp]
@@ -88,8 +90,8 @@ contábamos con más de 100 imágenes de más de 2048 x 2048 pixeles cada una.
 \end{figure}
 
 Usando de referencia la tabla de la documentación, y considerando que nuestras imágenes superaban
-los 2048 x 2048 pixeles, la memoria en VRAM requerida para nuestro juego alcanzó una cota mínima de 
-\textbf{2.24 GB}:
+los 2048 x 2048 pixeles, además de estar usando el método de compresión Lossless,
+la memoria en VRAM requerida para nuestro juego alcanzó una cota mínima de \textbf{2.24 GB}:
 
 \[
 \frac{21.33 \, MiB}{imagen} \times 100 \, imagenes = 2.24 \, GB
@@ -97,7 +99,7 @@ los 2048 x 2048 pixeles, la memoria en VRAM requerida para nuestro juego alcanz�
 
 Para computadoras sin una placa de gráficos dedicada, en lugar de alocar este espacio en VRAM,
 se aloca en memoria principal RAM, generando los problemas anteriormente mencionados.
-Habiendo hecho este descubrimiento, aplicamos 2 soluciones para solventarlo:
+Habiendo entendido la causa de la problemática, aplicamos 2 soluciones para solventarla:
 
 \begin{itemize}
     \item Reducir el tamaño de las imágenes recortándolas, ya que en realidad usamos solo
@@ -105,7 +107,7 @@ Habiendo hecho este descubrimiento, aplicamos 2 soluciones para solventarlo:
     \item Cambiar el modo de compresión de los cosméticos para personajes de \textbf{Lossless}
     a \textbf{VRAM Compressed}, para reducir aún más el espacio ocupado de VRAM. Si bien este
     modo de compresión no es recomendado para texturas 2D, especialmente del estilo
-    \textit{pixel art} como lo es nuestro juego, al cambiar el modo y volver a correr el juego
+    \textit{pixel art} como lo es nuestro juego, al correr el juego usando este método de compresión
     no se notaron defectos ni \textit{artifacts} visuales.
 \end{itemize}
 
