@@ -73,3 +73,47 @@ nodo.
 \subsection{Resultados obtenidos}
 
 \subsection{Métricas de latencia}
+
+\subsection{Requisitos del sistema para el juego}
+
+\noindent Si bien el frontend no es el foco del proyecto, es importante tener en cuenta cuáles son los 
+requisitos mínimos del sistema para correr el cliente del juego. Es decir, qué tipo de CPU se necesita,
+cuánta capcidad en memoria RAM y cuánto espacio ocupa en disco. Es importante mantener estos requisitos
+bajos, para lograr que el juego corra en la mayor cantidad de máquinas posibles y por lo tanto,
+que la mayor cantidad de gente pueda jugarlo.
+
+El archivo ejecutable del juego exportado ocupa \textbf{113,7 MB} (en la versión Linux) en disco.
+
+Además es necesario disponer de al menos \textbf{490 MB} de memoria RAM para ejecutar el juego.
+En casos de computadoras sin una placa gráfica dedicada, este requisito de memoria principal puede subir
+hasta \textbf{1 GB}, debido a que la VRAM necesaria se consume de la RAM.
+
+Respecto a los requisitos de CPU, estos son más dificiles de medir, debido a que existe una gran cantidad
+de modelos de microprocesadores comerciales, cada uno con una combinatoria aún mayor de posibles
+configuraciones y \textit{performances}. Sin embargo, existe una guía en la documentación de Godot\cite{ref3}
+con los requisitos mínimos y recomendados para un proyecto 2D o 3D exportado.
+Usando esta guía de referencia y teniendo en cuenta que el juego no es muy intensivo en cuanto a cantidad
+de cómputo (ya que la mayor parte del tiempo se están enviando y recibiendo paquetes de red), decidimos
+tomar como requisito mínimo de CPU el recomendado:
+
+\[
+\textit{Intel Core 2 Duo E8200} o \textit{AMD Athlon XE BE-2300}.
+\]
+
+A continuación se confecciona una tabla con todos los requisitos mínimos de sistema.
+
+\begin{longtable}{|l|l|}
+    \hline
+    \textbf{CPU} & \textit{Intel Core 2 Duo E8200}\\
+                 & \textit{AMD Athlon XE BE-2300}\\
+    \hline
+    \textbf{RAM} & 500 GB.\\
+                 & 1 GB para máquinas sin placa de video.\\
+    \hline
+    \textbf{Disco rígido} & 113,7 MB.\\
+    \hline
+    \textbf{Sistema Operativo} & Sistema operativo Windows o Linux.\\
+    \hline
+    \caption{Requisitos mínimos del sistema.}\\
+\end{longtable}
+
