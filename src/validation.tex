@@ -102,10 +102,13 @@ Los resultados obtenidos fueron los siguientes:
 Con la última prueba de carga con 24 jugadores llegamos al límite de CPU que el nodo \textbf{raspberrypi1} tolera, pasado este número estamos ejerciendo más carga que la que el procesador
 puede soportar \textit{gracefully} y comienzan los errores de mensajes no entregados, por lo que nos detendremos aquí. 
 
-Se puede observar que el consumo de CPU escala en el orden lineal con la cantidad de jugadores. Esto es coherente con el planteo original (TODO FALTA HACER ESE PLANTEO ORIGINAL AL PRINCIPIO DE ESTA SECCION)
-de que cada jugador resultará, en el peor escenario, en que cada evento generado por el mismo se procese \textit{n} veces, donde \textit{n} denota la cantidad de jugadores en el servidor.
+En principio, pareciera que el consumo de CPU escala en el orden lineal con la cantidad de jugadores. Esto contradice nuestro planteo original (TODO FALTA HACER ESE PLANTEO ORIGINAL AL PRINCIPIO DE ESTA SECCION)
+de que cada jugador introducido en el sistema induce, en el peor escenario, una incremento cuadrático en el consumo total, dado que cada evento generado se debe procesar \textit{n} veces, donde \textit{n} denota la cantidad de jugadores en el servidor.
+Teniendo \textit{n} jugadores resultaría en procesar \textit{n} veces los eventos de los \textit{n} jugadores, dando lugar a la complejidad cuadrática.
+Sobre este punto, nuestra hipótesis es que el comportamiento esperado únicamente se visibilice en sistemas con muchos más recursos de CPU disponibles, donde es posible realizar pruebas de carga
+con cantidades de jugadores mucho más elevadas. Más adelante mostraremos una medición que se alinea con esta hipótestis.
 
-Con esto demostramos el primer punto planteado, que es el de escala lineal de la aplicación para los eventos generados por los jugadores. En la siguiente sección evaluaremos las métricas obtenidas
+Con esto concluimos el análisis de escalabilidad vertical de nuestra aplicación. En la siguiente sección evaluaremos las métricas obtenidas
 con más de un nodo del cluster de \textit{Fiubakka} para validar la hipótesis de escalabilidad horizontal.
 
 \subsection{Pruebas de carga en múltiples nodos (RaspberryPi)}
@@ -239,7 +242,46 @@ A continuación se listan las características más relevantes de la máquina do
 \end{tabularx}
 \end{center}
 
-TODO
+\noindent Para las pruebas de carga en este entorno utilizamos un total de 84 jugadores. Esta cantidad de jugadores es divisible entre 2, 3 y 4 nodos
+uniformemente y resulta una carga adecuada para ejercer presión sobre los nodos pero no sobrecargarlos.
+
+\noindent En este caso, todos los nodos son equivalentes en recursos, ya que comparten el mismo \textit{host}. Los resultados obtenidos fueron los siguientes:
+
+\begin{center}
+\begin{tabularx}{\textwidth} { 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X | }
+        \hline
+        \textbf{Cantidad de jugadores (N)} & \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
+        \hline
+        84 & k3d nodo 1 & 11678m & 2396Mi \\
+        \hline
+        \multirow{2}{*}{84} & k3d nodo 1 & 7169m & 2091Mi \\
+        \cline{2-4}
+        & k3d nodo 2 & 6944m & 1958Mi \\
+        \hline
+        \multirow{3}{*}{84} & k3d nodo 1 & 5948m & 1905Mi \\
+        \cline{2-4}
+        & k3d nodo 2 & 5944m & 1672Mi \\
+        \cline{2-4}
+        & k3d nodo 3 & 5563m & 1588Mi \\
+        \hline
+\end{tabularx}
+\end{center}
+
+\noindent Los resultados obtenidos ahora son prometedores, y se ajustan a la hipótesis planteada. Vemos que al distribuir la carga de los jugadores
+sobre 2 nodos reducimos el consumo de CPU en aproximadamente un 40\% por nodo, y al distribuir la carga sobre 3 nodos reducimos el consumo de CPU en aproximadamente un 50\% por nodo.
+Es posible que la reducción de consumo de CPU en 3 nodos sea en realidad mayor a la observada, dado que para esa configuración el procesador del \textit{host} se encontraba al 100\% de uso,
+por lo que podíamos estar ante \textit{throttling}. Por otro lado, es lógico igualmente que la reducción práctica no coincida exactamente con la planteada en la teoría. La complejidad
+de $O(\frac{n^2}{m})$ ignora el \textit{overhead} introducido por la comunicación entre los nodos del cluster.
+
+Por otro lado, vemos que la memoria consumida sobre cada nodo se reduce apreciablemente para la mayoría de los nodos. El nodo con consumo de memoria más elevado es, seguramente, el que tiene
+asignado los Shard Coordinators de las entidades. Sería esperable que si aumentásemos la cantidad de jugadores la diferencia relativa en uso de memoria se reduzca incluso más, pero en nuestras pruebas
+incrementar la cantidad de jugadores a números considerablemente más elevados ya comienza a resultar en errores de procesamiento, por lo que no pudimos verificarlo.
+
+
 
 \subsection{Métricas de latencia}
 
