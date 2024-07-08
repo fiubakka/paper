@@ -5,7 +5,7 @@
 \noindent Inicialmente, partimos de la premisa de que nuestra arquitectura distribuida era naturalmente más escalable horizontalmente
 que una arquitectura monolítica. En esta sección realizaremos diversas pruebas con distintas configuraciones de nodos del servidor y cantidad
 de jugadores conectados para validar esta hipótesis. Para facilitar estas pruebas y hacerlas reproducibles, utilizaremos los Bots desarrollados
-en la sección \ref{sec:Bots}. Las pruebas fueron realizadas en el entorno de Kubernetes descrito en la sección TODO, que es actualmente el entorno
+en la sección \ref{sec:Bots}. Las siguientes pruebas fueron realizadas en el entorno de Kubernetes descrito en la sección TODO, que es actualmente el entorno
 productivo de \textit{Fiubakka}, pero es posible realizar estas pruebas sin necesidad de un ambiente de Kubernetes, mediante múltiples instancias del
 servidor en una misma máquina.
 
@@ -17,7 +17,7 @@ otro de los nodos cuenta con 4GiB de memoria RAM a diferencia de los otros dos n
 de cada nodo.
 
 \begin{center}
-    \begin{tabular}{|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|}
     \hline
     \textbf{Nodo} & \textbf{Núcleos del procesador} & \textbf{Velocidad del procesador} & \textbf{Memoria RAM} \\
     \hline
@@ -32,7 +32,7 @@ de cada nodo.
 
 Lógicamente, para cada prueba realizada se adjuntará el nodo de Kubernetes en el que se ejecutó el \textit{pod}, para poner en referencia los recursos utilizados.
 
-\subsection{Recursos utilizados por un nodo de \textit{Fiubakka}}
+\subsection{Recursos utilizados por 1 nodo de \textit{Fiubakka}}
 
 \noindent Comenzamos con la prueba más simple, un único nodo del cluster de \textit{Fiubakka} en \textit{idle}, esto es, sin ningún jugador conectado.
 Para obtener las métricas de recursos utilizados por la aplicación debemos observar los recursos reportados por el \textbf{pod} en Kubernetes.
@@ -47,7 +47,7 @@ es que nodos más rápidos que otros reportan un consumo de CPU menor para la mi
     \hline
     \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
     \hline
-    raspberrypi1 & 269m & 244Mi \\
+    raspberrypi1 & 269m & 344Mi \\
     \hline
 \end{tabular}
 \end{center}
@@ -55,11 +55,11 @@ es que nodos más rápidos que otros reportan un consumo de CPU menor para la mi
 \noindent Para demostrar el punto anterior sobre el consumo de CPU en nodos más rápidos, este es el resultado para el nodo \textbf{raspberrypi3}:
 
 \begin{center}
-    \begin{tabular}{|c|c|c|}
+\begin{tabular}{|c|c|c|}
     \hline
     \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
     \hline
-    raspberrypi3 & 118m & 274Mi \\
+    raspberrypi3 & 118m & 374Mi \\
     \hline
 \end{tabular}
 \end{center}
@@ -67,9 +67,174 @@ es que nodos más rápidos que otros reportan un consumo de CPU menor para la mi
 \noindent Vemos que es aproximadamente la mitad del consumo de CPU respecto al nodo \textbf{raspberrypi1}. Esto es coherente con lo mostrado en el cuadro de recursos de cada
 nodo.
 
+\subsection{Pruebas de carga en 1 nodo}
 
-\subsection{Resultados esperados}
+\noindent Procederemos a realizar pruebas de carga con distintas cantidades de jugadores, comenzando por un único nodo de la aplicación. Esto
+nos dará un punto de referencia para comparar con pruebas posteriores, donde incrementaremos la cantidad de nodos y haremos una comparativa con los resultados
+obtenidos en esta sección.
 
-\subsection{Resultados obtenidos}
+Como mencionamos anteriormente, todas las pruebas de carga se realizan simulando jugadores mediante el uso de Bots. Cada Bot ejercerá carga máxima posible por un único jugador, que corresponde
+al caso de movimiento constante. Cuando el jugador se mueve resulta en envío de mensajes cada aproximadamente 16 milisegundos, siendo esta la máxima frecuencia de mensajes que el servidor
+procesa por jugador.
 
-\subsection{Métricas de latencia}
+Los resultados obtenidos fueron los siguientes:
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+    \hline
+    \textbf{Nodo de ejecución} & \textbf{Cantidad de jugadores} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
+    \hline
+    raspberrypi1 & 1 & 352m & 553Mi \\
+    \hline
+    raspberrypi1 & 2 & 488m & 443Mi \\
+    \hline
+    raspberrypi1 & 4 & 797m & 712Mi \\
+    \hline
+    raspberrypi1 & 8 & 1359m & 790Mi \\
+    \hline
+    raspberrypi1 & 16 & 2780m & 1173Mi \\
+    \hline
+    raspberrypi1 & 24 & 3485m & 1645Mi \\
+    \hline
+\end{tabular}
+\end{center}
+
+Con la última prueba de carga con 24 jugadores llegamos al límite de CPU que el nodo \textbf{raspberrypi1} tolera, pasado este número estamos ejerciendo más carga que la que el procesador
+puede soportar \textit{gracefully} y comienzan los errores de mensajes no entregados, por lo que nos detendremos aquí. 
+
+Se puede observar que el consumo de CPU escala en el orden lineal con la cantidad de jugadores. Esto es coherente con el planteo original (TODO FALTA HACER ESE PLANTEO ORIGINAL AL PRINCIPIO DE ESTA SECCION)
+de que cada jugador resultará, en el peor escenario, en que cada evento generado por el mismo se procese \textit{n} veces, donde \textit{n} denota la cantidad de jugadores en el servidor.
+
+Con esto demostramos el primer punto planteado, que es el de escala lineal de la aplicación para los eventos generados por los jugadores. En la siguiente sección evaluaremos las métricas obtenidas
+con más de un nodo del cluster de \textit{Fiubakka} para validar la hipótesis de escalabilidad horizontal.
+
+\subsection{Pruebas de carga en múltiples nodos (RaspberryPi)}
+
+\noindent Habiendo medido el consumo de recursos de la aplicación para múltiples configuraciones de jugadores en un único nodo, realizaremos ahora las mismas configuraciones de jugadores totales
+pero distribuidos en más de un nodo uniformemente. La idea es que, si la aplicación es escalable horizontalmente, el consumo de recursos por nodo debería ser menor que el obtenido en la sección anterior.
+Cuánto menor es lo esperado aproximadamente en la teoría es $\frac{N}{m}$, donde \textit{N} es la cantidad de jugadores en el servidor (fijado a constante) y \textit{m} es la cantidad de nodos de \textit{Fiubakka}.
+Además, vamos a medir nuevamente el consumo para el caso \textit{idle} (ningún jugador conectado). Dado que ahora tendremos más de un nodo en el cluster, entran en juego mecanismos de \textit{heartbeat} y comunicación
+entre nodos que pueden incrementar el consumo de recursos.
+
+Los resultados obtenidos para $m=2$, con cada nodo de \textit{Fiubakka} en un nodo distinto de Kubernetes, fueron los siguientes:
+
+\begin{center}
+\begin{tabularx}{\textwidth} { 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X | }
+        \hline
+        \textbf{Cantidad de jugadores (N)} & \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
+        \hline
+        \multirow{2}{*}{0} & raspberrypi1 & 755m & 511Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 744m & 549Mi \\
+        \hline
+        \multirow{2}{*}{2} & raspberrypi1 & 1562m & 760Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 1487m & 642Mi \\
+        \hline
+        \multirow{2}{*}{4} & raspberrypi1 & 1780m & 886Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 1850m & 692Mi \\
+        \hline
+        \multirow{2}{*}{8} & raspberrypi1 & 2367m & 926Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 2247m & 732Mi \\
+        \hline
+        \multirow{2}{*}{16} & raspberrypi1 & 2962m & 1039Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 3053m & 897Mi \\
+        \hline
+        \multirow{2}{*}{24} & raspberrypi1 & 2947m & 1105Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 2979m & 1328Mi \\
+        \hline
+\end{tabularx}
+\end{center}
+
+\noindent Para $m=3$ se elimina el caso de 2 jugadores, dado que no se aprovecharía la distribución entre los 3 nodos, y se modifican algunas pruebas para 
+la cantidad de jugadores sea uniformemente distribuible entre los nodos. Se obtuvieron los siguientes resultados:
+
+\begin{center}
+\begin{tabularx}{\textwidth} { 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X | }
+        \hline
+        \textbf{Cantidad de jugadores (N)} & \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
+        \hline
+        \multirow{3}{*}{0} & raspberrypi1 & 961m & 763Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 893m & 729Mi \\
+        \cline{2-4}
+        & raspberrypi3 & 509m & 738Mi \\
+        \hline
+        \multirow{3}{*}{3} & raspberrypi1 & 1728m & 893Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 1333m & 814Mi \\
+        \cline{2-4}
+        & raspberrypi3 & 1236m & 849Mi \\
+        \hline
+        \multirow{3}{*}{9} & raspberrypi1 & 2433m & 956Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 1701m & 888Mi \\
+        \cline{2-4}
+        & raspberrypi3 & 1636m & 863Mi \\
+        \hline
+        \multirow{3}{*}{15} & raspberrypi1 & 2878m & 1159Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 2828m & 982Mi \\
+        \cline{2-4}
+        & raspberrypi3 & 1738m & 970Mi \\
+        \hline
+        \multirow{3}{*}{24} & raspberrypi1 & 3058m & 1285Mi \\
+        \cline{2-4}
+        & raspberrypi2 & 3179m & 1265Mi \\
+        \cline{2-4}
+        & raspberrypi3 & 2378m & 1166Mi \\
+        \hline
+\end{tabularx}
+\end{center}
+
+\noindent Los resultados obtenidos en principio son sorpresivos, dado que no se coinciden con la hipótesis propuesta. Vemos que para cantidades bajas de jugadores
+el consumo de CPU es mayor que en el caso de un único nodo, mientras que el consumo de memoria se mantiene aproximadamente igual. Para cantidades de jugadores más elevadas,
+como 16 o 24, el consumo de CPU disminuye ligeramente en las configuraciones de multinodo y ya si se observa menor reducción en el consumo de memoria que en el caso de un único nodo.
+
+La explicación de este fenómeno tiene más de una arista. En primer lugar, si bien la comunicación entre actores a nivel código es transparente ya sea un único nodo o varios, no es despreciable
+el hecho de que los mensajes pasan de enviarse dentro de la misma JVM a enviarse a través de la red. En el primer caso, el proceso de enviado de mensajes se reduce básicamente a una \textit{queue}
+protegida mediante un \textit{mutex}, donde los mensajes se encolan y desencolan con el único \textit{overhead} siendo la adquisición del mutex.
+En el segundo caso, se introduce un proceso de serialización y deserialización de los mensajes de Akka, además del \textit{overhead} que agrega el procesamiento de los paquetes
+TCP y UDP a través de donde se terminan enviando los mensajes entre los nodos. La comunicación entre nodos a través de la red resulta en una carga adicional base relevante, y esto es muy notorio
+en el caso de pocos jugadores.
+
+Basándonos en esta nueva hipótesis como motivo de los resultados obtenidos, y observando que para el caso de 24 jugadores particularmente \textbf{pareciera} empezar a verse una tendencia de disminución
+en el uso de recursos por nodo, realizamos otra prueba en una máquina considerablemente más potente.
+
+\subsection{Pruebas de carga en múltiples nodos (Virtualización)}
+
+\noindent Lamentablemente no contamos con un cluster de Kubernetes con nodos más potentes para poder validar nuestra hipótesis. Si bien existen proveedores Cloud de Kubernetes como AWS, Azure o Google que
+permiten configurar clusters con nodos dotados de muchos más recursos, sus costos son prohibitivos para nosotros. Sin embargo, no necesitamos formar un cluster real de Kubernetes para validar nuestra hipótesis.
+Podemos formar un cluster local con nodos virtuales en una misma máquina, y realizar las pruebas de carga en dicho cluster. Siempre y cuando la máquina donde realizemos las pruebas tenga más recursos que la combinación
+de las RaspberryPi, deberíamos observar una mejor performance en las pruebas de carga.
+
+Para formar un cluster de Kubernetes virtualizado utilizamos \textbf{k3d}, dado que es una versión \textit{dockerizada} de \textit{k3s}. \textit{k3s} es la distribución de Kubernetes que utilizamos en las RaspberryPi, por
+lo que garantizamos así que las pruebas sean lo más fiel posible a nuestro entorno productivo. Con \textit{k3d} podemos crear clusters de Kubernetes multinodo en una misma máquina, donde cada nodo se ejecuta como un contenedor.
+
+A continuación se listan las características más relevantes de la máquina donde se realizaron las pruebas:
+
+\begin{center}
+\begin{tabularx}{\textwidth} { 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X | }
+    \hline
+    \textbf{Modelo del procesador} & \textbf{Hilos del procesador} & \textbf{Velocidad del procesador} & \textbf{Memoria RAM} \\
+    \hline
+    Intel i7-12700K & 20 & 4.7GHz & 32GiB \\
+    \hline
+\end{tabularx}
+\end{center}

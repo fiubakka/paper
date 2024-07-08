@@ -8,3 +8,6 @@ notificador
 pasivada
 desincronizaciones
 transicionar
+cluster
+multinodo
+deserialización
