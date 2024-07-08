@@ -30,21 +30,21 @@ inicialmente.
 Las reuniones de planificación fueron las primeras que dejamos de hacer. Esto se debió a que al empezar el proyecto, las 
 dos tecnologías principales que elegimos usar eran completamente nuevas para todo el grupo, lo que causó que una porción considerable de
 los primeros Sprints fuera dedicada exclusivamente a la investigación y familiarización tanto con Godot como con Akka. Esto causó que al
-comienzo, estas primeras tareas fueran dificiles de planificar y puntuar, ya que había demasiada incertidumbre. Dado esto, decidimos dejar
+comienzo, estas primeras tareas fueran difíciles de planificar y puntuar, ya que había demasiada incertidumbre. Dado esto, decidimos dejar
 de lado las reuniones de planificación, y nunca las retomamos.
 Por otro lado, nos dimos cuenta que dar updates pequeños en alguno de los canales de comunicación que usamos (Discord, Whatsapp) era suficiente
-como reemplazo de las dailies.
+como reemplazo de las \textit{dailies}.
 Las reuniones de review al final de cada Sprint fueron mantenidas acorde al plan inicial.
 Por su lado, las reuniones con el tutor las seguimos haciendo, pero con una frecuencia variable.
 
 \subsection{Desarrollo del proyecto}
-Una vez definidas las tecnologías en las cuales ibamos a trabajar, Akka para el servidor y Godot para el cliente, decidimos separarnos
-en dos grupos de dos integrantes cada uno. Ivan y Marcos con Akka, Franco y Nicole con Godot. Al principio, cada grupo se enfocaría en 
-familiarizarse con la tecnología correspondiente y ir haciendo pruebas de concepto relacionadas al proyecto. Por ejemplo, para Akka 
+Una vez definidas las tecnologías en las cuales íbamos a trabajar, Akka para el servidor y Godot para el cliente, decidimos separarnos
+en dos grupos de dos integrantes cada uno. Iván y Marcos con Akka, Franco y Nicole con Godot. Al principio, cada grupo se enfocaría en 
+familiarizarse con la tecnología correspondiente e ir haciendo pruebas de concepto relacionadas al proyecto. Por ejemplo, para Akka 
 comenzamos a modelar un jugador, agregando los mensajes necesarios para la lógica del movimiento. Por otro lado, en Godot, en lo que primero
-se trabajó tambien fue el movimiento, sumado a como mostrar al personaje con graficos acordes a su orientación.
-Llegó un punto donde el cliente empezó a necesitar mas trabajo que el servidor, por lo que la separación en grupos se fue desarmando y
-todos desarrollabamos en donde era requerido.
+se trabajó también fue el movimiento, sumado a como mostrar al personaje con gráficos acordes a su orientación.
+Llegó un punto donde el cliente empezó a necesitar más trabajo que el servidor, por lo que la separación en grupos se fue desarmando y
+todos desarrollábamos en donde era requerido.
 
 Como se explica en la sección 6.6.1, durante los primeros Sprints de desarrollo, el cliente enviaba los inputs de movimiento al servidor y esperaba una respuesta con la
 la posición resultante de ese movimiento. Como en ese momento el servidor no estaba completamente funcional, decidimos crear una especie de servidor
@@ -53,15 +53,12 @@ y devolver una respuesta. Esto permitió que el grupo que trabajaba en Godot no 
 hasta que el servidor en Akka llegase a un estado funcional.
 
 Una vez que la comunicación entre el servidor y el cliente fue establecida, y definimos el protocolo detallado en la sección 6.4, que consiste en
-múltiples mensajes de protobuf, nos dimos cuenta que ibamos a tener que definir dichos mensajes tanto en el servidor como en el cliente. Eso iba
+múltiples mensajes de protobuf, nos dimos cuenta de que íbamos a tener que definir dichos mensajes tanto en el servidor como en el cliente. Eso iba
 a generar mucho código repetido, lo que a su vez aumentaría la probabilidad de tener algún error donde el mismo mensaje fuera definido de
 forma distinta en los dos proyectos. Es por eso que decidimos unificar todos los mensajes en un repositorio aparte, que utilizando submodulos
-de git, se vería como un directorio y se mantendría igual en ambos proyectos, lo que evitaria el error mencionado anteriormente.
+de Git, se vería como un directorio y se mantendría igual en ambos proyectos, lo que evitaría el error mencionado anteriormente.
 Entonces, para agregar o editar un mensaje, se debía agregar el archivo al repositorio y luego, en el repositorio de cada uno de los proyectos, 
 ejecutar el comando \texttt{git submodule --update} para actualizar. Una vez hecho esto, los mensajes de proto debían ser compilados para poder
 ser usados en el código. En el servidor, esto se hacía automáticamente al levantar el proyecto. Por otro lado, para el cliente, armamos un
-script en bash llamado \textit{gobuf-compile.sh} que se encargaba de compilar todos los mensajes y guardar el resultado en otra carpeta que 
-luego seria pusheada al repositorio, para no tener que hacer la compilación múltiples veces.
-
-\subsection{Riesgos iniciales}
-%Aca que pondriamos?
+script en Bash llamado \textit{gobuf-compile.sh} que se encargaba de compilar todos los mensajes y guardar el resultado en otra carpeta que 
+luego sería subida al repositorio, para no tener que hacer la compilación múltiples veces.

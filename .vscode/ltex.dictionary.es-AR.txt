@@ -11,3 +11,5 @@ transicionar
 cluster
 multinodo
 deserialización
+metadata
+review

@@ -22,8 +22,9 @@ para los usuarios, existen algunas funcionalidades para el juego que fueron inic
 planeados pero por restricciones de tiempo no fue posible completarlos. A continuación, listamos 
 las mas interesantes:
 
-\subsubsection{Sistema de recompensas y Tienda de items}
-Así como existen muchos cosméticos para la creación del personaje y además es posible cambiarlos dentro del
+\subsubsection{Sistema de recompensas y tienda de ítems}
+
+\noindent Así como existen muchos cosméticos para la creación del personaje y además es posible cambiarlos dentro del
 juego, no existe para los jugadores alguna forma de obtener nuevos cosméticos además de los que poseen en sus
 inventarios. Para solucionar esto, surgió la idea de agregar un tipo de moneda con la cuál un usuario podría comprar nuevos
 items equipables. Dichos objetos podrían ser adquiridos en una tienda ubicada en el \textbf{Level} del \textbf{Comedor}.
@@ -32,7 +33,8 @@ Esta funcionalidad hubiese estado relacionada al \textbf{Truco}, ya que la adqui
 sería una recompensa por ganar partidas de \textbf{Truco}.
 
 \subsubsection{Foro de consultas}
-Teniendo en mente la temática de una facultad, donde uno suele juntarse con profesores y/o compañeros de clase
+
+\noindent Teniendo en mente la temática de una facultad, donde uno suele juntarse con profesores y/o compañeros de clase
 para intercambiar ideas o hacer consultas, también se pensó en implementar un foro de consultas donde un usuario
 podría realizar un \textit{post} a modo de consulta y los demás usuarios podrían responder a la misma. Tanto el \textit{post}
 original como las respuestas podrían recibir votos positivos o negativos de parte de cualquier usuario, con el fin
@@ -45,7 +47,8 @@ una consulta que puede ser respondida luego de mucho tiempo, ya que el log de me
 cierra el juego.
 
 \subsubsection{Clases de programación}
-Una idea que surgió naturalmente dada la ambientación del juego fue la de tener minijuegos relacionados a distintas materias
+
+\noindent Una idea que surgió naturalmente dada la ambientación del juego fue la de tener minijuegos relacionados a distintas materias
 de la facultad. De todos los minijuegos que se nos ocurrieron, el más interesante era sin dudas el que apuntaba a simular
 una clase de programación. El jugador ingresaría a una sala similar a los laboratorios del piso 4 y al interactuar con una
 computadora, vería una interfaz como si fuera un \textit{IDE}. Allí tendría una consigna y la posibilidad de escribir código.
@@ -58,7 +61,7 @@ consigna mas compleja.
 
 \subsubsection{Godot: Optimización de imágenes}
 
-En cierto punto del desarrollo, nos encontramos con que cargar el proyecto en el editor de Godot
+\noindent En cierto punto del desarrollo, nos encontramos con que cargar el proyecto en el editor de Godot
 requería alrededor de 3 GB de memoria RAM y levantar una sola instancia del juego requería además
 otros 3 GB extra en memoria principal. En un entorno de desarrollo donde es necesario testear
 funcionalidades teniendo por lo menos dos instancias del juego corriendo a la vez, esto dificultó e incluso
@@ -69,22 +72,22 @@ de RAM no parecía tener sentido, ya que la suma del espacio requerido en disco 
 Luego de investigar más a fondo el problema y entender cómo estábamos cargando los archivos de imágenes,
 entendimos mejor el mecanismo que usa Godot para importar imágenes y qué implica eso.
 
-Al agregar una imágen al proyecto, Godot genera autmáticamente un archivo con el mismo nombre y extensión 
+Al agregar una imagen al proyecto, Godot genera automáticamente un archivo con el mismo nombre y extensión
 \textit{.import}, con metadata y configuraciones del archivo. 
 Por ejemplo, para el caso de las imágenes, es posible configurar el modo de compresión, generación de 
 \textit{mipmaps}, entre otras opciones. Godot un modo de compresión \textbf{Lossless} por defecto. 
-Si bien este modo tiene la ventaja de que no genera \textit{artifacts} visuales en las imágenes importadas, usa 
+Si bien este modo tiene la ventaja de que no genera artefactos visuales en las imágenes importadas, usa 
 considerablemente más memoria VRAM (\textit{Video Random Access Memory}) para almacenar la textura o
-imágen importada, en comparación con otras opciones de compresión disponible.
+imagen importada, en comparación con otras opciones de compresión disponible.
 La documentación de Godot\cite{ref2} provee un estimado del espacio que ocupa una sola textura
-RGBA8 en la VRAM, dependiendo de las dimensiones de resolución de la imágen y del método de compresión utilizado.
-En nuestro caso, como tenemos una imágen \textit{spritesheet} por cada variante de cada cosmético posible para los jugadores,
+RGBA8 en la VRAM, dependiendo de las dimensiones de resolución de la imagen y del método de compresión utilizado.
+En nuestro caso, como tenemos una imagen \textit{spritesheet} por cada variante de cada cosmético posible para los jugadores,
 contábamos con más de 100 imágenes de más de 2048 x 2048 pixeles cada una. 
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-docs-images.png}
-    \caption{Cuadro comparativo del tamaño que ocupa una imágen en VRAM según la resolución
+    \caption{Cuadro comparativo del tamaño que ocupa una imagen en VRAM según la resolución
              de la misma y el modo de compresión utilizado.}
 \end{figure}
 
@@ -97,7 +100,7 @@ la memoria en VRAM requerida para nuestro juego alcanzó una cota mínima de \te
 \]
 
 Para computadoras sin una placa de gráficos dedicada, en lugar de alocar este espacio en VRAM,
-se aloca en memoria principal RAM, generando los problemas anteriormente mencionados.
+se reserva en memoria principal RAM, generando los problemas anteriormente mencionados.
 Habiendo entendido la causa de la problemática, aplicamos 2 soluciones para solventarla:
 
 \begin{itemize}
@@ -107,7 +110,7 @@ Habiendo entendido la causa de la problemática, aplicamos 2 soluciones para sol
     a \textbf{VRAM Compressed}, para reducir aún más el espacio ocupado de VRAM. Si bien este
     modo de compresión no es recomendado para texturas 2D, especialmente del estilo
     \textit{pixel art} como lo es nuestro juego, al correr el juego usando este método de compresión
-    no se notaron defectos ni \textit{artifacts} visuales.
+    no se notaron defectos ni artefactos visuales.
 \end{itemize}
 
 Tras haber implementado estos cambios, logramos reducir la memoria requerida por una instancia
@@ -115,7 +118,7 @@ del juego a menos de 1 GB.
 
 \subsubsection{Control de versiones}
 
-Uno de esos problemas está relacionado al control de versiones. Cada escena o nodo creado posee 
+\noindent Uno de esos problemas está relacionado al control de versiones. Cada escena o nodo creado posee 
 un archivo autogenerado por Godot en el cual se ven reflejados los cambios que realizamos desde 
 el motor de videojuegos. No es usual que este archivo sea modificado manualmente, sino que toda 
 modificación se realiza a través de la interfaz de Godot. Al realizar un merge con Github, si 
@@ -125,7 +128,7 @@ que terminaban ocasionando comportamientos no deseados en el juego.
 
 Por ejemplo, para satisfacer los conflictos de un archivo podría haberse eliminado una signal 
 que activaba alguna funcionalidad al presionarse un botón, y al no considerar que este botón 
-podría dejar de funcionar al realizar el merge de Github, este error era descubierto una 
+podría dejar de funcionar al realizar el \textit{merge} de Github, este error era descubierto una 
 vez que deseáramos presionar el botón. Debido a que el error fue introducido en un merge y 
 no momentos antes de presionar dicho botón, la búsqueda del error podía tornarse complicada 
 o confusa. Para prevenir estos problemas, observamos con más detenimiento los archivos 
@@ -133,9 +136,9 @@ autogenerados al momento de realizar merges y al momento de realizar code review
 incluso dejando comentarios en los pull request preguntando si realizar dichos cambios 
 es el comportamiento que el dueño del pull request está buscando.
 
-\subsubsection{Uso de signals}
+\subsubsection{Uso de \textit{signals}}
 
-Otro problema fue el acoplamiento de las escenas y los nodos. Durante gran parte del proyecto, 
+\noindent Otro problema fue el acoplamiento de las escenas y los nodos. Durante gran parte del proyecto, 
 la mayoría de los nodos se comunicaban con sus nodos hijos de la siguiente manera:
 
 \begin{lstlisting}
@@ -149,9 +152,9 @@ que el nodo padre y los nodos hijos conozcan detalles de la implementación del 
 la modularización, se puede intercambiar a los hijos de un nodo sin necesidad de modificar el 
 código del padre, mejora la escalabilidad, por mencionar algunas ventajas.
 
-\subsubsection{Convención en el nombramiento de callbacks}
+\subsubsection{Convención en el nombramiento de \textit{callbacks}}
 
-Relacionado al uso de señales, otro de los problemas que surgió es no seguir la convención de 
+\noindent Relacionado al uso de señales, otro de los problemas que surgió es no seguir la convención de 
 Godot al nombrar los callbacks creados manualmente para conectar a las señales:
 
 \begin{lstlisting}
