@@ -32,8 +32,17 @@ en la comunicación entre el cliente y el servidor:
 \label{apendix:protobuf}
 \begin{longtable}{|p{0.35\textwidth}|p{0.45\textwidth}|p{0.1\textwidth}|}
     \hline
-    \textbf{Mensaje} & \textbf{Atributos} & \textbf{Quién lo envía} \\
-    % \hline
+    \textbf{Mensaje} & \textbf{Atributos} & \textbf{Origen} \\ \hline
+    \endfirsthead
+    \hline
+    \textbf{Mensaje} & \textbf{Atributos} & \textbf{Origen} \\\hline
+    \endhead
+    \hline
+    \endfoot
+    \hline
+    \endlastfoot
+    
+    \hline
     PBPlayerMovement & required float x & Cliente \\
                         & required float y & \\
     \hline
