@@ -575,7 +575,7 @@ la respuesta ni que se completen los otros disparados.
     \caption{Diagrama de flujo de movimiento de un jugador}
 \end{figure}
 
-En el diagrama se muestra un componente que mencionamos previamente cuando presentamos el módulo de Akka Persistence: el PlayerPersistor. Se trata la entidad encargada de almacenar (y recuperar) el estado
+En el diagrama se muestra un componente que mencionamos previamente cuando presentamos el módulo de Akka Persistence: el PlayerPersistor. Se trata de la entidad encargada de almacenar (y recuperar) el estado
 del jugador. Hace uso de los \textit{behaviors} de Durable State que Akka Persistence provee. Como comentamos anteriormente, la interacción con la persistencia se delega a esta otra entidad y no propiamente al
 Player por temas de flexibilidad de API y de latencia. Esto por supuesto significa que no existe garantía de que el nuevo estado haya sido persistido, pero al ser el PlayerPersistor una entidad esta sujeto a las garantías
 de Sharding de rebalanceo y recuperabilidad en casos de fallos. En los casos donde haya errores en la persistencia momentáneos podrá recuperarse automáticamente, y dado que el protocolo del juego se basa en mensajes
