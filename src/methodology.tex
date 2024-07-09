@@ -38,7 +38,8 @@ Las reuniones de review al final de cada Sprint fueron mantenidas acorde al plan
 Por su lado, las reuniones con el tutor las seguimos haciendo, pero con una frecuencia variable.
 
 \subsection{Desarrollo del proyecto}
-Una vez definidas las tecnologías en las cuales íbamos a trabajar, Akka para el servidor y Godot para el cliente, decidimos separarnos
+
+\noindent Una vez definidas las tecnologías en las cuales íbamos a trabajar, Akka para el servidor y Godot para el cliente, decidimos separarnos
 en dos grupos de dos integrantes cada uno. Iván y Marcos con Akka, Franco y Nicole con Godot. Al principio, cada grupo se enfocaría en 
 familiarizarse con la tecnología correspondiente e ir haciendo pruebas de concepto relacionadas al proyecto. Por ejemplo, para Akka 
 comenzamos a modelar un jugador, agregando los mensajes necesarios para la lógica del movimiento. Por otro lado, en Godot, en lo que primero
@@ -46,19 +47,121 @@ se trabajó también fue el movimiento, sumado a como mostrar al personaje con g
 Llegó un punto donde el cliente empezó a necesitar más trabajo que el servidor, por lo que la separación en grupos se fue desarmando y
 todos desarrollábamos en donde era requerido.
 
-Como se explica en la sección 6.6.1, durante los primeros Sprints de desarrollo, el cliente enviaba los inputs de movimiento al servidor y esperaba una respuesta con la
+Como se explica en la sección \ref{sec:movement-logic}, durante los primeros Sprints de desarrollo, el cliente enviaba los inputs de movimiento al servidor y esperaba una respuesta con la
 la posición resultante de ese movimiento. Como en ese momento el servidor no estaba completamente funcional, decidimos crear una especie de servidor
 \textit{mock} para simular el comportamiento del real. Este servidor fue desarrollado en Python, y se encargaba simplemente de escuchar mensajes por TCP
 y devolver una respuesta. Esto permitió que el grupo que trabajaba en Godot no quedara bloqueado en el desarrollo del movimiento del jugador
 hasta que el servidor en Akka llegase a un estado funcional.
 
+\subsubsection{Repositorios y esquemas de branching}
+
+\noindent Tenemos dos repositorios principales que fueron creados en el inicio del desarrollo del proyecto.
+El correspondiente para el servidor es llamado \textit{fiubakka-server} mientras que el del cliente es \textit{fiubakka-game}.
+Debido a las diferentes circunstancias entre el cliente y el servidor, el desarrollo se llevó a cabo con distintas estrategias
+en cada repositorio.
+
+En el servidor, comenzamos el desarrollo haciendo \textit{pair programming}. Es decir, hacíamos una reunión en la cual un integrante
+escribía el código, pero los dos pensábamos la solución. Esto conllevó a que gran parte del desarrollo inicial fuera mergeada directamente
+a la rama principal del repositorio (\textit{main} en este caso). Una vez que ambos nos sentimos cómodos con la tecnología y separamos el 
+desarrollo, casi no hubo momentos en los cuales los dos tuvimos que desarrollar en paralelo sobre una misma parte del código, lo que evitó tener
+que establecer una estrategia de branching, ya que la probabilidad de tener conflictos importantes era muy baja. En caso de tener conflictos, 
+estos siempre fueron fácilmente solucionados.
+Sin embargo, hubo casos en los cuales el desarrollo de una funcionalidad se hizo en una rama diferente de la principal, ya sea porque era demasiado
+grande o porque era algo mas experimental, como por ejemplo cuando agregamos Kafka para los eventos, o al empezar a utilizar las particiones de Kafka
+para poder cambiar de mapas.
+
+Por otro lado, la situación en el cliente fue distinta. Desde el principio tuvimos la posibilidad de paralelizar el desarrollo, por lo que 
+decidimos de entrada utilizar la estrategia de \textit{feature branching}. Esta estrategia consiste en que para cada nueva funcionalidad
+que queríamos agregar en el cliente, debíamos crear una nueva rama a partir de la principal (\textit{main} al igual que para el servidor),
+hacer el desarrollo de la funcionalidad en la rama creada, actualizandola con \textit{main} si fuera necesario, y una vez que este finalizada
+crear un \textit{Pull Request} para que los otros integrantes puedan revisar los cambios. Al revisar un \textit{PR}, se podían dejar comentarios
+sobre cambios que se consideran necesarios, por ejemplo arreglar un error, o cambiar una implementación por otra mas eficiente. Una vez atendidos
+los comentarios, el \textit{PR} era mergeado a main. En nuestro caso, si bien eran importantes, no era obligatorio tener un mínimo de aprobaciones para poder mergear un \textit{PR},
+para así no bloquear el desarrollo en caso de que los otros integrantes no pudieran revisarlo.
+
+
 Una vez que la comunicación entre el servidor y el cliente fue establecida, y definimos el protocolo detallado en la sección 6.4, que consiste en
 múltiples mensajes de protobuf, nos dimos cuenta de que íbamos a tener que definir dichos mensajes tanto en el servidor como en el cliente. Eso iba
 a generar mucho código repetido, lo que a su vez aumentaría la probabilidad de tener algún error donde el mismo mensaje fuera definido de
-forma distinta en los dos proyectos. Es por eso que decidimos unificar todos los mensajes en un repositorio aparte, que utilizando submodulos
+forma distinta en los dos proyectos. Es por eso que decidimos unificar todos los mensajes en un repositorio aparte llamado \textit{fiubakka-protocol-buffers}, que utilizando submodulos
 de Git, se vería como un directorio y se mantendría igual en ambos proyectos, lo que evitaría el error mencionado anteriormente.
 Entonces, para agregar o editar un mensaje, se debía agregar el archivo al repositorio y luego, en el repositorio de cada uno de los proyectos, 
 ejecutar el comando \texttt{git submodule --update} para actualizar. Una vez hecho esto, los mensajes de proto debían ser compilados para poder
 ser usados en el código. En el servidor, esto se hacía automáticamente al levantar el proyecto. Por otro lado, para el cliente, armamos un
 script en Bash llamado \textit{gobuf-compile.sh} que se encargaba de compilar todos los mensajes y guardar el resultado en otra carpeta que 
 luego sería subida al repositorio, para no tener que hacer la compilación múltiples veces.
+
+Por último tenemos un repositorio llamado simplemente \textit{paper} que usamos para el desarrollo del informe final.
+
+Todos estos repositorios están agrupados en una organización de Github llamada \textit{fiubakka}.
+
+\subsection{Integración de los cambios}
+
+\noindent Seguimos la metodología de \textbf{Continous Integration (CI)} desde los comienzos del proyecto, donde cada \textit{merge} realizado en la rama principal
+del repositorio del servidor realizaba automáticamente la compilación, creación y publicación de dos imágenes de Docker. Una de las imágenes es la de desarrollo local, que cuenta
+con la infraestructura de Kafka y PostgreSQL ya embebida en la imagen, simplificando la experiencia de desarrollo para el cliente. Cada cambio realizado en el servidor se veía reflejado
+inmediatamente en la imagen de Docker, y los desarrolladores del cliente no necesitaban tener el repositorio del servidor configurado para poder probar los cambios, simplemente actualizaban la
+imagen de Docker y ya tenían todo lo necesario para poder probarlo. La otra imagen publicada es la utilizada para producción, una imagen optimizada en tamaño y sin las dependencias de infraestructura
+embebidas. Ambas imágenes pueden ser consultadas en DockerHub, siendo las imágenes \textbf{mrmarcosrolando/fiubakka:prod-latest} y \textbf{mrmarcosrolando/fiubakka:dev-latest} respectivamente.
+
+Por otro lado, una vez que mudamos nuestro ambiente de producción al cluster de Kubernetes que construimos, implementamos también \textbf{Continous Deployment (CD)} en nuestro proyecto.
+Además de publicar las imágenes de Docker, cada cambio realizado en la rama principal actualiza la versión de \textit{Fiubakka} ejecutada en el servidor. En particular, para el caso de la imagen productiva,
+tuvimos que utilizar \textbf{CircleCI} como herramienta de CI/CD, ya que Github Actions no cuenta con \textit{runners} basados en la arquitectura de ARM. Dado que nuestro cluster de Kubernetes utiliza
+RaspberryPis, y por ende, arquitectura ARM, fue necesario construir las imágenes de producción exclusivamente en CircleCI para poder cumplir con la compatibilidad de la arquitectura de la imagen. De todas formas, sí utilizamos
+\textbf{Github Actions} para construir la imagen de desarrollo, dado que las computadoras donde desarrollamos son exclusivamente de arquitectura x86 y evitábamos consumir todos los créditos gratuitos ofrecidos por CircleCI.
+
+Tanto para la construcción de las imágenes de Docker como para el despliegue automático en Kubernetes, es decir, todo nuestro proceso de CI/CD fue desarrollado con \textbf{Dagger} en lugar de los lenguajes de configuración nativos
+de Github Actions y CircleCI basados en YAML. Dagger es un motor de CI/CD que se ejecuta totalmente en contenedores, y tiene como objetivo revolucionar la forma en que se escriben los pipelines de de \textit{devops}.
+Dagger abandona el YAML prevalente en prácticamente todas las herramientas de pipelines y opta por definir los pipelines vía código. Esto tiene muchísimas ventajas, no solo porque cualquier entorno con Docker puede reproducir el pipeline
+(sin ninguna duda su mayor ventaja) sino también porque permite la reutilización de código, la modularización de los pipelines y la posibilidad de elegir entre múltiples lenguajes de programación para el desarrollo. En particular, todo nuestro
+CI/CD utiliza el SDK de Dagger en Python.
+
+Mediante el uso de Dagger, escribimos nuestro pipeline una única vez, y luego lo utilizamos tanto para Github Actions como para CircleCI, lo que nos ahorró tiempo de desarrollo que hubiéramos tenido que invertir en caso de no haber utilizado esta tecnología.
+Además, el hecho de que todos los pasos del pipeline se ejecutan en contenedores de Docker significó que funcionaba perfectamente, sin ningún cambio, tanto en Github Actions y CircleCI como en nuestras máquinas de desarrollo locales.
+
+A continuación se provee el pipeline de generación y publicación de las imágenes del servidor de \textit{Fiubakka} desarrollado con Dagger.
+
+\begin{lstlisting}[language=Python, caption={\textbf{Pipeline de construcción y publicación de las imágenes de Docker}}]
+    
+async def main():
+    subprocess.run(["git", "submodule", "update", "--init"])
+
+    for env_var in ["DOCKER_USER", "DOCKER_PASS", "DOCKER_REPO"]:
+        if env_var not in os.environ:
+            raise OSError(f"{env_var} environment variable must be set")
+        commit_sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")[:7]
+
+    async with dagger.Connection() as client, anyio.create_task_group() as tg:
+        password = client.set_secret("docker_password", os.environ["DOCKER_PASS"])
+        base_image = build_image(client, "Dockerfile.build", password)
+        await publish_image(base_image, f"build-latest")
+        app_image = build_image(client, f"Dockerfile.{os.environ["ENV"]}", password)
+        
+        for tag in [commit_sha, "latest"]:
+            tg.start_soon(
+                publish_image,
+                app_image,
+                f"{os.environ["ENV"]}-{tag}"
+            )
+
+def build_image(client: dagger.Client, image_path: str, password: dagger.Secret):
+    return client
+        .host()
+        .directory(".")
+        .docker_build(dockerfile=image_path)
+        .with_registry_auth(
+            "docker.io",
+            os.environ["DOCKER_USER"],
+            password
+        )
+
+async def publish_image(image: dagger.Container, tag: str):
+    await image.publish(f"{os.environ["DOCKER_REPO"]}:{tag}")
+
+anyio.run(main)
+
+\end{lstlisting}
+
+Vemos que la implementación del pipeline, a diferencia de YAML, es considerablemente más práctica y entendible. El hecho de que sea código convencional
+en lugar de un lenguaje declarativo como YAML permite una mayor flexibilidad, reutilización y modularización del pipeline, y manejar errores de forma que en YAML
+sería imposible. La comunidad detrás de Dagger está creciendo muy rápidamente y esto es solo el comienzo de que lo, creemos, va a poder ser posible en el futuro.
