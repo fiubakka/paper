@@ -575,7 +575,7 @@ la respuesta ni que se completen los otros disparados.
     \caption{Diagrama de flujo de movimiento de un jugador}
 \end{figure}
 
-En el diagrama se muestra un componente que mencionamos previamente cuando presentamos el módulo de Akka Persistence: el PlayerPersistor. Se trata de la entidad encargada de almacenar (y recuperar) el estado
+En el diagrama se muestra un componente que mencionamos previamente cuando presentamos el módulo de Akka Persistence: el PlayerPersistor. Se trata la entidad encargada de almacenar (y recuperar) el estado
 del jugador. Hace uso de los \textit{behaviors} de Durable State que Akka Persistence provee. Como comentamos anteriormente, la interacción con la persistencia se delega a esta otra entidad y no propiamente al
 Player por temas de flexibilidad de API y de latencia. Esto por supuesto significa que no existe garantía de que el nuevo estado haya sido persistido, pero al ser el PlayerPersistor una entidad esta sujeto a las garantías
 de Sharding de rebalanceo y recuperabilidad en casos de fallos. En los casos donde haya errores en la persistencia momentáneos podrá recuperarse automáticamente, y dado que el protocolo del juego se basa en mensajes
@@ -1030,16 +1030,16 @@ con los valores correspondientes, serializandolo y finalmente enviándolo.
 
 % La totalidad de los mensajes que definimos en nuestro protocolo pueden encontrarse en el Anexo \ref{apendix:protobuf}.
 
-\subsection{Frontend: cliente Godot}
+\subsection{Cliente: Godot}
 
 \noindent \textit{Godot} es un motor para desarrollo de videojuegos, de origen argentino, gratuito y de código abierto. 
 Fue creado originalmente en 2001 por Juan Linietsky and Ariel Manzur \textit{in-house} en un estudio de juegos argentino,
-y luego tuvo se hizo público en 2014, bajo licencia MIT. Godot recibió una gran cantidad de apoyo y features desde su 
+y luego se hizo público en 2014, bajo licencia MIT. Godot recibió una gran cantidad de apoyo y features desde su 
 lanzamiento \textit{open source}.
 
-Este motor brinda distintas herramientas para desarrollar aplicaciones interactivas, como por ejemplo 
-interfaces gráficas, gráficos 2D y 3D, input del usuario con distintos periféricos, control de audio, 
-lógica de físicas y colisiones, conectividad a través de la red, entre muchas otras.
+Este motor brinda distintas herramientas para desarrollar aplicaciones interactivas (principalmente
+videojuegos), como por ejemplo interfaces gráficas, gráficos 2D y 3D, input del usuario con distintos periféricos, 
+control de audio, lógica de físicas y colisiones, conectividad a través de la red, entre muchas otras.
 Además de permitir desarrollar para múltiples plataformas, permite programar scripts exponiendo una 
 API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaje propio de Godot. 
 
@@ -1061,14 +1061,15 @@ mejorar la performance en runtime y aumenta la eficiencia del código.
     \caption{Editor de código de Godot.}
 \end{figure}
 
-El motor ofrece una amplia colección de Nodos, que son los componentes básicos que se utilizan para 
-construir Escenas. A su vez, estas escenas pueden ser sub-nodos de otras escenas. Los Nodos pueden ser desde un 
-simple botón (\textbf{Button}) hasta un cuerpo tridimensional con lógica de físicas y colisiones 
-(\textbf{PhysicsBody3D}) e incluso un \textbf{AnimationPlayer} que se encarga de manejar animaciones, 
-es decir, una secuencia de imágenes o \textit{Sprites}.
+El motor ofrece una amplia colección de \textbf{Nodos}, que son los componentes básicos que se utilizan para 
+construir \textbf{Escenas}. A su vez, estas escenas pueden ser sub-nodos de otras escenas. Los Nodos pueden ser desde un 
+simple botón hasta un cuerpo tridimensional con lógica de físicas y colisiones 
+e incluso un \textbf{AnimationPlayer} que se encarga de manejar animaciones, 
+es decir, una secuencia de imágenes o \textit{sprites}.
 
-Estos nodos no solamente son modificables y configurables como se desee, sino que además se les puede 
-añadir un script, extendiendo y personalizando su comportamiento como sea necesario.
+Estos Nodos poseen distintos atributos que se pueden configurar y modificar según se desee.
+No solo eso, sino que además se les puede añadir un script, extendiendo y personalizando
+su comportamiento como sea necesario.
 
 \begin{figure}[htbp]
     \centering
@@ -1079,8 +1080,8 @@ añadir un script, extendiendo y personalizando su comportamiento como sea neces
 \end{figure}
 
 Otro feature importante de Godot es el uso de señales (\textit{signals}) para comunicar eventos entre nodos.
-Un Nodo cualquiera o una Escena personalizada pueden emitir \textit{signals} con un nombre específico 
-(incluso con parámetros) para que otros Nodos o Escenas se suscriban a dicha señal. Al suscribirse, los 
+Tanto los Nodos por defecto como las Escenas compuestas personalizadas pueden emitir \textit{signals} con un nombre específico 
+(e incluso con parámetros) para que otros Nodos o Escenas se suscriban a dicha señal. Al suscribirse, los 
 Nodos receptores definen un handler (comúnmente nombrado \textit{\_on\_node\_signal\_name}) para manejar 
 la señal recibida. De esta forma se pueden crear escenas compuestas de múltiples Nodos distintos, con 
 comportamiento más complejo, pero sin acoplar todos los nodos que necesiten comunicarse entre sí. En la
@@ -1105,12 +1106,12 @@ la Figura \ref{fig:signals-diagram} ilustra cómo es el flujo al emitirse una se
     \label{fig:signals-diagram}
 \end{figure}
 
-La filosofía del diseño de Godot es construir escenas reutilizables usando nodos. A estas escenas y 
+La filosofía del diseño de Godot es construir Escenas reutilizables usando Nodos. A estas escenas y 
 nodos se les puede agregar comportamiento con \textit{scripts}. Con la composición y jerarquía de los Nodos, 
 se puede construir una lógica de juego que es clara y fácil de entender.
 Es por estas características de cohesión, simplicidad y eficiencia en el diseño de Godot, así
 como también el tipo de herramientas que provee que optamos por usar este motor para el desarrollo del
-frontend del proyecto en lugar de crear módulos de autoría propia con un lenguaje de más bajo nivel, 
+Cliente del proyecto en lugar de crear módulos de autoría propia con un lenguaje de más bajo nivel, 
 como por ejemplo C o C++.
 
 \subsubsection{Estructura de proyecto}
@@ -1344,10 +1345,9 @@ el mensaje correspondiente con los parámetros correctos, lo serializa y envía 
 al Servidor a través de la conexión TCP.
 
 \subsection{Comunicación entre cliente y servidor}
-
-\noindent Aún habiendo definido el protocolo de estándar de comunicación que utilizaríamos para conectar al Cliente y Servidor,
+Aún habiendo definido el protocolo de estándar de comunicación que utilizaríamos para conectar al Cliente y Servidor,
 fue necesario tomar ciertas decisiones y definir otros protocolos a la hora de definir los mensajes
-concretos que intercambiarían el cliente con el servidor.
+concretos que intercambiarían el frontend con el backend.
 
 \subsubsection{Lógica del juego: movimiento y colisiones}
 \noindent Otro de nuestros problemas iniciales fue decidir cómo implementaríamos el movimiento del 
