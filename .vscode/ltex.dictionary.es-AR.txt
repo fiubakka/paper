@@ -13,3 +13,4 @@ multinodo
 deserialización
 metadata
 review
+deserializamos

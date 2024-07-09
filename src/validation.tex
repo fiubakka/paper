@@ -2,7 +2,7 @@
 % resultado final del proyecto y verificación del mismo. 
 % Las mismas podrán ser ajustadas más adelante.
 
-\noindent Inicialmente, partimos de la premisa de que nuestra arquitectura distribuida era naturalmente más escalable horizontalmente
+\noindent Inicialmente, partimos de la premisa de que nuestra arquitectura distribuida era naturalmente más escalable
 que una arquitectura monolítica. En esta sección realizaremos diversas pruebas con distintas configuraciones de nodos del servidor y cantidad
 de jugadores conectados para validar esta hipótesis. Para facilitar estas pruebas y hacerlas reproducibles, utilizaremos los Bots desarrollados
 en la sección \ref{sec:Bots}. Las siguientes pruebas fueron realizadas en el entorno de Kubernetes descrito en la sección TODO, que es actualmente el entorno
@@ -12,8 +12,8 @@ servidor en una misma máquina.
 A priori, lo que esperamos observar en las pruebas de carga es que el consumo de CPU sobre un único nodo de la aplicación tenga una \textbf{complejidad temporal
 de $\boldsymbol{O(n^2)}$}, donde \textit{n} es la cantidad de jugadores conectados induciendo carga continua. Esto es así porque cada evento generado por un jugador debe ser procesado por todos los
 demás jugadores que se encuentren en el mismo mapa. Dado que queremos forzar el peor escenario posible, todos los jugadores creados en las pruebas de carga comparten el mismo mapa.
-Es importante recalcar que esta complejidad temporal es inherente a la naturaleza de la notificación a todos los jugadores, no es algo particular de nuestra arquitectura. Un servidor monolítico
-tiene la mimsa complejidad temporal para notificar a todos los jugadores conectados.
+Es importante recalcar que esta complejidad temporal es inherente a la naturaleza de la notificación de los eventos del juego a todos los jugadores, no es algo particular de nuestra arquitectura; un servidor monolítico
+enfrentaría la misma complejidad temporal.
 
 Donde nuestra aplicación se debería destacar es en la escalabilidad horizontal, y aquí entra la segunda observación que esperamos ver en los resultados de las pruebas. Dada la complejidad temporal de
 $O(n^2)$ en un único nodo, esperamos que al distribuir la carga de jugadores en \textit{m} nodos, el consumo de CPU por nodo pase a tener una \textbf{complejidad temporal de $\boldsymbol{O(\frac{n^2}{m})}$}, donde \textit{m} es la cantidad de nodos
@@ -51,7 +51,7 @@ de cada nodo.
 \end{tabular}
 \end{center}
 
-\noindent Lógicamente, para cada prueba realizada se adjuntará el nodo de Kubernetes en el que se ejecutó el \textit{pod}, para poner en referencia los recursos utilizados.
+\noindent Lógicamente, para cada prueba realizada se adjunta el nodo de Kubernetes en el que se ejecutó el \textit{pod}, para poner en referencia los recursos utilizados.
 
 \subsection{Recursos utilizados por 1 nodo de \textit{Fiubakka}}
 
@@ -129,7 +129,7 @@ Teniendo \textit{n} jugadores resultaría en procesar \textit{n} veces los event
 Sobre este punto, nuestra hipótesis es que el comportamiento esperado únicamente se visibilice en sistemas con muchos más recursos de CPU disponibles, donde es posible realizar pruebas de carga
 con cantidades de jugadores mucho más elevadas.
 
-Para validar esta hipótesis, utilizamos una herramienta que presentaremos más detalladamente en una próxima sección, pero por ahora alcanza con entender que los siguientes gráficos corresponden a la cantidad de eventos generados entre todos los jugadores
+Para validar esta hipótesis utilizamos una herramienta que presentaremos más detalladamente en una próxima sección, pero que por ahora alcanza con entender que los siguientes gráficos corresponden a la cantidad de eventos generados entre todos los jugadores
 y la cantidad de eventos procesados en total por todos los jugadores, respectivamente. A medida que el tiempo avanza se agregan jugadores al sistema, a ritmo constante, donde cada jugador genera la misma cantidad de eventos que los demás.
 
 \begin{figure}[htbp]

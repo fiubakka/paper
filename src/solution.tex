@@ -205,6 +205,7 @@ de un \textit{trait} o interfaz de Scala, y luego automáticamente se encarga de
 Inicializar un cluster de Akka es sencillo. A modo de ejemplo, esta es la configuración de \textit{Fiubakka}
 para el ambiente local de desarrollo:
 
+\label{config:akka-cluster}
 \begin{lstlisting}[language=applicationconf, caption={\textbf{Configuración de Akka Cluster Fiubakka}}]
     cluster {
         downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
@@ -220,9 +221,9 @@ para el ambiente local de desarrollo:
     }
 \end{lstlisting}
 
-Para el ambiente local se utilizan lo que se denomina como \textit{seed nodes}, que son nodos que se encargan de iniciar el cluster.
-Al iniciar un nodo de Akka el mismo verifica si su dirección corresponde a un seed node. Si es así, se encargará de escuchar futuras
-conexiones de otros nodos de Akka que busquen unirse al cluster, y siempre que un nodo de Akka no seed se inicie intentará conectarse a los seed nodes especificados
+Para el ambiente local se utilizan lo que se denomina como \textit{seed nodes} o nodos semilla, que son nodos que se encargan de iniciar el cluster.
+Al iniciar un nodo de Akka el mismo verifica si su dirección corresponde a un nodo semilla. Si es así, se encargará de escuchar futuras
+conexiones de otros nodos de Akka que busquen unirse al cluster, y siempre que un nodo de Akka no semilla se inicie intentará conectarse a los nodos semilla especificados
 en la configuración. Por supuesto, este método únicamente funciona si las direcciones de los nodos son estáticas y conocidas de antemano.
 Para ambientes dinámicos como Kubernetes existen otros métodos de descubrimiento de nodos que describiremos más adelante.
 
@@ -1026,9 +1027,36 @@ El mensaje que el cliente enviará es \textbf{PBPlayerMovement}, que incluye otr
 \textbf{PBPlayerVelocity} y \textbf{PBPlayerPosition}, ambos vectores bidimensionales representados
 por sus coordenadas en \textbf{x} e \textbf{y}. De esta forma cuando el usuario controla y mueve a
 su personaje, el cliente se lo comunica al servidor creando una instancia de \textbf{PBPlayerMovement}
-con los valores correspondientes, serializandolo y finalmente enviándolo.
+con los valores correspondientes, serializándolo y finalmente enviándolo.
 
-% La totalidad de los mensajes que definimos en nuestro protocolo pueden encontrarse en el Anexo \ref{apendix:protobuf}.
+La totalidad de los mensajes que definimos en nuestro protocolo pueden encontrarse en el Anexo \ref{apendix:protobuf}.
+
+\subsection{Ambiente productivo: Kubernetes}
+
+\noindent Todas las propiedades de escalabilidad de Akka pierden su valor si no se cuenta con un ambiente que permita administrar la configuración del cluster
+de forma automática y se encargue de reemplazar las instancias del servidor que fallen o permita escalar dinámicamente la configuración de nodos del cluster.
+Naturalmente, \textbf{Kubernetes} surge como la solución ideal donde desplegar una aplicación basada en Akka, y es por esto que decidimos utilizarlo para nuestro ambiente productivo.
+
+Kubernetes es un sistema de orquestación de contenedores \textit{open source} que permite automatizar el despliegue, escalamiento y manejo de aplicaciones de \textit{software}.
+Dado que Akka y Kubernetes son tecnologías que se complementan perfectamente, existe un \textit{plugin} de Akka llamado \textbf{Akka Management} especialmente orientado a los despliegues
+en Kubernetes. Cuando la aplicación se ejecuta en un cluster de Kubernetes e inicializa el módulo de Akka Management, se levanta por un lado un servidor HTTP donde se pueden recibir \textit{requests}
+de otros nodos que deseen formar o unirse al cluster. En paralelo, el mismo nodo se encarga de hacer un \textit{discovery} en el ambiente de Kubernetes de otros nodos que estén inicializados y deseen formar
+un cluster. Cuando los nodos se descubren entre sí, se ponen de acuerdo en quién será el líder del Akka Cluster (en Akka, el líder siempre corresponde al nodo más antiguo) y comienzan a formar el cluster.
+
+Si un nodo del Akka Cluster falla, el líder se encarga de eliminarlo del cluster y notificar a los demás miembros. Si el líder es el que falla, automáticamente los demás miembros saben que el siguiente líder
+es el nodo más antiguo registrado en el cluster. Kubernetes, al detectar el fallo del nodo, se encargará de crear una nueva instancia para mantener la cantidad de réplicas de la aplicación constante en el valor
+configurado. La nueva instancia se unirá al cluster; efectivamente recuperándose el sistema sin necesidad de intervención humana.
+
+El proceso descrito anteriormente ignora la configuración de \textit{seed nodes} descrita en \ref{config:akka-cluster}, ya que el descubrimiento de los demás nodos es dinámico y no se cuenta
+con IPs estáticas.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/akka-management.png}
+    \caption{Componentes del \textit{discovery} de nodos de Akka en Kubernetes}
+\end{figure}
+
+Con esto concluimos todo lo que compete al servidor de \textit{Fiubakka}. En las siguientes secciones analizaremos la otra columna de nuestro proyecto: el cliente de Godot.
 
 \subsection{Cliente: Godot}
 
