@@ -205,6 +205,7 @@ de un \textit{trait} o interfaz de Scala, y luego automáticamente se encarga de
 Inicializar un cluster de Akka es sencillo. A modo de ejemplo, esta es la configuración de \textit{Fiubakka}
 para el ambiente local de desarrollo:
 
+\label{config:akka-cluster}
 \begin{lstlisting}[language=applicationconf, caption={\textbf{Configuración de Akka Cluster Fiubakka}}]
     cluster {
         downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
@@ -220,9 +221,9 @@ para el ambiente local de desarrollo:
     }
 \end{lstlisting}
 
-Para el ambiente local se utilizan lo que se denomina como \textit{seed nodes}, que son nodos que se encargan de iniciar el cluster.
-Al iniciar un nodo de Akka el mismo verifica si su dirección corresponde a un seed node. Si es así, se encargará de escuchar futuras
-conexiones de otros nodos de Akka que busquen unirse al cluster, y siempre que un nodo de Akka no seed se inicie intentará conectarse a los seed nodes especificados
+Para el ambiente local se utilizan lo que se denomina como \textit{seed nodes} o nodos semilla, que son nodos que se encargan de iniciar el cluster.
+Al iniciar un nodo de Akka el mismo verifica si su dirección corresponde a un nodo semilla. Si es así, se encargará de escuchar futuras
+conexiones de otros nodos de Akka que busquen unirse al cluster, y siempre que un nodo de Akka no semilla se inicie intentará conectarse a los nodos semilla especificados
 en la configuración. Por supuesto, este método únicamente funciona si las direcciones de los nodos son estáticas y conocidas de antemano.
 Para ambientes dinámicos como Kubernetes existen otros métodos de descubrimiento de nodos que describiremos más adelante.
 
@@ -799,6 +800,7 @@ Por supuesto, todo este proceso es transparente al cliente. Los únicos efectos 
 hizo (por ejemplo, quedarse quieto en lugar de moverse).
 
 \subsubsection{Bots}
+\label{sec:Bots}
 
 \noindent Para poder simular la presencia de múltiples jugadores en el juego y con el objetivo de hacer pruebas de carga es que
 desarrollamos un actor \textbf{Bot}. Un bot, en la jerga de los videojuegos, es un \textit{mock} de un jugador que es en realidad controlado
@@ -932,11 +934,31 @@ con el \textbf{playId} siguiente que corresponda.
 Este protocolo garantiza que ambos clientes estén sincronizados con el estado del juego en todo momento, evitando problemas ocasionados por la pérdida de mensajes u orden de los mensajes recibidos. Garantizar la sincronización constante nos permite además optimizar el tamaño
 de los mensajes enviados, ya que solo necesitamos notificar el cambio (por ejemplo, carta jugada por el rival) en lugar de notificar el estado completo de la partida ante cada cambio. 
 
-TODO diagrama que muestra este flujo
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/truco-state-update.png}
+    \caption{Diagrama de flujo de jugada en el Truco}
+\end{figure}
 
 \subsubsection{Fin de partida de Truco}
 
-\noindent TODO
+\noindent Una vez que la partida de Truco finaliza, ya sea porque uno de los jugadores cumplió con el objetivo de puntos o abandonó, es necesario notificar a ambos clientes que la partida ha terminado y retornar el estado del Player al previo a comenzar la partida de Truco.
+En el caso de que la partida termine porque uno de los jugadores ganó, el TrucoManager lo indicará en el mensaje de actualización de estado del juego a ambos clientes. Al recibirlo, el cliente enviará el mensaje de tipo \textbf{TrucoDisconnect}. La entidad Player volverá
+al comportamiento normal de procesar eventos del juego y se lo notificará al cliente mediante el mensaje \textbf{TrucoDisconnectAck}, el cual es un mensaje de \textit{acknowledgement} de desconexión del Truco. El cliente deberá reenviar el mensaje de desconexión periódicamente hasta
+que reciba dicho mensaje de confirmación, esto evita situaciones de desincronización entre el cliente y el servidor.
+
+En el caso de que la partida termine porque uno de los jugadores abandonó, el TrucoManager lo detectará y enviará un mensaje de tipo \textbf{TrucoPlayerDisconnected} al jugador que todavía está en la partida, de forma periódica al igual que en el caso anterior. Al recibir este mensaje,
+el cliente enviará el mensaje de \textbf{TrucoDisconnect} y se repite el flujo descrito para el anterior caso. De esta forma logramos volver al juego principal y mantener al cliente sincronizado con el servidor.
+
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/truco-disconnection.png}
+    \caption{Diagrama de desconexión de partida de Truco al abandonar un jugador}
+\end{figure}
 
 \subsection{Protocolo de comunicación}
 
@@ -1005,16 +1027,52 @@ El mensaje que el cliente enviará es \textbf{PBPlayerMovement}, que incluye otr
 \textbf{PBPlayerVelocity} y \textbf{PBPlayerPosition}, ambos vectores bidimensionales representados
 por sus coordenadas en \textbf{x} e \textbf{y}. De esta forma cuando el usuario controla y mueve a
 su personaje, el cliente se lo comunica al servidor creando una instancia de \textbf{PBPlayerMovement}
-con los valores correspondientes, serializandolo y finalmente enviándolo.
+con los valores correspondientes, serializándolo y finalmente enviándolo.
 
-% La totalidad de los mensajes que definimos en nuestro protocolo pueden encontrarse en el Anexo \ref{apendix:protobuf}.
+La totalidad de los mensajes que definimos en nuestro protocolo pueden encontrarse en el Anexo \ref{apendix:protobuf}.
 
-\subsection{Frontend: cliente Godot}
+\subsection{Ambiente productivo: Kubernetes}
+\label{sec:kubernetes}
+
+\noindent Todas las propiedades de escalabilidad de Akka pierden su valor si no se cuenta con un ambiente que permita administrar la configuración del cluster
+de forma automática y se encargue de reemplazar las instancias del servidor que fallen o permita escalar dinámicamente la configuración de nodos del cluster.
+Naturalmente, \textbf{Kubernetes} surge como la solución ideal donde desplegar una aplicación basada en Akka, y es por esto que decidimos utilizarlo para nuestro ambiente productivo.
+
+Kubernetes es un sistema de orquestación de contenedores \textit{open source} que permite automatizar el despliegue, escalamiento y manejo de aplicaciones de \textit{software}.
+Dado que Akka y Kubernetes son tecnologías que se complementan perfectamente, existe un \textit{plugin} de Akka llamado \textbf{Akka Management} especialmente orientado a los despliegues
+en Kubernetes. Cuando la aplicación se ejecuta en un cluster de Kubernetes e inicializa el módulo de Akka Management, se levanta por un lado un servidor HTTP donde se pueden recibir \textit{requests}
+de otros nodos que deseen formar o unirse al cluster. En paralelo, el mismo nodo se encarga de hacer un \textit{discovery} en el ambiente de Kubernetes de otros nodos que estén inicializados y deseen formar
+un cluster. Cuando los nodos se descubren entre sí, se ponen de acuerdo en quién será el líder del Akka Cluster (en Akka, el líder siempre corresponde al nodo más antiguo) y comienzan a formar el cluster.
+
+Si un nodo del Akka Cluster falla, el líder se encarga de eliminarlo del cluster y notificar a los demás miembros. Si el líder es el que falla, automáticamente los demás miembros saben que el siguiente líder
+es el nodo más antiguo registrado en el cluster. Kubernetes, al detectar el fallo del nodo, se encargará de crear una nueva instancia para mantener la cantidad de réplicas de la aplicación constante en el valor
+configurado. La nueva instancia se unirá al cluster; efectivamente recuperándose el sistema sin necesidad de intervención humana.
+
+El proceso descrito anteriormente ignora la configuración de \textit{seed nodes} descrita en \ref{config:akka-cluster}, ya que el descubrimiento de los demás nodos es dinámico y no se cuenta
+con IPs estáticas.
+
+Respecto al proveedor de Kubernetes, \textit{Fiubakka} no utiliza ningún proveedor Cloud; se encuentra desplegado de forma totalmente \textit{self hosted} en un cluster de RaspberryPis administrado
+por uno de los integrantes del equipo. Tanto Kafka, PostgresSQL, el servidor de \textit{Fiubakka}, como todos los demás componentes necesarios para el funcionamiento del servidor se ejecutan en este cluster.
+En la sección \ref{sec:lessons-kubernetes} se encuentra la explicación del por qué fuimos por esta solución y las ventajas que nos brindó.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/akka-management.png}
+    \caption{Componentes del \textit{discovery} de nodos de Akka en Kubernetes}
+\end{figure}
+
+Con esto concluimos todo lo que compete al servidor de \textit{Fiubakka}. En las siguientes secciones analizaremos la otra columna de nuestro proyecto: el cliente de Godot.
+
+\subsection{Cliente: Godot}
 
 \noindent \textit{Godot} es un motor para desarrollo de videojuegos, de origen argentino, gratuito y de código abierto. 
-Este motor brinda distintas herramientas para desarrollar aplicaciones interactivas, como por ejemplo 
-interfaces gráficas, gráficos 2D y 3D, input del usuario con distintos periféricos, control de audio, 
-lógica de físicas y colisiones, conectividad a través de la red, entre muchas otras.
+Fue creado originalmente en 2001 por Juan Linietsky and Ariel Manzur \textit{in-house} en un estudio de juegos argentino,
+y luego se hizo público en 2014, bajo licencia MIT. Godot recibió una gran cantidad de apoyo y features desde su 
+lanzamiento \textit{open source}.
+
+Este motor brinda distintas herramientas para desarrollar aplicaciones interactivas (principalmente
+videojuegos), como por ejemplo interfaces gráficas, gráficos 2D y 3D, input del usuario con distintos periféricos, 
+control de audio, lógica de físicas y colisiones, conectividad a través de la red, entre muchas otras.
 Además de permitir desarrollar para múltiples plataformas, permite programar scripts exponiendo una 
 API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaje propio de Godot. 
 
@@ -1036,14 +1094,15 @@ mejorar la performance en runtime y aumenta la eficiencia del código.
     \caption{Editor de código de Godot.}
 \end{figure}
 
-El motor ofrece una amplia colección de Nodos, que son los componentes básicos que se utilizan para 
-construir Escenas. A su vez, estas escenas pueden ser sub-nodos de otras escenas. Los Nodos pueden ser desde un 
-simple botón (\textbf{Button}) hasta un cuerpo tridimensional con lógica de físicas y colisiones 
-(\textbf{PhysicsBody3D}) e incluso un \textbf{AnimationPlayer} que se encarga de manejar animaciones, 
-es decir, una secuencia de imágenes o \textit{Sprites}.
+El motor ofrece una amplia colección de \textbf{Nodos}, que son los componentes básicos que se utilizan para 
+construir \textbf{Escenas}. A su vez, estas escenas pueden ser sub-nodos de otras escenas. Los Nodos pueden ser desde un 
+simple botón hasta un cuerpo tridimensional con lógica de físicas y colisiones 
+e incluso un \textbf{AnimationPlayer} que se encarga de manejar animaciones, 
+es decir, una secuencia de imágenes o \textit{sprites}.
 
-Estos nodos no solamente son modificables y configurables como se desee, sino que además se les puede 
-añadir un script, extendiendo y personalizando su comportamiento como sea necesario.
+Estos Nodos poseen distintos atributos que se pueden configurar y modificar según se desee.
+No solo eso, sino que además se les puede añadir un script, extendiendo y personalizando
+su comportamiento como sea necesario.
 
 \begin{figure}[htbp]
     \centering
@@ -1054,8 +1113,8 @@ añadir un script, extendiendo y personalizando su comportamiento como sea neces
 \end{figure}
 
 Otro feature importante de Godot es el uso de señales (\textit{signals}) para comunicar eventos entre nodos.
-Un Nodo cualquiera o una Escena personalizada pueden emitir \textit{signals} con un nombre específico 
-(incluso con parámetros) para que otros Nodos o Escenas se suscriban a dicha señal. Al suscribirse, los 
+Tanto los Nodos por defecto como las Escenas compuestas personalizadas pueden emitir \textit{signals} con un nombre específico 
+(e incluso con parámetros) para que otros Nodos o Escenas se suscriban a dicha señal. Al suscribirse, los 
 Nodos receptores definen un handler (comúnmente nombrado \textit{\_on\_node\_signal\_name}) para manejar 
 la señal recibida. De esta forma se pueden crear escenas compuestas de múltiples Nodos distintos, con 
 comportamiento más complejo, pero sin acoplar todos los nodos que necesiten comunicarse entre sí. En la
@@ -1080,27 +1139,28 @@ la Figura \ref{fig:signals-diagram} ilustra cómo es el flujo al emitirse una se
     \label{fig:signals-diagram}
 \end{figure}
 
-La filosofía del diseño de Godot es construir escenas reutilizables usando nodos. A estas escenas y 
+La filosofía del diseño de Godot es construir Escenas reutilizables usando Nodos. A estas escenas y 
 nodos se les puede agregar comportamiento con \textit{scripts}. Con la composición y jerarquía de los Nodos, 
 se puede construir una lógica de juego que es clara y fácil de entender.
 Es por estas características de cohesión, simplicidad y eficiencia en el diseño de Godot, así
 como también el tipo de herramientas que provee que optamos por usar este motor para el desarrollo del
-frontend del proyecto en lugar de crear módulos de autoría propia con un lenguaje de más bajo nivel, 
+Cliente del proyecto en lugar de crear módulos de autoría propia con un lenguaje de más bajo nivel, 
 como por ejemplo C o C++.
 
 \subsubsection{Estructura de proyecto}
 
-\noindent A continuación detallamos nuestra implementación del frontend utilizando las herramientas descriptas
+\noindent A continuación detallamos nuestra implementación del cliente utilizando las herramientas descriptas
 anteriormente, cómo las aplicamos y los motivantes.
 
-Para este proyecto, definimos una Escena \textbf{Main} donde se instancian las escenas más importantes 
+Para este proyecto, definimos una primera Escena \textbf{Main} donde se instancian las escenas más importantes 
 del juego, necesarias para el funcionamiento del mismo. Por ejemplo, es en este nodo donde se instancian
-escenas como el Menú Principal (\textbf{MainMenu}), las pantallas de login (\textbf{Login} y \textbf{CharacterCreation}) y los nodos necesarios para la conexión 
-con el Servidor (\textbf{ServerConsumer}, \textbf{ServerProducer}, entre otros).
+escenas como el (\textbf{MainMenu}), las pantallas de \textbf{Login} y \textbf{CharacterCreation}
+y los nodos necesarios para la comunicación con el Servidor, principalmente\textbf{ServerConsumer}
+y \textbf{ServerProducer}.
 Los niveles propiamente dichos no se instancian al iniciar el juego, sino una vez que el jugador 
 se haya conectado al servidor y luego a medida que se mueve por las distintas zonas del juego.
 De esta forma, encapsulamos todas las escenas activas en un mismo lugar y 
-no desperdiciamos recursos instanciandolas a la vez, solo se instancian las escenas que
+no desperdiciamos recursos instanciandolas todas a la vez, solo se instancian las escenas que
 se van a usar. En las Figuras \ref{fig:node-tree-main-menu} y \ref{fig:node-tree-level} se muestra
 cómo se ve el arbol de nodos en distintos momentos del juego.
 
@@ -1119,21 +1179,22 @@ cómo se ve el arbol de nodos en distintos momentos del juego.
     \label{fig:node-tree-level}
 \end{figure}
 
-Cuando un jugador ejecuta por primera vez el juego, lo primero que verá es la escena del menú principal, 
-o \textbf{MainMenu}. Luego de elegir el idioma del juego, tendrá dos opciones diaponibles: ingresar al juego
-con un usuario existente desde el \textbf{Login} o crear un personaje y un usuario en \textbf{CharacterCreation}.
+Cuando un jugador ejecuta por primera vez el juego, lo primero que verá es la escena del menú principal.
+Luego de elegir el idioma del juego, tendrá dos opciones disponibles: ingresar al juego
+con un usuario existente desde el Login o crear un personaje y un usuario en CharacterCreation (también
+llamada Register).
 
 % TODO: imagen MainMenu
 
-Si el usuario opta por ingresar al juego a través de \textbf{Login}, deberá ingresar con un nombre de usuario
+Si el usuario opta por ingresar al juego a través de Login, deberá ingresar con un nombre de usuario
 y contraseña existentes. En caso de haber algún error de login, se mostrará por pantalla según el error 
 correspondiente, como por ejemplo credenciales inválidas. Como el sistema de autenticación de usuario no
 fue el foco de este proyecto, no es posible recuperar la contraseña de un usuario ni tampoco darlo de baja.
 
 % TODO: imagen Login
 
-Por otro lado, si se tratase de un nuevo jugador o si uno existente desea crear otro personaje, el usuario
-puede entrar a la pantalla de registro (o \textbf{CharacterCreation}) donde podrá ingresar sus nuevas
+Por otro lado, si se tratase de un nuevo jugador o si se desea crear otro personaje, el usuario
+puede entrar a la pantalla de registro donde podrá ingresar sus nuevas
 credenciales de usuario y también personalizar la apariencia de su nuevo personaje. En esta pantalla
 se visualiza del lado izquierdo un \textit{sprite} del personaje que será creado y a la derecha una
 lista de selectores para los distintos cosméticos que componen al \textit{sprite}. El usuario podrá elegir
@@ -1142,28 +1203,32 @@ e ingrese sus credenciales, se crea el usuario correspondiente.
 
 % TODO: imagen CharacterCreation
 
-Además hacemos uso de los \textbf{Autoloads} de Godot, que funcionan igual que clases \textbf{Singleton}
-del patrón de diseño del mismo nombre. Estos Autoloads se cargan en el arbol de escenas desde el comienzo
-y están siempre disponibles sin importar cual es la escena actualmente corriendo. Un detalle importante es que
-estos Autoloads simplemente \textit{actúan} como Singletons, pero no son realmente Singletons (podrían instanciarse
-más de una vez cada uno).
-Se definieron ciertas clases (\textit{scripts}) que son necesarios en un scope global como Autoloads.
+Un feature del cual hacemos uso en Godot es el de los scripts \textbf{Autoloads}, que funcionan de manera
+similar que las clases \textbf{Singleton} del patrón de diseño del mismo nombre.
+Estos Autoloads se cargan en el arbol de escenas desde el comienzo y están siempre disponibles
+sin importar cual es la escena actualmente activa. Un detalle importante es que
+estos Autoloads no son Singletons propiamente dichos, sino que simplemente actúan como tales. Esto quiere
+decir que se podría crear más de una instancia de un script Autoload. Sin embargo, este no fue el caso
+para los Autoloads que desarrollamos.
+Se definieron ciertas clases que son necesarias en un scope global como Autoloads.
 Por ejemplo, para el manejo, carga y borrado de escenas, hacemos uso de un \textbf{SceneManager}, 
 que es un script Autoload que permite transicionar entre niveles dentro del juego. En general, 
-se implementaron Singletons de tipo \textit{Manager} para acceder a distintos comportamientos y 
-configuraciones globales (información del jugador, cambio de escenas, control del audio, entre otros).
+se implementaron Singletons de estilo \textit{Manager} para acceder a distintos comportamientos y 
+configuraciones globales (información del jugador, cambio de escenas, control de entidades, entre otros).
 
-Cada nivel es una instancia de la clase \textbf{Level}. Si bien cada escena de nivel creada es diseñada
-de forma especial para replicar alguna parte de la arquitectura de la Facultad de Ingeniería,
+Cada nivel es una instancia de la clase \textbf{Level}, para que cada uno herede el comportamiento común
+necesario, principalmente el manejo de las puertas y transición entre niveles.
+Si bien cada escena de nivel fue diseñada de forma especial para replicar alguna parte de la arquitectura de la Facultad de Ingeniería,
 existen ciertos tipos de nodos que deben usarse en todos los niveles (ver Figura \ref{fig:level-nodes}).
 Por ejemplo, para definir la forma, apariencia y estructura de cada nivel, debe tener un \textbf{TileMap},
-que es un tipo de nodo que a partir de una \textit{Sprite Sheet} permite "pintar" sobre
+que es un tipo de nodo que a partir de una textura permite "pintar" sobre
 una grilla predefinida de pixeles, como si fuera un canvas. Además se deben definir las colisiones de las 
-"paredes" de cada nivel, para que el jugador no se pase del límite de la cámara y se vaya 
-\textit{out of bounds}. Esto se logra con nodos del tipo \textbf{StaticBody2D} y \textbf{CollisionShape2D}.
+paredes de cada nivel, para que el jugador no se pase del límite de la cámara ni se vaya 
+\textit{out of bounds}. Esto se logra con nodos del tipo \textbf{StaticBody2D} y \textbf{CollisionShape2D},
+definiendo su posición y la forma de la colisión.
 Otro nodo importante en un nivel es el \textbf{Player}, ya que cada nivel debe incluir su propio jugador.
-Esto quiere decir que no instanciamos un solo nodo \textbf{Player} y lo transferimos entre los distintos 
-\textbf{Levels}, sino que cada \textbf{Level} debe instanciar su propio \textbf{Player}. Esta implementación
+Esto quiere decir que no instanciamos un solo Player y lo transferimos entre los distintos 
+niveles, sino que cada instancia de Level debe instanciar su propio Player. Esta implementación
 simplifica la transferencia de data necesaria entre niveles.
 También son importantes las puertas o \textbf{Doors} en los niveles, ya que estas cumplen la función de
 permitirles a los jugadores cambiar de nivel y moverse a través de la Facultad.
@@ -1180,16 +1245,16 @@ permitirles a los jugadores cambiar de nivel y moverse a través de la Facultad.
 Como se mencionó anteriormente, para transicionar entre niveles, es decir, para cargar un nuevo Level
 y remover el actual, implementamos un script Autoload llamado \textbf{SceneManager}.
 Este SceneManager encapsula la responsabilidad de manejar el cambio de niveles de forma natural para 
-el usuario. El proceso para cambiar de un Level a otro es:
+el usuario. El proceso para cambiar de un nivel a otro es:
 
 \begin{itemize}
     \item Mostrar una escena de pantalla de carga \textbf{LoadingScreen} (Figura \ref{fig:loading-screen}).
-    \item Cargar de memoria la nueva escena en un hilo separado.
+    \item Cargar en memoria la nueva escena en un hilo separado.
     \item Una vez cargada la escena nueva, montarla en el arbol de escenas.
-    \item Antes de remover la escena actual, transferir cualquier tipo de data relevante de un nive la otro,
+    \item Antes de remover la escena actual, transferir cualquier tipo de data relevante de un nivel a otro,
     como por ejemplo el equipamiento del jugador.
     \item Remover la escena actual.
-    \item Remover la \textbf{LoadingScreen}.
+    \item Remover la LoadingScreen.
 \end{itemize}
 
 \begin{figure}[htbp]
@@ -1199,26 +1264,27 @@ el usuario. El proceso para cambiar de un Level a otro es:
     \label{fig:loading-screen}
 \end{figure}
 
-Un \textbf{Player} o jugador es una escena donde se encapsulan tanto la vista como el comportamiento del
+Un Player o jugador es una escena donde se encapsulan tanto la vista como el comportamiento del
 personaje que controla el usuario. Está compuesto tanto de \textbf{CompositeSprites} para la visualización
-de los cosméticos elegidos en la pantalla de creación del personaje, como de \textbf{CollisionShape2D} para
+de los cosméticos elegidos en la pantalla de creación del personaje, como de CollisionShape2D para
 la detección de colisiones con las paredes u otros objetos del nivel donde se encuentre.
 Además es esta escena la que contiene una \textbf{Camera2D}, que representa la vista que el usuario tendrá
-del juego en el textit{viewport} de su pantalla. Al ser un subnodo del \textbf{Player}, logramos un efecto donde la
+del juego en el \textit{viewport} de su pantalla. Al ser un subnodo del Player, logramos un efecto donde la
 cámara sigue al jugador a donde sea que vaya, como es usual en este tipo de juegos. Cabe destacar que se 
-definieron coordenadas límites para la cámara (o \textit{bounds}) para evitar que se muestre regiones por
+definieron coordenadas límites para la cámara (o \textit{bounds}) para evitar que se muestren regiones por
 fuera del perímetro de cada mapa.
-Otro nodo notable es el \textbf{AnimationPlayer}, el cual permite definir animaciones para el jugador
-(por ejemplo, \textit{idle} o \textit{walking}) definiendo cuál \textit{Sprite} debe mostrarse en cada
+Otro nodo notable es el AnimationPlayer, el cual permite definir animaciones para el jugador
+(por ejemplo, \textit{idle} o \textit{walking}) definiendo cuál \textit{sprite} debe mostrarse en cada
 \textit{frame} de la animación.
 
-Dos escenas muy similares al \textbf{Player} son las \textbf{Entities} y los \textbf{NPCs}.
-Ambos cuentan con los mismos nodos que un \textbf{Player} (\textbf{CompositeSprites}, \textbf{CollisionShape2D},
-\textbf{AnimationPlayer}), pero la principal diferencia es que estas escenas no son controladas por el jugador.
-Una \textbf{Entity} es el personaje de otro jugador conectado. Un \textbf{NPC} es un personaje no jugable
-(o \textit{Non-Playable Character}). El jugador puede interactuar con ambos de distintas formas.
+Dos escenas muy similares al Player son las \textbf{Entities} y los \textbf{NPCs}.
+Ambos cuentan con los mismos nodos que un Player (CompositeSprites, CollisionShape2D, AnimationPlayer),
+pero la principal diferencia es que estas escenas no son controladas por el jugador.
+Una Entity es el personaje de otro jugador humano conectado. Un NPC (\textit{Non-Playable Character})
+es un personaje que no es controlado por una persona. El jugador puede interactuar
+con ambos de distintas formas.
 
-Una vez dentro de la Facultad, el jugador podrá moverse a través del nivel usando las cuatro flechas teclas
+Una vez dentro de la Facultad, el jugador podrá moverse a través del nivel usando las cuatro teclas de flechas
 direccionales del teclado o \textbf{WASD}.
 También podrá acceder a un inventario presionando la tecla \textbf{I} (ver Figura \ref{fig:inventory}).
 Dentro de este inventario verá listados los objetos que tenga disponible, ya sean objetos personales u otros
@@ -1246,7 +1312,7 @@ Uno de los principales features del juego es la posibilidad de desafiar a otros 
 Truco. El Truco es un juego de cartas argentino que se juega con naipes españoles. El objetivo del juego
 es obtener 30 puntos antes que el oponente, ganando las manos y haciendo disitntas jugadas con cantos.
 Para desafiar a otro jugador a una partida de Truco, el usuario solo debe hacer click derecho sobre cualquier
-otro personaje que vea en su pantalla. Eso habilitará un submenú con un botón para jugar al Truco.
+otro personaje (no NPC) que vea en su pantalla. Eso habilitará un submenú con un botón para jugar al Truco.
 El otro jugador recibirá una notificación que puede aceptar o rechazar. Al aceptarla, ambos jugadores
 verán la pantalla de Truco y la partida comienza. (Figuras \ref{fig:truco-submenu} y \ref{fig:truco-notification})
 
@@ -1272,9 +1338,9 @@ mouse desde su mano y soltarla sobre la mesa en la región que corresponda al tu
 haciendo \textit{drag and drop}. El otro jugador va a ver la carta jugada por su oponente y se le hailitará
 que juegue su turno, si aún no terminó la ronda.
 La partida termina cuando un jugador llega a acumular 30 puntos o en caso de que alguno abandone, ya sea 
-voluntariamente o en caso de alguna desconexión.
+voluntariamente o por alguna desconexión.
 Todas las reglas del Truco así como también el control del transcurso de la partida y del \textit{game state}
-están implementadas en el Servidor. El Cliente solo funciona a modo de \textit{frontend} para que los
+están implementadas en el Servidor. El Cliente solo funciona a modo de interfaz para que los
 usuarios puedan jugar.
 
 % TODO: dejar 1 sola captura indicando con recuadros que significa cada parte de la UI
@@ -1286,8 +1352,7 @@ usuarios puedan jugar.
             ven en la región inferior y las cartas se juegan sobre la mesa.}
     \label{fig:truco-game}
 \end{figure}
- 
-% TODO: poner en algun lado como se mueve el jugador (controles)
+
 Todos los controles del juego están detallados en el apéndice.
 
 
@@ -1374,3 +1439,21 @@ solo volver a arrastrarla a su zona original y una interfaz que muestre los cant
 un cartel que aparezca para avisarle al jugador que su oponente realizó un canto y que luego 
 desaparezca, indicadores de a qué jugador le corresponde realizar una jugada, entre otras cosas.
 
+\subsection{Juego ejecutable}
+\noindent Otro aspecto importante del proyecto frontend es poder generar un archivo ejecutable con el juego,
+para disponibilizar a los usuarios.
+Si bien una forma de poder correrlo es clonando el código fuente y levantando el proyecto con el editor
+de Godot, esta forma no es recomendable por dos razones:
+\begin{itemize}
+    \item No es muy práctico ni amigable para el usuario no técnico hacerlo clonar un repositorio de código y además
+    hacerle descargar y usar otro programa que no sea el juego en si.
+    \item Al disponibilizar el código fuente, cualquier usuario podría correr una versión modificada del 
+    frontend del juego y conectarse de todas formas al servidor.
+\end{itemize}
+Es por esto que debemos generar un archivo ejecutable con el juego.
+
+Godot provee una forma muy fácil y sencilla de exportar el juego a un ejecutable para distintas plataformas.
+Solo es necesario descargar los \textit{templates} correspondientes a la plataforma destino, que pueden ser
+distintos sistemas operativos como Windows, Linux o MacOS, así como también otras plataformas, como dispositivos
+Android o incluso aplicaciones web.
+Para nuestro proyecto generamos ejecutables funcionales para sistemas operativos Windows y Linux.

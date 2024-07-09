@@ -8,3 +8,9 @@ notificador
 pasivada
 desincronizaciones
 transicionar
+cluster
+multinodo
+deserialización
+metadata
+review
+deserializamos
