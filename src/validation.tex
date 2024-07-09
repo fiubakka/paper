@@ -340,6 +340,103 @@ Por otro lado, vemos que la memoria consumida se reduce apreciablemente para la 
 asignado los Shard Coordinators de las entidades. Sería esperable que si aumentásemos la cantidad de jugadores la diferencia relativa en uso de memoria se reduzca incluso más, pero en nuestras pruebas
 incrementar la cantidad de jugadores a números considerablemente más elevados ya comienza a resultar en errores de procesamiento, por lo que no pudimos verificarlo.
 
+Finalmente, lo que sí debería verse claramente es como al aumenta la cantidad de nodos la carga de consumidores inducida en cada nodo debería ser proporcional a $\frac{n^2}{m}$.
+Como referencia primero se muestra el gráfico de carga de consumición de eventos para el caso de un único nodo con los 84 jugadores.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/fiubakka-consumer-single-node-metrics.png}
+    \caption{Velocidad de consumo de eventos en un único nodo con 84 jugadores.}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/fiubakka-consumer-two-node-metrics.png}
+    \caption{Velocidad de consumo de eventos en dos nodos con 84 jugadores en total.}
+\end{figure}
+
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/fiubakka-consumer-three-node-metrics.png}
+    \caption{Velocidad de consumo de eventos en tres nodos con 84 jugadores en total.}
+\end{figure}
+
+Vemos para los casos de 2 y 3 nodos la carga se distribuye entre los nodos de forma equitativa, mantiéndose aproximadamente el mismo valor total de velocidad de consumo de eventos del único nodo si tomamos la suma
+de cada velocidad en los casos multinodos. Particularmente, para el caso de 3 nodos se observa que uno de los nodos (el celeste) quedo por debajo de los otros. En este caso en particular se dio que algunos jugadores se terminaron procesando
+en los otros dos nodos, por lo que la carga del nodo celeste quedo algo por debajo del resto. Los resultados observados coinciden perfectamente con el planteo teórico propuesto anteriormente, y revalidan la hipótestis de escalabilidad
+horizontal que planteamos para nuestra arquitectura.
+
+\subsection{Métricas del servidor}
+
+\noindent Ningún sistema está completo sin métricas de monitoreo. Las métricas son esenciales no solo para medir el desempeño de la aplicación, sino también para poder detectar errores y encontrar problemas en la aplicación.
+\textit{Fiubakka} no es una excepción, y cuenta con una batería de métricas que permiten analizar al detalle la \textit{performance} de cada componente que lo conforma.
+
+Para obtener las métricas de \textit{Fiubakka} utilizamos el plugin de \textbf{Cinnamon}, también conocido como Lightbend Telemetry. Cinnamon es un agente de Java desarrollado por la empresa Lightbend, responsables del desarrollo de tanto Scala
+como Akka, para la instrumentación y obtención de métricas de aplicaciones basadas en Akka. Ofrece un conjunto de bibliotecas, todas optativas, para instrumentar cada componente de Akka. Por supuesto, también permite instrumentar la JVM de la aplicación
+del nodo de Akka.
+
+Los gráficos de métricas de producción y consumición de eventos que mostramos en la secciones anteriores fueron obtenidos mediante Cinnamon, por lo que además resultó ser una herramienta esencial para validar nuestras hipótesis de \textit{performance}
+del servidor.
+
+Si bien Cinnamon se encarga de reportar las métricas, es necesario definir un \textit{stack} o conjunto de aplicaciones que nos permitan tanto exportar como consumir las métricas. Cinnamon cuenta con implementaciones para diversos exportadores de métricas.
+En nuestro caso utilizamos \textbf{Prometheus} como servidor de métricas y \textbf{Grafana} como visualizador de las mismas. Prometheus es un servidor de métricas de código abierto que permite almacenar y consultar métricas de forma eficiente.
+Mientras que Cinnamon expone un servidor HTTP para consultar las métricas, Prometheus se encarga de \textit{scrapear} el servidor para recolectar las métricas dada una frecuencia configurada. Grafana se encarga luego de consultar y consumir las métricas almacenadas
+en el servidor de Prometheus para visualizarlas en forma de gráficos.
+
+Todas las métricas reportadas por nuestro ambiente productivo pueden ser consultadas en Grafana a través del dominio \textbf{grafana-fiubakka.marcosrolando.uk}. De esta forma tenemos una visión constante y en tiempo real del estado de nuestros servidores de producción.
+
+A continuación se muestran, a modo de ejemplo, tan solo algunos de los distintos gráficos de métricas obtenidas de \textit{Fiubakka}:
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/actors-metrics.png}
+    \caption{Gráfico de métricas de los actores de \textit{Fiubakka}.}
+\end{figure}
+
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{../assets/cluster-metrics.png}
+    \caption{Gráfico de métricas de los nodos del Akka Cluster de \textit{Fiubakka}.}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{../assets/cluster-sharding-metrics.png}
+    \caption{Gráfico de métricas de Cluster Sharding de \textit{Fiubakka}.}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/persistence-metrics.png}
+    \caption{Gráfico de métricas de Akka Persistence de \textit{Fiubakka}.}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/remote-actors-metrics.png}
+    \caption{Gráfico de métricas de actores remotos (otros nodos al medido) de \textit{Fiubakka}.}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/streams-metrics.png}
+    \caption{Gráfico de métricas de Akka Streams de \textit{Fiubakka}.}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/jvm-metrics.png}
+    \caption{Gráfico de métricas de las JVMs de los nodos de \textit{Fiubakka}.}
+\end{figure}
+
+\newpage
+
+Con esto concluimos el análisis de métricas del servidor. En las siguientes secciones exploraremos las métricas, recursos y requisitos
+del cliente del juego.
 
 \subsection{Requisitos del sistema para el cliente del juego}
 
