@@ -9,6 +9,27 @@ en la sección \ref{sec:Bots}. Las siguientes pruebas fueron realizadas en el en
 productivo de \textit{Fiubakka}, pero es posible realizar estas pruebas sin necesidad de un ambiente de Kubernetes, mediante múltiples instancias del
 servidor en una misma máquina.
 
+A priori, lo que esperamos observar en las pruebas de carga es que el consumo de CPU sobre un único nodo de la aplicación tenga una \textbf{complejidad temporal
+de $\boldsymbol{O(n^2)}$}, donde \textit{n} es la cantidad de jugadores conectados induciendo carga continua. Esto es así porque cada evento generado por un jugador debe ser procesado por todos los
+demás jugadores que se encuentren en el mismo mapa. Dado que queremos forzar el peor escenario posible, todos los jugadores creados en las pruebas de carga comparten el mismo mapa.
+Es importante recalcar que esta complejidad temporal es inherente a la naturaleza de la notificación a todos los jugadores, no es algo particular de nuestra arquitectura. Un servidor monolítico
+tiene la mimsa complejidad temporal para notificar a todos los jugadores conectados.
+
+Donde nuestra aplicación se debería destacar es en la escalabilidad horizontal, y aquí entra la segunda observación que esperamos ver en los resultados de las pruebas. Dada la complejidad temporal de
+$O(n^2)$ en un único nodo, esperamos que al distribuir la carga de jugadores en \textit{m} nodos, el consumo de CPU por nodo pase a tener una \textbf{complejidad temporal de $\boldsymbol{O(\frac{n^2}{m})}$}, donde \textit{m} es la cantidad de nodos
+de la aplicación. En otras palabras, esperamos que el consumo de CPU por nodo disminuya en la misma proporción que la cantidad de nodos. Esta es la principal ventaja de nuestra arquitectura en comparación con las monolíticas,
+además de la distribución de responsabilidades y procesamiento de los eventos a los clientes de los jugadores conectados, quitando carga de los nodos del servidor.
+Dado que la cantidad de nodos del cluster de \textit{Fiubakka} puede modificarse en ejecución, es decir que la cantidad de nodos en el cluster no es necesariamente estático, es válido considerarlo como una variable para la complejidad
+algorítmica.
+
+La complejidad temporal de $O(\frac{n^2}{m})$ resulta intuitiva si lo llevamos al caso donde $n = m$. Si la cantidad de nodos del cluster de \textit{Fiubakka} es igual a la cantidad de jugadores conectados,
+y los jugadores en consecuencia se distribuyen uniformemente entre los nodos (garantizado por el rebalanceo de entidades de Cluster Sharding) entonces cada nodo procesa los mensajes de todos los demás jugadores
+únicamente para el jugador que tenga asignado. Si esta relación entre jugadores y nodos se mantiene fija para cualquier cantidad de jugadores, efectivamente estamos ante una complejidad temporal de $O(n)$ por nodo, con
+\textit{n} siendo la cantidad de jugadores total en el cluster.
+
+Por supuesto, en la práctica no es el objetivo mantener el caso de $n = m$, ya que resultaría como mínimo en costos de infraestructura muy elevados, pero sí es muy importante la característica de nuestra arquitectura de poder
+disminuir el consumo de la aplicación en cada nodo invidiualmente mediante, en principio, únicamente agregar más nodos al cluster.
+
 Como aclaración previa a las pruebas, el cluster de Kubernetes utilizado cuenta con un nodo con una CPU aproximadamente el doble de rápida que los otros dos nodos.
 Todas las pruebas que involucren menos de la totalidad de los nodos únicamente utilizarán los nodos más lentos para mantener uniformidad en los resultados.
 Igualmente, a los efectos del resultado esperado, es esperable que dada una utilización de CPU \textit{x} en un nodo del servidor, se reduzca aproximadamente a
@@ -102,11 +123,49 @@ Los resultados obtenidos fueron los siguientes:
 Con la última prueba de carga con 24 jugadores llegamos al límite de CPU que el nodo \textbf{raspberrypi1} tolera, pasado este número estamos ejerciendo más carga que la que el procesador
 puede soportar \textit{gracefully} y comienzan los errores de mensajes no entregados, por lo que nos detendremos aquí. 
 
-En principio, pareciera que el consumo de CPU escala en el orden lineal con la cantidad de jugadores. Esto contradice nuestro planteo original (TODO FALTA HACER ESE PLANTEO ORIGINAL AL PRINCIPIO DE ESTA SECCION)
+En principio, pareciera que el consumo de CPU escala en el orden lineal con la cantidad de jugadores. Esto contradice nuestro planteo original
 de que cada jugador introducido en el sistema induce, en el peor escenario, una incremento cuadrático en el consumo total, dado que cada evento generado se debe procesar \textit{n} veces, donde \textit{n} denota la cantidad de jugadores en el servidor.
 Teniendo \textit{n} jugadores resultaría en procesar \textit{n} veces los eventos de los \textit{n} jugadores, dando lugar a la complejidad cuadrática.
 Sobre este punto, nuestra hipótesis es que el comportamiento esperado únicamente se visibilice en sistemas con muchos más recursos de CPU disponibles, donde es posible realizar pruebas de carga
-con cantidades de jugadores mucho más elevadas. Más adelante mostraremos una medición que se alinea con esta hipótestis.
+con cantidades de jugadores mucho más elevadas.
+
+Para validar esta hipótesis, utilizamos una herramienta que presentaremos más detalladamente en una próxima sección, pero por ahora alcanza con entender que los siguientes gráficos corresponden a la cantidad de eventos generados entre todos los jugadores
+y la cantidad de eventos procesados en total por todos los jugadores, respectivamente. A medida que el tiempo avanza se agregan jugadores al sistema, a ritmo constante, donde cada jugador genera la misma cantidad de eventos que los demás.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/stream-producer-metrics.png}
+    \caption{Procesamiento de eventos generados por los jugadores en función de la cantidad de jugadores.}
+\end{figure}
+
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/stream-consumer-metrics.png}
+    \caption{Procesamiento de eventos consumidos por los jugadores en función de la cantidad de jugadores.}
+\end{figure}
+
+Vemos que para el caso de los eventos generados tenemos claramente una tendencia lineal, esperable dado que cada jugador introducido genera la misma cantidad de eventos en el sistema independientemente de los demás jugadores.
+Para los eventos consumidos en cambio vemos que la pendiente no es lineal, y se puede apreciar lo que parece una asíntota más cuadrática. Si reducimos la resolución y observamos ambas mediciones en un rango de tiempo más amplio,
+los resultados son más claros.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/stream-producer-amplified-metrics.png}
+    \caption{Procesamiento de eventos generados por los jugadores en función de la cantidad de jugadores.}
+\end{figure}
+
+\newpage
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{../assets/stream-consumer-amplified-metrics.png}
+    \caption{Procesamiento de eventos consumidos por los jugadores en función de la cantidad de jugadores.}
+\end{figure}
+
+El hecho de que ambas métricas se mantengan constantes en un punto se debe a que ese es el momento en el que se deja de agregar jugadores al sistema. mantiendo la carga
+constante a partir de ese punto en adelante. Validamos entonces nuestra hipótesis original respecto a la complejidad temporal de la aplicación en un único nodo.
 
 Con esto concluimos el análisis de escalabilidad vertical de nuestra aplicación. En la siguiente sección evaluaremos las métricas obtenidas
 con más de un nodo del cluster de \textit{Fiubakka} para validar la hipótesis de escalabilidad horizontal.
@@ -242,7 +301,7 @@ A continuación se listan las características más relevantes de la máquina do
 \end{tabularx}
 \end{center}
 
-\noindent Para las pruebas de carga en este entorno utilizamos un total de 84 jugadores. Esta cantidad de jugadores es divisible entre 2, 3 y 4 nodos
+\noindent Para las pruebas de carga en este entorno utilizamos un total de 84 jugadores. Esta cantidad de jugadores es divisible entre 2 y 3 nodos
 uniformemente y resulta una carga adecuada para ejercer presión sobre los nodos pero no sobrecargarlos.
 
 \noindent En este caso, todos los nodos son equivalentes en recursos, ya que comparten el mismo \textit{host}. Los resultados obtenidos fueron los siguientes:
@@ -277,15 +336,12 @@ Es posible que la reducción de consumo de CPU en 3 nodos sea en realidad mayor 
 por lo que podíamos estar ante \textit{throttling}. Por otro lado, es lógico igualmente que la reducción práctica no coincida exactamente con la planteada en la teoría. La complejidad
 de $O(\frac{n^2}{m})$ ignora el \textit{overhead} introducido por la comunicación entre los nodos del cluster.
 
-Por otro lado, vemos que la memoria consumida sobre cada nodo se reduce apreciablemente para la mayoría de los nodos. El nodo con consumo de memoria más elevado es, seguramente, el que tiene
+Por otro lado, vemos que la memoria consumida se reduce apreciablemente para la mayoría de los nodos. El nodo con consumo de memoria más elevado es, seguramente, el que tiene
 asignado los Shard Coordinators de las entidades. Sería esperable que si aumentásemos la cantidad de jugadores la diferencia relativa en uso de memoria se reduzca incluso más, pero en nuestras pruebas
 incrementar la cantidad de jugadores a números considerablemente más elevados ya comienza a resultar en errores de procesamiento, por lo que no pudimos verificarlo.
 
 
-
-\subsection{Métricas de latencia}
-
-\subsection{Requisitos del sistema para el juego}
+\subsection{Requisitos del sistema para el cliente del juego}
 
 \noindent Si bien el frontend no es el foco del proyecto, es importante tener en cuenta cuáles son los 
 requisitos mínimos del sistema para correr el cliente del juego. Es decir, qué tipo de CPU se necesita,
