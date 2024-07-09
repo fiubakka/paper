@@ -1135,7 +1135,7 @@ la Figura \ref{fig:signals-diagram} ilustra cómo es el flujo al emitirse una se
     \caption{Diagrama del flujo de emisión de una signal. Primero se define la señal text\_submitted
             en el nodo LoginUsername y se la conecta al nodo Login (que es padre de LoginUsername).
             Al emitirse esta señal, Login la escucha y entonces ejecuta su función handler
-            \_on\_login\_username\_text\_submitted}
+            \textit{\_on\_login\_username\_text\_submitted}}
     \label{fig:signals-diagram}
 \end{figure}
 
@@ -1161,37 +1161,41 @@ Los niveles propiamente dichos no se instancian al iniciar el juego, sino una ve
 se haya conectado al servidor y luego a medida que se mueve por las distintas zonas del juego.
 De esta forma, encapsulamos todas las escenas activas en un mismo lugar y 
 no desperdiciamos recursos instanciandolas todas a la vez, solo se instancian las escenas que
-se van a usar. En las Figuras \ref{fig:node-tree-main-menu} y \ref{fig:node-tree-level} se muestra
+se van a usar. En la Figura \ref{fig:godot-node-tree} se muestra
 cómo se ve el arbol de nodos en distintos momentos del juego.
 
-% TODO: unir en una sola figura
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.4\textwidth]{../assets/godot-scene-tree-1.png}
-    \caption{Arbol de nodos (Scene Tree) en la pantalla principal del juego}
-    \label{fig:node-tree-main-menu}
+    \includegraphics[width=1.0\textwidth]{../assets/godot-scene-tree.png}
+    \caption{Izquierda: árbol de nodos (Scene Tree) en la pantalla principal del juego,
+             derecha: árbol de nodos cuando el jugador está en un nivel del juego}
+    \label{fig:godot-node-tree}
 \end{figure}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.4\textwidth]{../assets/godot-scene-tree-2.png}
-    \caption{Arbol de nodos cuando el jugador está en un nivel del juego}
-    \label{fig:node-tree-level}
-\end{figure}
 
 Cuando un jugador ejecuta por primera vez el juego, lo primero que verá es la escena del menú principal.
 Luego de elegir el idioma del juego, tendrá dos opciones disponibles: ingresar al juego
 con un usuario existente desde el Login o crear un personaje y un usuario en CharacterCreation (también
 llamada Register).
 
-% TODO: imagen MainMenu
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-main-menu.png}
+    \caption{Pantalla del Menú Principal}
+    \label{fig:godot-main-menu}
+\end{figure}
 
 Si el usuario opta por ingresar al juego a través de Login, deberá ingresar con un nombre de usuario
 y contraseña existentes. En caso de haber algún error de login, se mostrará por pantalla según el error 
 correspondiente, como por ejemplo credenciales inválidas. Como el sistema de autenticación de usuario no
 fue el foco de este proyecto, no es posible recuperar la contraseña de un usuario ni tampoco darlo de baja.
 
-% TODO: imagen Login
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-login.png}
+    \caption{Pantalla de Login. Son necesarios un nombre de usuario y contraseña.}
+    \label{fig:godot-main-menu}
+\end{figure}
 
 Por otro lado, si se tratase de un nuevo jugador o si se desea crear otro personaje, el usuario
 puede entrar a la pantalla de registro donde podrá ingresar sus nuevas
@@ -1201,7 +1205,12 @@ lista de selectores para los distintos cosméticos que componen al \textit{sprit
 agregar, combinar e incluso quitar los cosméticos de su personaje a su gusto. Una vez que haya hecho su elección
 e ingrese sus credenciales, se crea el usuario correspondiente.
 
-% TODO: imagen CharacterCreation
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-register.png}
+    \caption{Pantalla de creación de personaje.}
+    \label{fig:godot-main-menu}
+\end{figure}
 
 Un feature del cual hacemos uso en Godot es el de los scripts \textbf{Autoloads}, que funcionan de manera
 similar que las clases \textbf{Singleton} del patrón de diseño del mismo nombre.
@@ -1237,8 +1246,7 @@ permitirles a los jugadores cambiar de nivel y moverse a través de la Facultad.
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/levels-tree-nodes.png}
     \caption{Ejemplos de árboles de nodos para distintas escenas de tipo \textit{Level}. Nótese que
-            comparten ciertos tipos de nodos en común (\textbf{Player}, \textbf{TileMaps},
-            \textbf{CollisionShape2D}, etc.)}
+            comparten ciertos tipos de nodos en común (Player, TileMaps, CollisionShape2D, etc.)}
     \label{fig:level-nodes}
 \end{figure}
 
@@ -1343,20 +1351,20 @@ Todas las reglas del Truco así como también el control del transcurso de la pa
 están implementadas en el Servidor. El Cliente solo funciona a modo de interfaz para que los
 usuarios puedan jugar.
 
-% TODO: dejar 1 sola captura indicando con recuadros que significa cada parte de la UI
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{../assets/godot-truco-1.png}
-    \includegraphics[width=0.8\textwidth]{../assets/godot-truco-2.png}
-    \caption{Pantalla de Truco durante una partida en transcurso. Las cartas y los cantos dispnibles se
-            ven en la región inferior y las cartas se juegan sobre la mesa.}
+    \includegraphics[width=1.0\textwidth]{../assets/godot-truco.png}
+    \caption{Pantalla de Truco durante una partida en transcurso. 
+             Las regiones numeradas son: región del oponente con nombre, cartas y puntaje (1),
+             zona de juego (2), botón para salir (3), región del jugador con nombre, puntaje e
+             indicador de turno (4), mano del jugador (5) y cantos disponibles (6)}
     \label{fig:truco-game}
 \end{figure}
 
 Todos los controles del juego están detallados en el apéndice.
 
 
-\subsubsection{Comunicación con el servidor}
+\subsubsection{Comunicación por red}
 
 \noindent Al comienzo del proyecto, un posible limitante de usar Godot eran las herramientas que podía ofrecer 
 el motor para la conectividad con el servidor, ya sea UDP, TCP o incluso HTTP. 
@@ -1372,21 +1380,22 @@ de los protocolos antes mencionados. En nuestro caso, decidimos usar el protocol
 Luego, definimos nuestras propias clases \textit{wrapper} para establecer la conexión al servidor y el 
 manejo de mensajes. 
 
-Para la recepción implementamos un \textbf{ServerConsumer} que se encarga de recibir los paquetes 
+Para la recepción implementamos un ServerConsumer que se encarga de recibir los paquetes 
 del Servidor, parsea el mensaje completo (ver sección Protocol buffers) y según qué mensaje recibió, 
 invoca al \textit{handler} correspondiente para actualizar el estado del juego del lado del Cliente.
-Este \textbf{ServerConsumer} se ejecuta en un thread aparte, para no bloquear el thread principal mientras
-esperamos recibir un mensaje. Sin embargo, luego de parsear un mensaje recibido, el \textit{handler}
+Este ServerConsumer se ejecuta en un thread aparte, para no bloquear el thread principal mientras
+esperamos recibir paquetes del Servidor. Sin embargo, luego de parsear un mensaje recibido, el \textit{handler}
 correspondiente se ejecuta en el thread principal.
 
 Es análogo el envío de mensajes en el sentido desde el Cliente hacia el Servidor: algún input de un 
-usuario dispara una \textit{signal} que el \textbf{ServerProducer} recibe, este se encarga de crear 
+usuario dispara una \textit{signal} que el ServerProducer recibe, este se encarga de crear 
 el mensaje correspondiente con los parámetros correctos, lo serializa y envía los paquetes de bytes 
 al Servidor a través de la conexión TCP.
+Esta conexión con el Servidor se establece ni bien corre el juego, puesto que es necesaria para el Login y Registro.
 
 \subsection{Comunicación entre cliente y servidor}
 Aún habiendo definido el protocolo de estándar de comunicación que utilizaríamos para conectar al Cliente y Servidor,
-fue necesario tomar ciertas decisiones y definir otros protocolos a la hora de definir los mensajes
+fue necesario tomar ciertas decisiones y establecer otros protocolos a la hora de definir los mensajes
 concretos que intercambiarían el frontend con el backend.
 
 \subsubsection{Lógica del juego: movimiento y colisiones}
@@ -1399,20 +1408,20 @@ jugador y dejar que el servidor se encargara de verificar que se tratase de un i
 el efecto de este input en la nueva posición. Luego el servidor respondería enviandole a Godot la nueva
 dirección para que se viera reflejada en el juego.
 
-Este acercamiento sirvió en un inicio donde el juego era un prototipo donde no teníamos definidos 
-mapas con un perímetro definido, sin embargo empezaron a verse las faltas en esta solución cuando 
-se comenzó a implementar las colisiones del jugador con los mapas y los objetos dentro de sus límites.
+Esta solución sirvió en un inicio donde el juego era un prototipo donde no teníamos definidos 
+mapas con un perímetro definido, sin embargo empezaron a verse las faltas de la misma cuando 
+se comenzaron a implementar las colisiones del jugador con los mapas y los objetos dentro de sus límites.
 
+Si bien sería posible implementar un sistema de colisiones en el Servidor notamos que sería una funcionalidad
+de gran complejidad, para la cual tendríamos que definir muchas restricciones si queremos mantener una buena
+performance del Servidor.
 Se decidió entonces ceder la mayor parte de la lógica del movimiento a Godot debido a que este provee 
 su propio sistema de colisiones, aprovechando las herramientas que provee sin reinventar un sistema 
-colisiones. Este acercamiento nos hacía renunciar a que el input fuera 
+nuevo. Este acercamiento nos hacía renunciar a que el input fuera 
 verificado con cada movimiento, pero facilitaba de forma significativa la implementación del 
 movimiento y las colisiones. Debido a que nuestro juego no muestra ninguna ventaja competitiva 
 en la modificación del movimiento del jugador, decidimos perder parte de las verificaciones en 
 favor a la facilidad de desarrollo provista por Godot.
-
-% TODO: algoritmos de colisiones son resolubles en el backend, era reiventar la rueda, ya tenemos godot <3
-% y no sabíamos cómo iba a ir el tema de performance.
 
 \subsubsection{Juego de cartas: Truco}
 \noindent Como se mencionó anteriormente y a modo de muestra del tipo de funcionalidades que se pueden
