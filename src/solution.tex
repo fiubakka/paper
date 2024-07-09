@@ -1032,6 +1032,7 @@ con los valores correspondientes, serializándolo y finalmente enviándolo.
 La totalidad de los mensajes que definimos en nuestro protocolo pueden encontrarse en el Anexo \ref{apendix:protobuf}.
 
 \subsection{Ambiente productivo: Kubernetes}
+\label{sec:kubernetes}
 
 \noindent Todas las propiedades de escalabilidad de Akka pierden su valor si no se cuenta con un ambiente que permita administrar la configuración del cluster
 de forma automática y se encargue de reemplazar las instancias del servidor que fallen o permita escalar dinámicamente la configuración de nodos del cluster.
@@ -1049,6 +1050,10 @@ configurado. La nueva instancia se unirá al cluster; efectivamente recuperándo
 
 El proceso descrito anteriormente ignora la configuración de \textit{seed nodes} descrita en \ref{config:akka-cluster}, ya que el descubrimiento de los demás nodos es dinámico y no se cuenta
 con IPs estáticas.
+
+Respecto al proveedor de Kubernetes, \textit{Fiubakka} no utiliza ningún proveedor Cloud; se encuentra desplegado de forma totalmente \textit{self hosted} en un cluster de RaspberryPis administrado
+por uno de los integrantes del equipo. Tanto Kafka, PostgresSQL, el servidor de \textit{Fiubakka}, como todos los demás componentes necesarios para el funcionamiento del servidor se ejecutan en este cluster.
+En la sección \ref{sec:lessons-kubernetes} se encuentra la explicación del por qué fuimos por esta solución y las ventajas que nos brindó.
 
 \begin{figure}[htbp]
     \centering
