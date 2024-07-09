@@ -121,7 +121,7 @@ Además, el hecho de que todos los pasos del pipeline se ejecutan en contenedore
 
 A continuación se provee el pipeline de generación y publicación de las imágenes del servidor de \textit{Fiubakka} desarrollado con Dagger.
 
-\begin{lstlisting}[language=Python]
+\begin{lstlisting}[language=Python, caption={\textbf{Pipeline de construcción y publicación de las imágenes de Docker}}]
     
 async def main():
     subprocess.run(["git", "submodule", "update", "--init"])
@@ -162,6 +162,6 @@ anyio.run(main)
 
 \end{lstlisting}
 
-Vemos que la implementación del pipeline, a diferencia de YAML, es mucho más práctica y entendible. El hecho de que sea código convencional
+Vemos que la implementación del pipeline, a diferencia de YAML, es considerablemente más práctica y entendible. El hecho de que sea código convencional
 en lugar de un lenguaje declarativo como YAML permite una mayor flexibilidad, reutilización y modularización del pipeline, y manejar errores de forma que en YAML
 sería imposible. La comunidad detrás de Dagger está creciendo muy rápidamente y esto es solo el comienzo de que lo, creemos, va a poder ser posible en el futuro.
