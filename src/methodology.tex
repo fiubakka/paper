@@ -52,13 +52,43 @@ la posición resultante de ese movimiento. Como en ese momento el servidor no es
 y devolver una respuesta. Esto permitió que el grupo que trabajaba en Godot no quedara bloqueado en el desarrollo del movimiento del jugador
 hasta que el servidor en Akka llegase a un estado funcional.
 
+\subsubsection{Repositorios y esquemas de branching}
+\noindent Tenemos dos repositorios principales que fueron creados en el inicio del desarrollo del proyecto.
+El correspondiente para el servidor es llamado \textit{fiubakka-server} mientras que el del cliente es \textit{fiubakka-game}.
+Debido a las diferentes circunstancias entre el cliente y el servidor, el desarrollo se llevó a cabo con distintas estrategias
+en cada repositorio.
+
+En el servidor, comenzamos el desarrollo haciendo \textit{pair programming}. Es decir, hacíamos una reunión en la cual un integrante
+escribía el código, pero los dos pensábamos la solución. Esto conllevó a que gran parte del desarrollo inicial fuera mergeada directamente
+a la rama principal del repositorio (\textit{main} en este caso). Una vez que ambos nos sentimos cómodos con la tecnología y separamos el 
+desarrollo, casi no hubo momentos en los cuales los dos tuvimos que desarrollar en paralelo sobre una misma parte del código, lo que evitó tener
+que establecer una estrategia de branching, ya que la probabilidad de tener conflictos importantes era muy baja. En caso de tener conflictos, 
+estos siempre fueron fácilmente solucionados.
+Sin embargo, hubo casos en los cuales el desarrollo de una funcionalidad se hizo en una rama diferente de la principal, ya sea porque era demasiado
+grande o porque era algo mas experimental, como por ejemplo cuando agregamos Kafka para los eventos, o al empezar a utilizar las particiones de Kafka
+para poder cambiar de mapas.
+
+Por otro lado, la situación en el cliente fue distinta. Desde el principio tuvimos la posibilidad de paralelizar el desarrollo, por lo que 
+decidimos de entrada utilizar la estrategia de \textit{feature branching}. Esta estrategia consiste en que para cada nueva funcionalidad
+que queríamos agregar en el cliente, debíamos crear una nueva rama a partir de la principal (\textit{main} al igual que para el servidor),
+hacer el desarrollo de la funcionalidad en la rama creada, actualizandola con \textit{main} si fuera necesario, y una vez que este finalizada
+crear un \textit{Pull Request} para que los otros integrantes puedan revisar los cambios. Al revisar un \textit{PR}, se podían dejar comentarios
+sobre cambios que se consideran necesarios, por ejemplo arreglar un error, o cambiar una implementación por otra mas eficiente. Una vez atendidos
+los comentarios, el \textit{PR} era mergeado a main. En nuestro caso, si bien eran importantes, no era obligatorio tener un mínimo de aprobaciones para poder mergear un \textit{PR},
+para así no bloquear el desarrollo en caso de que los otros integrantes no pudieran revisarlo.
+
+
 Una vez que la comunicación entre el servidor y el cliente fue establecida, y definimos el protocolo detallado en la sección 6.4, que consiste en
 múltiples mensajes de protobuf, nos dimos cuenta de que íbamos a tener que definir dichos mensajes tanto en el servidor como en el cliente. Eso iba
 a generar mucho código repetido, lo que a su vez aumentaría la probabilidad de tener algún error donde el mismo mensaje fuera definido de
-forma distinta en los dos proyectos. Es por eso que decidimos unificar todos los mensajes en un repositorio aparte, que utilizando submodulos
+forma distinta en los dos proyectos. Es por eso que decidimos unificar todos los mensajes en un repositorio aparte llamado \textit{fiubakka-protocol-buffers}, que utilizando submodulos
 de Git, se vería como un directorio y se mantendría igual en ambos proyectos, lo que evitaría el error mencionado anteriormente.
 Entonces, para agregar o editar un mensaje, se debía agregar el archivo al repositorio y luego, en el repositorio de cada uno de los proyectos, 
 ejecutar el comando \texttt{git submodule --update} para actualizar. Una vez hecho esto, los mensajes de proto debían ser compilados para poder
 ser usados en el código. En el servidor, esto se hacía automáticamente al levantar el proyecto. Por otro lado, para el cliente, armamos un
 script en Bash llamado \textit{gobuf-compile.sh} que se encargaba de compilar todos los mensajes y guardar el resultado en otra carpeta que 
 luego sería subida al repositorio, para no tener que hacer la compilación múltiples veces.
+
+Por último tenemos un repositorio llamado simplemente \textit{paper} que usamos para el desarrollo del informe final.
+
+Todos estos repositorios están agrupados en una organización de Github llamada \textit{fiubakka}.
