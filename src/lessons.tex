@@ -54,7 +54,7 @@ cuando no estuviéramos utilizando el cluster era eliminarlo, por lo que debíam
 
 Por otro lado, al utilizar un cluster propio en lugar de manejado por algún proveedor Cloud, surgió la problemática de como exponer los servicios a la red pública. Existen distintas formas de conseguir esto, desde la más cruda vía
 exposición de ports (conocido como \textit{Port Forwarding}) hasta la utilización de servicios externos que ofrecen \textit{proxies} para mayor seguridad y abstracción. Nosotros optamos por esta segunda opción, haciendo uso de
-\textbf{Cloudflare}. En particular, utilizamos \textbf{Cloudflare Tunnel} para exponer los distintos servicios a la red pública. Cloudflare lo ofrece de manera gratuita, lo único que tuvimos que pagar fue el dominio (vía Cloudflare
+\textbf{Cloudflare} \label{ref:cloudflare}. En particular, utilizamos \textbf{Cloudflare Tunnel} para exponer los distintos servicios a la red pública. Cloudflare lo ofrece de manera gratuita, lo único que tuvimos que pagar fue el dominio (vía Cloudflare
 también) que utilizamos para exponer los servicios. El servidor de \textit{Fiubakka} se encuentra expuesto a través de \textbf{fiubakka.marcosrolando.uk} en el puerto 2020, y lo que se expone es un balanceador de carga TCP de Kubernetes
 para poder distribuir las conexiones entre los distintos nodos del servidor.
 

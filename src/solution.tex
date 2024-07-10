@@ -1471,3 +1471,17 @@ Solo es necesario descargar los \textit{templates} correspondientes a la platafo
 distintos sistemas operativos como Windows, Linux o MacOS, así como también otras plataformas, como dispositivos
 Android o incluso aplicaciones web.
 Para nuestro proyecto generamos ejecutables funcionales para sistemas operativos Windows y Linux.
+
+Como se explicará más adelante, para poder jugar es necesario además conectarse al servidor a través de Cloudflare\ref{ref:cloudflare}.
+Es por esto que el jugador deberá instalar el \textit{Daemon} de Cloudflare y correr el siguiente comando en una terminal antes de ejecutar el juego:
+
+\begin{lstlisting}[language=bash]
+    $ cloudflared access tcp --hostname fiubakka.marcosrolando.uk --url 127.0.0.1:2020
+\end{lstlisting}
+
+Para facilitarle el uso al usuario no familiarizado con interfaces de comandos, publicamos además dos
+archivos de scripts ejecutables para sistemas Windows y Linux, para la instalación y ejecución de Cloudflared junto con el juego:
+\begin{itemize}
+    \item \textbf{setup.bat} (Windows) y \textbf{setup.sh} (Linux) para la instalación del \textit{daemon}.
+    \item \textbf{play.bat} (Windows) y \textbf{play.sh} (Linux) correr el comando \textit{cloudflared} en simultaneo con el juego.
+\end{itemize}
