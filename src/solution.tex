@@ -8,47 +8,44 @@
 
 \noindent Como respuesta a las problemáticas presentadas anteriormente nosotros desarrollamos una arquitectura
 completamente distribuida, opuesta totalmente al modelo monolítico prevaleciente en la industria de los videojuegos. 
-El estado del juego no se encuentra restringido a un único nodo servidor, sino que se encuentra 
-distribuido en varios, cada uno con igual importancia y responsabilidades que el resto. El conjunto del estado en cada uno de estos nodos compone el 
+El estado del juego no se encuentra contenido en un único nodo servidor, sino que se distribuye entre varios, cada uno con igual importancia y responsabilidades que el resto. El conjunto del estado en cada uno de estos nodos compone el 
 estado del juego en su totalidad.
 
 El aspecto central del videojuego desarrollado es el uso que hace del \textbf{modelo de actores}.
 Dicho modelo se basa en el \textbf{actor} como mínima unidad de cómputo y el pasaje de \textbf{mensajes} como única manera
-de compartir información entre los actores. En la práctica, esto significa que toda la lógica del juego
-es procesada por los actores, y la comunicación entre ellos se realiza únicamente mediante mensajes.
-Este paradigma, ideado por Carl Hewitt en los años 70, eliminá varios de los problemas presentes
+de compartir información entre los actores. Este paradigma, ideado por Carl Hewitt en los años 70, elimina varios de los problemas presentes
 en la programación concurrente tradicional que mencionamos anteriormente, como
-los \textit{deadlocks} y \textit{race conditions}, al eliminar el uso de memoria compartida
-como herramienta de comunicación en el sistema.
-Este modelo además resulta en una forma natural de representar a las entidades del videojuego, donde podemos plantear una 
-relación \textbf{1 a 1} entre entidad y actor. Si además establecemos que el estado de cada entidad 
+los \textit{deadlocks} y \textit{race conditions}, al evitar el uso de memoria compartida
+como herramienta de comunicación en el sistema. Resulta, además, en una forma natural de representar a las entidades del videojuego, donde podemos plantear una 
+relación \textbf{1 a 1} entre entidad y actor. Si establecemos que el estado de cada entidad 
 debería ser administrado por ella misma, otra característica intrínseca del modelo de actores,
 se desprende entonces que se ajusta perfectamente a lo que queremos desarrollar.
 
 Existen muchas implementaciones del modelo de actores. Algunas de ellas son estándar del lenguaje de programación,
-como Erlang y Elixir, otras son bibliotecas de terceros que implementan el paradigma sobre lenguajes
-agnósticos al mismo, como es el caso de la biblioteca Actix en Rust.
+como en Erlang y Elixir, otras son bibliotecas de terceros que implementan el paradigma sobre lenguajes
+agnósticos al mismo, como es el caso de la biblioteca Actix en Rust o Hollywood en Go.
 Nosotros decidimos utilizar Akka, un toolkit para construir aplicaciones concurrentes
-y distribuidas que implementa el modelo de actores para la JVM (Java Virtual Machine).
+y distribuidas que implementa el modelo de actores para la Java Virtual Machine.
 Si bien Akka en sí está implementado en Scala, es compatible con otros lenguajes
 basados en la JVM, como Java y Kotlin. Particularmente nos decantamos por utilizar Scala también
 como lenguaje de programación del proyecto, ya que es el lenguaje nativo de Akka y cuenta con la documentación
 más completa y actualizada.
 
-Llegado a este punto, tenemos que el modelo de actores, y particularmente Akka, nos permite desarrollar un sistema distribuido
+Akka nos permite desarrollar un sistema distribuido
 donde nuestra aplicación puede ejecutarse en N nodos de manera transparente, donde los distintos actores que residen en cada nodo
-pueden comunicarse entre sí sin importar en qué nodo se encuentren y desconociendo la ubicación del otro actor con el que se comunican.
+pueden comunicarse entre sí sin importar en cuál se encuentren y desconociendo la ubicación del otro actor con el que se comunican.
 En breve entraremos en más detalle sobre el funcionamiento de Akka y los distintos componentes que utilizamos.
 
 No alcanza sin embargo únicamente con Akka para poder desarrollar la arquitectura de nuestro videojuego.
 El primer punto a resolver con el que nos encontramos es que necesitamos un mecanismo que nos permita comunicar distintos eventos
 provenientes de un actor a otros N actores. Algunos de estos eventos pueden ser la actualización de las propiedades de uno de los jugadores,
-como su posición y equipamiento, o las acciones que el jugador realice. Una primera solución que se podría plantear a esta problemática sería que cuando un jugador realice una acción,
+como su posición y equipamiento, entre otras diversas acciones que el jugador realice. Una primera solución que se podría plantear a esta problemática sería que cuando un jugador realice una acción,
 por ejemplo de movimiento, sea responsabilidad de este notificar vía mensajes a todos los demás actores del juego que se ha desplazado. Esta solución sin embargo no es escalable, principalmente por dos motivos:
 
 \begin{itemize}
     \item Cada actor correspondiente a un jugador debería almacenar una referencia a todos los demás jugadores para poder notificarles los eventos.
-    Dados N actores en el sistema, esto generaría una complejidad espacial de O($N^2$).
+    Dados N actores en el sistema, esto generaría una complejidad espacial de O($N^2$), además de incurrir una penalidad temporal de O($N$) en el procesamiento de cada evento
+    del jugador.
     \item No contamos con un mecanismo que nos permita notificar a los demás actores que un nuevo actor se ha unido al sistema de forma automática.
     Para que un actor conozca a otro depende de haber recibido su dirección a través de un mensaje o haberlo creado él mismo.
 \end{itemize}
@@ -58,13 +55,13 @@ y almacene las referencias a cada jugador creado, pero este mecanismo presenta u
 para poder maximizar la distribución del modelo desarrollado.
 
 Debido a esto, y siempre con el objetivo de maximizar la distribución del sistema minimizando los puntos de falla únicos del mismo,
-decidimos hacer uso de otra herramienta distribuida, \textbf{Kafka}.
+decidimos hacer uso de otra tecnología distribuida, \textbf{Kafka}.
 
 Kafka es un sistema distribuido de procesamiento de datos y almacenamiento de eventos caracterizado
 por alto \textit{throughput} y baja latencia, características críticas para los sistemas de tiempo real.
 Kafka se adapta perfectamente a lo que necesitamos para poder comunicar los eventos que los jugadores
 realicen dentro del juego, y nos permite implementar un protocolo de comunicación de eventos entre los actores
-de baja latencia, alta disponibilidad, tolerancia a fallos y escalabilidad horizontal.
+de baja latencia, alta disponibilidad, y tolerante a fallos.
 
 Integrando Kafka en el sistema diseñamos un mecanismo de comunicación de eventos donde delegamos la lectura
 y publicación de eventos en Kafka a actores específicos, de aquí en adelante denominados \textbf{Consumidores}
@@ -74,7 +71,7 @@ son los encargados de leer estos eventos y notificar a los actores correspondien
 Este último paso, la notificación del Consumidor a los demás jugadores de la partida, no es trivial de implementar.
 A primera vista, volvemos al problema inicial de que deberíamos almacenar referencias a todos los actores del juego registrados
 para poder enviarles los mensajes de notificación. Una forma de evitar esto podría ser proponer que cada jugador tenga un correspondiente
-Consumidor, lo que tiene la ventaja de no introducir un punto único de falla. En la práctica sin embargo, los consumidores de Kafka consumen muchos recursos y
+Consumidor, lo que tiene la ventaja de no introducir un punto único de falla. En la práctica los consumidores de Kafka consumen muchos recursos y
 nuestro servidor sería incapaz de procesar una gran cantidad de jugadores.
 Es aquí donde introducimos otro de los principales \textit{features} de Akka que nos permite resolver esta problemática:
 \textbf{Akka Streams}.
@@ -85,7 +82,7 @@ La clave detrás del uso de Akka Streams es que permite conectar múltiples fuen
 lo que ya hacemos con Kafka, pero a nivel del nodo de la aplicación, es decir, internamente, y con la ventaja de consumir considerablemente menos recursos que con
 consumidores de Kafka.
 
-En resumidas cuentas, los eventos masivos se procesan de la siguiente manera:
+Los eventos masivos, entonces, se procesan de la siguiente manera:
 
 \begin{itemize}
     \item Un jugador realiza una acción en el juego, como por ejemplo un movimiento.
@@ -103,7 +100,7 @@ y la comunicación entre los actores de cada nodo es transparente, dando la ilus
 
 \subsection{Introducción a Akka}
 
-\noindent Akka cuenta con varias herramientas para conseguir implementar la arquitectura mostrada previamente. Para poder entender los distintos componentes de nuestro servidor
+\noindent Akka cuenta con varias herramientas para conseguir implementar la arquitectura explicada previamente. Para poder entender los distintos componentes de nuestro servidor
 es necesario primero introducir cada tecnología de Akka que utilizamos y dar una breve pero clara explicación de sus usos y funcionalidades.
 Comenzamos por lo central: la implementación del modelo de actores en Akka. 
 
@@ -1079,7 +1076,7 @@ API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaj
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-engine-showcase.png}
-    \caption{Editor de Godot Engine.\cite{ref1}}
+    \caption{Editor de Godot Engine \cite{ref1}.}
 \end{figure}
 
 \textit{GDScript} es un lenguaje de programación de alto nivel y con sintaxis similar a Python. 
