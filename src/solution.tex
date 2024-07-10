@@ -1413,9 +1413,11 @@ Esta solución sirvió en un inicio donde el juego era un prototipo donde no ten
 mapas con un perímetro definido, sin embargo empezaron a verse las faltas de la misma cuando 
 se comenzaron a implementar las colisiones del jugador con los mapas y los objetos dentro de sus límites.
 
-Si bien sería posible implementar un sistema de colisiones en el Servidor notamos que sería una funcionalidad
-de gran complejidad, para la cual tendríamos que definir muchas restricciones si queremos mantener una buena
-performance del Servidor.
+Un primer planteo fue manejar y controlar las colisiones en el Servidor. Sin embargo, se hizo rápidamente aparente
+la complejidad de implementar un sistema de colisiones con una arquitectura como la nuestra, ya que en primer lugar
+sería necesario calcular las colisiones de forma centralizada, matando el propósito de la arquitectura propuesta.
+Por otro lado, intentar plantear un sistema de resolución de colisiones distibuido implicaría una complejidad que excede
+el objetivo de este Trabajo.
 Se decidió entonces ceder la mayor parte de la lógica del movimiento a Godot debido a que este provee 
 su propio sistema de colisiones, aprovechando las herramientas que provee sin reinventar un sistema 
 nuevo. Este acercamiento nos hacía renunciar a que el input fuera 
@@ -1423,6 +1425,9 @@ verificado con cada movimiento, pero facilitaba de forma significativa la implem
 movimiento y las colisiones. Debido a que nuestro juego no muestra ninguna ventaja competitiva 
 en la modificación del movimiento del jugador, decidimos perder parte de las verificaciones en 
 favor a la facilidad de desarrollo provista por Godot.
+Cabe aclarar además que esta solución funciona solo para colisiones estáticas, es decir, entre un solo objeto
+dinámico (el jugador) y los demás objetos estáticos (el perímetro de un nivel, o sus "paredes"). Por esto 
+los jugadores no colisionan entre si.
 
 \subsubsection{Juego de cartas: Truco}
 \noindent Como se mencionó anteriormente y a modo de muestra del tipo de funcionalidades que se pueden
