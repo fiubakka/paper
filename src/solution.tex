@@ -8,47 +8,44 @@
 
 \noindent Como respuesta a las problemáticas presentadas anteriormente nosotros desarrollamos una arquitectura
 completamente distribuida, opuesta totalmente al modelo monolítico prevaleciente en la industria de los videojuegos. 
-El estado del juego no se encuentra restringido a un único nodo servidor, sino que se encuentra 
-distribuido en varios, cada uno con igual importancia y responsabilidades que el resto. El conjunto del estado en cada uno de estos nodos compone el 
+El estado del juego no se encuentra contenido en un único nodo servidor, sino que se distribuye entre varios, cada uno con igual importancia y responsabilidades que el resto. El conjunto del estado en cada uno de estos nodos compone el 
 estado del juego en su totalidad.
 
 El aspecto central del videojuego desarrollado es el uso que hace del \textbf{modelo de actores}.
 Dicho modelo se basa en el \textbf{actor} como mínima unidad de cómputo y el pasaje de \textbf{mensajes} como única manera
-de compartir información entre los actores. En la práctica, esto significa que toda la lógica del juego
-es procesada por los actores, y la comunicación entre ellos se realiza únicamente mediante mensajes.
-Este paradigma, ideado por Carl Hewitt en los años 70, eliminá varios de los problemas presentes
+de compartir información entre los actores. Este paradigma, ideado por Carl Hewitt en los años 70, elimina varios de los problemas presentes
 en la programación concurrente tradicional que mencionamos anteriormente, como
-los \textit{deadlocks} y \textit{race conditions}, al eliminar el uso de memoria compartida
-como herramienta de comunicación en el sistema.
-Este modelo además resulta en una forma natural de representar a las entidades del videojuego, donde podemos plantear una 
-relación \textbf{1 a 1} entre entidad y actor. Si además establecemos que el estado de cada entidad 
+los \textit{deadlocks} y \textit{race conditions}, al evitar el uso de memoria compartida
+como herramienta de comunicación en el sistema. Resulta, además, en una forma natural de representar a las entidades del videojuego, donde podemos plantear una 
+relación \textbf{1 a 1} entre entidad y actor. Si establecemos que el estado de cada entidad 
 debería ser administrado por ella misma, otra característica intrínseca del modelo de actores,
 se desprende entonces que se ajusta perfectamente a lo que queremos desarrollar.
 
 Existen muchas implementaciones del modelo de actores. Algunas de ellas son estándar del lenguaje de programación,
-como Erlang y Elixir, otras son bibliotecas de terceros que implementan el paradigma sobre lenguajes
-agnósticos al mismo, como es el caso de la biblioteca Actix en Rust.
+como en Erlang y Elixir, otras son bibliotecas de terceros que implementan el paradigma sobre lenguajes
+agnósticos al mismo, como es el caso de la biblioteca Actix en Rust o Hollywood en Go.
 Nosotros decidimos utilizar Akka, un toolkit para construir aplicaciones concurrentes
-y distribuidas que implementa el modelo de actores para la JVM (Java Virtual Machine).
+y distribuidas que implementa el modelo de actores para la Java Virtual Machine.
 Si bien Akka en sí está implementado en Scala, es compatible con otros lenguajes
 basados en la JVM, como Java y Kotlin. Particularmente nos decantamos por utilizar Scala también
 como lenguaje de programación del proyecto, ya que es el lenguaje nativo de Akka y cuenta con la documentación
 más completa y actualizada.
 
-Llegado a este punto, tenemos que el modelo de actores, y particularmente Akka, nos permite desarrollar un sistema distribuido
+Akka nos permite desarrollar un sistema distribuido
 donde nuestra aplicación puede ejecutarse en N nodos de manera transparente, donde los distintos actores que residen en cada nodo
-pueden comunicarse entre sí sin importar en qué nodo se encuentren y desconociendo la ubicación del otro actor con el que se comunican.
+pueden comunicarse entre sí sin importar en cuál se encuentren y desconociendo la ubicación del otro actor con el que se comunican.
 En breve entraremos en más detalle sobre el funcionamiento de Akka y los distintos componentes que utilizamos.
 
 No alcanza sin embargo únicamente con Akka para poder desarrollar la arquitectura de nuestro videojuego.
 El primer punto a resolver con el que nos encontramos es que necesitamos un mecanismo que nos permita comunicar distintos eventos
 provenientes de un actor a otros N actores. Algunos de estos eventos pueden ser la actualización de las propiedades de uno de los jugadores,
-como su posición y equipamiento, o las acciones que el jugador realice. Una primera solución que se podría plantear a esta problemática sería que cuando un jugador realice una acción,
+como su posición y equipamiento, entre otras diversas acciones que el jugador realice. Una primera solución que se podría plantear a esta problemática sería que cuando un jugador realice una acción,
 por ejemplo de movimiento, sea responsabilidad de este notificar vía mensajes a todos los demás actores del juego que se ha desplazado. Esta solución sin embargo no es escalable, principalmente por dos motivos:
 
 \begin{itemize}
     \item Cada actor correspondiente a un jugador debería almacenar una referencia a todos los demás jugadores para poder notificarles los eventos.
-    Dados N actores en el sistema, esto generaría una complejidad espacial de O($N^2$).
+    Dados N actores en el sistema, esto generaría una complejidad espacial de O($N^2$), además de incurrir una penalidad temporal de O($N$) en el procesamiento de cada evento
+    del jugador.
     \item No contamos con un mecanismo que nos permita notificar a los demás actores que un nuevo actor se ha unido al sistema de forma automática.
     Para que un actor conozca a otro depende de haber recibido su dirección a través de un mensaje o haberlo creado él mismo.
 \end{itemize}
@@ -58,13 +55,13 @@ y almacene las referencias a cada jugador creado, pero este mecanismo presenta u
 para poder maximizar la distribución del modelo desarrollado.
 
 Debido a esto, y siempre con el objetivo de maximizar la distribución del sistema minimizando los puntos de falla únicos del mismo,
-decidimos hacer uso de otra herramienta distribuida, \textbf{Kafka}.
+decidimos hacer uso de otra tecnología distribuida, \textbf{Kafka}.
 
 Kafka es un sistema distribuido de procesamiento de datos y almacenamiento de eventos caracterizado
 por alto \textit{throughput} y baja latencia, características críticas para los sistemas de tiempo real.
 Kafka se adapta perfectamente a lo que necesitamos para poder comunicar los eventos que los jugadores
 realicen dentro del juego, y nos permite implementar un protocolo de comunicación de eventos entre los actores
-de baja latencia, alta disponibilidad, tolerancia a fallos y escalabilidad horizontal.
+de baja latencia, alta disponibilidad, y tolerante a fallos.
 
 Integrando Kafka en el sistema diseñamos un mecanismo de comunicación de eventos donde delegamos la lectura
 y publicación de eventos en Kafka a actores específicos, de aquí en adelante denominados \textbf{Consumidores}
@@ -74,7 +71,7 @@ son los encargados de leer estos eventos y notificar a los actores correspondien
 Este último paso, la notificación del Consumidor a los demás jugadores de la partida, no es trivial de implementar.
 A primera vista, volvemos al problema inicial de que deberíamos almacenar referencias a todos los actores del juego registrados
 para poder enviarles los mensajes de notificación. Una forma de evitar esto podría ser proponer que cada jugador tenga un correspondiente
-Consumidor, lo que tiene la ventaja de no introducir un punto único de falla. En la práctica sin embargo, los consumidores de Kafka consumen muchos recursos y
+Consumidor, lo que tiene la ventaja de no introducir un punto único de falla. En la práctica los consumidores de Kafka consumen muchos recursos y
 nuestro servidor sería incapaz de procesar una gran cantidad de jugadores.
 Es aquí donde introducimos otro de los principales \textit{features} de Akka que nos permite resolver esta problemática:
 \textbf{Akka Streams}.
@@ -85,7 +82,7 @@ La clave detrás del uso de Akka Streams es que permite conectar múltiples fuen
 lo que ya hacemos con Kafka, pero a nivel del nodo de la aplicación, es decir, internamente, y con la ventaja de consumir considerablemente menos recursos que con
 consumidores de Kafka.
 
-En resumidas cuentas, los eventos masivos se procesan de la siguiente manera:
+Los eventos masivos, entonces, se procesan de la siguiente manera:
 
 \begin{itemize}
     \item Un jugador realiza una acción en el juego, como por ejemplo un movimiento.
@@ -103,7 +100,7 @@ y la comunicación entre los actores de cada nodo es transparente, dando la ilus
 
 \subsection{Introducción a Akka}
 
-\noindent Akka cuenta con varias herramientas para conseguir implementar la arquitectura mostrada previamente. Para poder entender los distintos componentes de nuestro servidor
+\noindent Akka cuenta con varias herramientas para conseguir implementar la arquitectura explicada previamente. Para poder entender los distintos componentes de nuestro servidor
 es necesario primero introducir cada tecnología de Akka que utilizamos y dar una breve pero clara explicación de sus usos y funcionalidades.
 Comenzamos por lo central: la implementación del modelo de actores en Akka. 
 
@@ -1079,7 +1076,7 @@ API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaj
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-engine-showcase.png}
-    \caption{Editor de Godot Engine.\cite{ref1}}
+    \caption{Editor de Godot Engine \cite{ref1}.}
 \end{figure}
 
 \textit{GDScript} es un lenguaje de programación de alto nivel y con sintaxis similar a Python. 
@@ -1135,7 +1132,7 @@ la Figura \ref{fig:signals-diagram} ilustra cómo es el flujo al emitirse una se
     \caption{Diagrama del flujo de emisión de una signal. Primero se define la señal text\_submitted
             en el nodo LoginUsername y se la conecta al nodo Login (que es padre de LoginUsername).
             Al emitirse esta señal, Login la escucha y entonces ejecuta su función handler
-            \_on\_login\_username\_text\_submitted}
+            \textit{\_on\_login\_username\_text\_submitted}}
     \label{fig:signals-diagram}
 \end{figure}
 
@@ -1161,37 +1158,41 @@ Los niveles propiamente dichos no se instancian al iniciar el juego, sino una ve
 se haya conectado al servidor y luego a medida que se mueve por las distintas zonas del juego.
 De esta forma, encapsulamos todas las escenas activas en un mismo lugar y 
 no desperdiciamos recursos instanciandolas todas a la vez, solo se instancian las escenas que
-se van a usar. En las Figuras \ref{fig:node-tree-main-menu} y \ref{fig:node-tree-level} se muestra
+se van a usar. En la Figura \ref{fig:godot-node-tree} se muestra
 cómo se ve el arbol de nodos en distintos momentos del juego.
 
-% TODO: unir en una sola figura
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.4\textwidth]{../assets/godot-scene-tree-1.png}
-    \caption{Arbol de nodos (Scene Tree) en la pantalla principal del juego}
-    \label{fig:node-tree-main-menu}
+    \includegraphics[width=1.0\textwidth]{../assets/godot-scene-tree.png}
+    \caption{Izquierda: árbol de nodos (Scene Tree) en la pantalla principal del juego,
+             derecha: árbol de nodos cuando el jugador está en un nivel del juego}
+    \label{fig:godot-node-tree}
 \end{figure}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.4\textwidth]{../assets/godot-scene-tree-2.png}
-    \caption{Arbol de nodos cuando el jugador está en un nivel del juego}
-    \label{fig:node-tree-level}
-\end{figure}
 
 Cuando un jugador ejecuta por primera vez el juego, lo primero que verá es la escena del menú principal.
 Luego de elegir el idioma del juego, tendrá dos opciones disponibles: ingresar al juego
 con un usuario existente desde el Login o crear un personaje y un usuario en CharacterCreation (también
 llamada Register).
 
-% TODO: imagen MainMenu
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-main-menu.png}
+    \caption{Pantalla del Menú Principal}
+    \label{fig:godot-main-menu}
+\end{figure}
 
 Si el usuario opta por ingresar al juego a través de Login, deberá ingresar con un nombre de usuario
 y contraseña existentes. En caso de haber algún error de login, se mostrará por pantalla según el error 
 correspondiente, como por ejemplo credenciales inválidas. Como el sistema de autenticación de usuario no
 fue el foco de este proyecto, no es posible recuperar la contraseña de un usuario ni tampoco darlo de baja.
 
-% TODO: imagen Login
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-login.png}
+    \caption{Pantalla de Login. Son necesarios un nombre de usuario y contraseña.}
+    \label{fig:godot-main-menu}
+\end{figure}
 
 Por otro lado, si se tratase de un nuevo jugador o si se desea crear otro personaje, el usuario
 puede entrar a la pantalla de registro donde podrá ingresar sus nuevas
@@ -1201,7 +1202,12 @@ lista de selectores para los distintos cosméticos que componen al \textit{sprit
 agregar, combinar e incluso quitar los cosméticos de su personaje a su gusto. Una vez que haya hecho su elección
 e ingrese sus credenciales, se crea el usuario correspondiente.
 
-% TODO: imagen CharacterCreation
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/godot-register.png}
+    \caption{Pantalla de creación de personaje.}
+    \label{fig:godot-main-menu}
+\end{figure}
 
 Un feature del cual hacemos uso en Godot es el de los scripts \textbf{Autoloads}, que funcionan de manera
 similar que las clases \textbf{Singleton} del patrón de diseño del mismo nombre.
@@ -1237,8 +1243,7 @@ permitirles a los jugadores cambiar de nivel y moverse a través de la Facultad.
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/levels-tree-nodes.png}
     \caption{Ejemplos de árboles de nodos para distintas escenas de tipo \textit{Level}. Nótese que
-            comparten ciertos tipos de nodos en común (\textbf{Player}, \textbf{TileMaps},
-            \textbf{CollisionShape2D}, etc.)}
+            comparten ciertos tipos de nodos en común (Player, TileMaps, CollisionShape2D, etc.)}
     \label{fig:level-nodes}
 \end{figure}
 
@@ -1343,20 +1348,20 @@ Todas las reglas del Truco así como también el control del transcurso de la pa
 están implementadas en el Servidor. El Cliente solo funciona a modo de interfaz para que los
 usuarios puedan jugar.
 
-% TODO: dejar 1 sola captura indicando con recuadros que significa cada parte de la UI
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{../assets/godot-truco-1.png}
-    \includegraphics[width=0.8\textwidth]{../assets/godot-truco-2.png}
-    \caption{Pantalla de Truco durante una partida en transcurso. Las cartas y los cantos dispnibles se
-            ven en la región inferior y las cartas se juegan sobre la mesa.}
+    \includegraphics[width=1.0\textwidth]{../assets/godot-truco.png}
+    \caption{Pantalla de Truco durante una partida en transcurso. 
+             Las regiones numeradas son: región del oponente con nombre, cartas y puntaje (1),
+             zona de juego (2), botón para salir (3), región del jugador con nombre, puntaje e
+             indicador de turno (4), mano del jugador (5) y cantos disponibles (6)}
     \label{fig:truco-game}
 \end{figure}
 
 Todos los controles del juego están detallados en el apéndice.
 
 
-\subsubsection{Comunicación con el servidor}
+\subsubsection{Comunicación por red}
 
 \noindent Al comienzo del proyecto, un posible limitante de usar Godot eran las herramientas que podía ofrecer 
 el motor para la conectividad con el servidor, ya sea UDP, TCP o incluso HTTP. 
@@ -1372,24 +1377,26 @@ de los protocolos antes mencionados. En nuestro caso, decidimos usar el protocol
 Luego, definimos nuestras propias clases \textit{wrapper} para establecer la conexión al servidor y el 
 manejo de mensajes. 
 
-Para la recepción implementamos un \textbf{ServerConsumer} que se encarga de recibir los paquetes 
+Para la recepción implementamos un ServerConsumer que se encarga de recibir los paquetes 
 del Servidor, parsea el mensaje completo (ver sección Protocol buffers) y según qué mensaje recibió, 
 invoca al \textit{handler} correspondiente para actualizar el estado del juego del lado del Cliente.
-Este \textbf{ServerConsumer} se ejecuta en un thread aparte, para no bloquear el thread principal mientras
-esperamos recibir un mensaje. Sin embargo, luego de parsear un mensaje recibido, el \textit{handler}
+Este ServerConsumer se ejecuta en un thread aparte, para no bloquear el thread principal mientras
+esperamos recibir paquetes del Servidor. Sin embargo, luego de parsear un mensaje recibido, el \textit{handler}
 correspondiente se ejecuta en el thread principal.
 
 Es análogo el envío de mensajes en el sentido desde el Cliente hacia el Servidor: algún input de un 
-usuario dispara una \textit{signal} que el \textbf{ServerProducer} recibe, este se encarga de crear 
+usuario dispara una \textit{signal} que el ServerProducer recibe, este se encarga de crear 
 el mensaje correspondiente con los parámetros correctos, lo serializa y envía los paquetes de bytes 
 al Servidor a través de la conexión TCP.
+Esta conexión con el Servidor se establece ni bien corre el juego, puesto que es necesaria para el Login y Registro.
 
 \subsection{Comunicación entre cliente y servidor}
 Aún habiendo definido el protocolo de estándar de comunicación que utilizaríamos para conectar al Cliente y Servidor,
-fue necesario tomar ciertas decisiones y definir otros protocolos a la hora de definir los mensajes
+fue necesario tomar ciertas decisiones y establecer otros protocolos a la hora de definir los mensajes
 concretos que intercambiarían el frontend con el backend.
 
 \subsubsection{Lógica del juego: movimiento y colisiones}
+\label{sec:movement-logic}
 \noindent Otro de nuestros problemas iniciales fue decidir cómo implementaríamos el movimiento del 
 jugador. Al tratarse de un juego online, lo ideal sería que la lógica fuera mayormente implementada del 
 lado del servidor y así garantizar que los jugadores no pudieran realizar movimientos prohibidos, como 
@@ -1399,20 +1406,24 @@ jugador y dejar que el servidor se encargara de verificar que se tratase de un i
 el efecto de este input en la nueva posición. Luego el servidor respondería enviandole a Godot la nueva
 dirección para que se viera reflejada en el juego.
 
-Este acercamiento sirvió en un inicio donde el juego era un prototipo donde no teníamos definidos 
-mapas con un perímetro definido, sin embargo empezaron a verse las faltas en esta solución cuando 
-se comenzó a implementar las colisiones del jugador con los mapas y los objetos dentro de sus límites.
+Esta solución sirvió en un inicio donde el juego era un prototipo donde no teníamos definidos 
+mapas con un perímetro definido, sin embargo empezaron a verse las faltas de la misma cuando 
+se comenzaron a implementar las colisiones del jugador con los mapas y los objetos dentro de sus límites.
 
+Un primer planteo fue manejar y controlar las colisiones en el Servidor. Sin embargo, se hizo rápidamente aparente
+la complejidad de implementar un sistema de colisiones con una arquitectura como la nuestra, ya que en primer lugar
+sería necesario calcular las colisiones de forma centralizada, matando el propósito de la arquitectura propuesta.
+Por otro lado, intentar plantear un sistema de resolución de colisiones distibuido implicaría una complejidad que excede
+el objetivo de este Trabajo.
 Se decidió entonces ceder la mayor parte de la lógica del movimiento a Godot debido a que este provee 
 su propio sistema de colisiones, aprovechando las herramientas que provee sin reinventar un sistema 
-colisiones. Este acercamiento nos hacía renunciar a que el input fuera 
+nuevo. Este acercamiento nos hacía renunciar a que el input fuera 
 verificado con cada movimiento, pero facilitaba de forma significativa la implementación del 
 movimiento y las colisiones. Debido a que nuestro juego no muestra ninguna ventaja competitiva 
 en la modificación del movimiento del jugador, decidimos perder parte de las verificaciones en 
 favor a la facilidad de desarrollo provista por Godot.
-
-% TODO: algoritmos de colisiones son resolubles en el backend, era reiventar la rueda, ya tenemos godot <3
-% y no sabíamos cómo iba a ir el tema de performance.
+Cabe aclarar además que esta solución funciona solo para colisiones estáticas, es decir, entre un solo objeto
+dinámico (el jugador) y los demás objetos estáticos (el perímetro de un nivel, o sus "paredes").
 
 \subsubsection{Juego de cartas: Truco}
 \noindent Como se mencionó anteriormente y a modo de muestra del tipo de funcionalidades que se pueden
@@ -1457,3 +1468,17 @@ Solo es necesario descargar los \textit{templates} correspondientes a la platafo
 distintos sistemas operativos como Windows, Linux o MacOS, así como también otras plataformas, como dispositivos
 Android o incluso aplicaciones web.
 Para nuestro proyecto generamos ejecutables funcionales para sistemas operativos Windows y Linux.
+
+Como se explicará más adelante, para poder jugar es necesario además conectarse al servidor a través de Cloudflare\ref{ref:cloudflare}.
+Es por esto que el jugador deberá instalar el \textit{Daemon} de Cloudflare y correr el siguiente comando en una terminal antes de ejecutar el juego:
+
+\begin{lstlisting}[language=bash]
+    $ cloudflared access tcp --hostname fiubakka.marcosrolando.uk --url 127.0.0.1:2020
+\end{lstlisting}
+
+Para facilitarle el uso al usuario no familiarizado con interfaces de comandos, publicamos además dos
+archivos de scripts ejecutables para sistemas Windows y Linux, para la instalación y ejecución de Cloudflared junto con el juego:
+\begin{itemize}
+    \item \textbf{setup.bat} (Windows) y \textbf{setup.sh} (Linux) para la instalación del \textit{daemon}.
+    \item \textbf{play.bat} (Windows) y \textbf{play.sh} (Linux) correr el comando \textit{cloudflared} en simultaneo con el juego.
+\end{itemize}

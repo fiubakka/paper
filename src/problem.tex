@@ -6,18 +6,16 @@
 
 \noindent Si bien el modelo monolítico descrito anteriormente funciona bien para la mayoría de los 
 casos con una cantidad acotada de jugadores, empieza a ser un problema cuando el juego 
-permite la interacción de una magnitud mayor de jugadores / entidades en simultáneo. 
-Al ser una arquitectura monolítica las herramientas típicas que se utilizan para escalar 
-la performance es delegar ciertas tareas a distintos hilos del procesador, para así distribuir 
-el cómputo realizado y conseguir paralelizar el procesamiento de la lógica del juego, obteniendo una mejor performance. 
+permite la interacción de una magnitud mayor de jugadores u otras entidades en simultáneo. 
+Para mejorar la performance se suele recurrir a delegar ciertas tareas a distintos hilos del procesador, para así distribuir 
+el cómputo realizado y conseguir paralelizar el procesamiento de la lógica del juego. 
 Sin embargo, el uso de hilos conlleva conocidos problemas de concurrencia. Entre estos se encuentran los \textit{deadlocks} o \textit{race conditions} que se originan al estar compartiendo 
 recursos, principalmente la memoria. Este enfoque se ve también limitado por la cantidad de hilos 
 que posea el procesador, donde la cantidad dada nos marca el límite máximo posible de paralelización
-del que se dispone.
+del que se dispone. Además, si el juego no fue diseñado con concurrencia en mente, puede resultar imposible separarlo en secciones lógicas
+independientes que puedan ser procesadas en paralelo.
 
-Todas estas problemáticas resultan en limitantes a la hora de determinar la cantidad máxima de jugadores
+Todas estas problemáticas resultan en limitantes a la hora de determinar la cantidad máxima de eventos
 que se pueden procesar en una única instancia del juego, manteniendo un nivel de performance aceptable para el flujo del juego.
 Si el juego a desarrollar tiene como requisito soportar una cantidad elevada de jugadores
-en simultáneo, es necesario buscar una solución que permita escalar horizontalmente y es aquí donde proponemos
-una alternativa.
-
+en simultáneo será necesario buscar una solución alternativa que permita escalar horizontalmente.
