@@ -96,20 +96,31 @@
   basicstyle=\ttfamily\small,
 }
 
-\begin{document}
 
 %\title{\textbf{FIUBAkka} \\ \large \textbf{Juego multijugador online con Akka}}
 
 \newcommand{\mytitlefont}{\fontsize{50}{60}\selectfont}
 
 \title{
-    \mytitlefont \textbf{FIUBAkka} \\ % Título grande
-    \large {Juego multijugador online con Akka}    % Descripción en tamaño \large
-}
+  \mytitlefont \textbf{FIUBAkka} \\ % Título grande
+  \large {Juego multijugador online con Akka}    % Descripción en tamaño \large
+  }
+\date{} % No mostrar fecha en el título
+  
+\begin{document}
 
-\date{\today}
+\newgeometry{top=0cm, bottom=0cm, left=1cm, right=1cm}
 
 \maketitle % Prints the title, author, and date
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.5\textwidth]{../assets/fiubakka-logo.png}
+\end{figure}
+
+\begin{center}
+  \large \today
+\end{center}
 
 %TODO: Completar padrones
 \begin{table}[h!]
@@ -135,16 +146,14 @@
   Tutor: Ing. Pablo Deymonnaz
 \end{center}
 
-\thispagestyle{empty}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.5\textwidth]{../assets/fiuba-logo.png}
-\end{figure}
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.3\textwidth]{../assets/fiubakka-logo.png}
+  \includegraphics[width=0.5\textwidth]{../assets/fiuba-logo.png}
 \end{figure}
+
+\restoregeometry
+
+\thispagestyle{empty}
 
 \newpage
 \thispagestyle{empty}
