@@ -3,3 +3,35 @@
 % el Trabajo Profesional a su formación, a otras entidades si las hubiera, 
 % y los resultados principales obtenidos. También se debe destacar si el 
 % desarrollo generó alguna innovación y de qué tipo.
+
+Dados los resultados presentados en la sección \ref{sec:validation}, podemos concluir que la premisa
+en la cual se basó nuestro proyecto, que propone que una arquitectura distribuida es beneficiosa para un
+videojuego con una gran cantidad de jugadores dadas las facilidades que presenta a la hora de escalar,
+podemos concluir que nuestro proyecto fue exitoso. Logramos demostrar que al escalar horizontalmente,
+es decir, al aumentar la cantidad de nodos del servidor en lugar de aumentar la potencia de los nodos existentes,
+la carga disminuye, lo cual nos permitiría tener una cantidad mucho mayor de jugadores que si solo tuvieramos
+una cantidad fija de nodos y solo pudieramos mejorar su hardware.
+Sin embargo, hay múltiples consideraciones a tener en cuenta dada nuestra arquitectura. Principalmente, los nodos
+del servidor deben tener un hardware lo suficientemente potente como para poder aprovechar las ventajas de la
+distribución, como fue explicado en mas detalle en la sección \ref{sec:virtualization}, lo cuál puede incurrir en 
+costos considerablemente altos.
+
+Otra cosa a tener en cuenta es el tipo de juego sobre el cual se quiere aplicar esta arquitectura. Dada la naturaleza
+distribuida, como ya fue explicado en secciones anteriores, la consistencia de la información para todos los jugadores
+será eventual, es decir, en un determinado instante dos jugadores pueden tener información distinta, pero dado cierto tiempo,
+todos terminarán sincronizados. Esto conlleva a que los juegos de naturaleza más competitiva no se adaptarían bien a esta
+arquitectura, debido a estos problemas de sincronización, o también posibles modificaciones en el cliente que le den una ventaja
+injusta a los jugadores que lo hagan.
+Otro tipo de juegos incompatibles con nuestra arquitectura son aquellos que requieran una latencia extremadamente baja, como sería
+un juego de disparos en primera persona. Existen algunas partes en la arquitectura que agregan demasiado overhead y harían que la
+experiencia en este tipo de juegos no sea optima.
+
+La experiencia de llevar a cabo este proyecto fue extremadamente enriquecedora para todos los integrantes del grupo.
+Nos permitió poner en práctica, una gran cantidad de conceptos aprendidos durante el transcurso de la carrera como algoritmos convencionales,
+, programación concurrente, arquitecturas distribuidas, comunicación sobre la red, complejidad algorítmica, escalabilidad e incluso metodologías
+de desarrollo ágiles y administración de proyectos. Si bien nos dividimos en equipos durante el desarrollo, eventualmente todos aportamos
+en cada una de las áreas, en distinta medida, pero lo suficiente para que tengamos un entendimiento de todos los conceptos aplicados.
+
+Para concluir, consideramos que nuestro proyecto culminó en una arquitectura que es una base muy sólida para el desarrollo de videojuegos
+que busquen manejar una gran cantidad de jugadores interactuando entre sí. Creemos que esto puede abrir la puerta al desarrollo de más juegos
+de este estilo.
