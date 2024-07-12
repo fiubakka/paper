@@ -99,58 +99,54 @@
 
 %\title{\textbf{FIUBAkka} \\ \large \textbf{Juego multijugador online con Akka}}
 
-\newcommand{\mytitlefont}{\fontsize{50}{60}\selectfont}
-
-\title{
-  \mytitlefont \textbf{FIUBAkka} \\ % Título grande
-  \large {Juego multijugador online con Akka}    % Descripción en tamaño \large
-  }
-\date{} % No mostrar fecha en el título
-  
 \begin{document}
 
-\newgeometry{top=0cm, bottom=0cm, left=1cm, right=1cm}
+% Reducir márgenes solo para la primera página
+\newgeometry{top=1cm, bottom=1cm, left=1cm, right=1cm}
 
-\maketitle % Prints the title, author, and date
+\begin{titlepage}
+    \centering
+    \includegraphics[width=0.6\textwidth]{../assets/fiuba-logo.png} % Ajusta la ruta y tamaño de la imagen
+    \vspace{1cm}
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.5\textwidth]{../assets/fiubakka-logo.png}
-\end{figure}
+    {\Huge \textbf{FIUBAkka}} % Tamaño y negrita del título
+    \vspace{0.5cm}
 
-\begin{center}
-  \large \today
-\end{center}
+    {\Large Juego multijugador online con Akka} % Tamaño de la descripción
+    \vfill
 
-%TODO: Completar padrones
-\begin{table}[h!]
-  \centering
-  \begin{tabular}{|c|c|c|}
-      \hline
-      \multicolumn{3}{|c|}{\textbf{Integrantes}} \\
-      \hline\hline
-      Nombre & Padrón & Email \\
-      \hline\hline
-      Nicole Raveszani & 123456 & nraveszani@fi.uba.ar \\
-      \hline
-      Marcos Rolando & 234567 & mrolando@fi.uba.ar \\
-      \hline
-      Franco Scaccheri & 345678 & fscaccheri@fi.uba.ar \\
-      \hline
-      Iván Soriano & 102342 & isoriano@fi.uba.ar \\
-      \hline
-  \end{tabular}
-\end{table}
+    %TODO: Completar padrones
+    \begin{table}[h!]
+      \centering
+      \begin{tabular}{|c|c|c|}
+          \hline
+          \multicolumn{3}{|c|}{\textbf{Integrantes}} \\
+          \hline\hline
+          Nombre & Padrón & Email \\
+          \hline\hline
+          Nicole Raveszani & 123456 & nraveszani@fi.uba.ar \\
+          \hline
+          Marcos Rolando & 234567 & mrolando@fi.uba.ar \\
+          \hline
+          Franco Scaccheri & 345678 & fscaccheri@fi.uba.ar \\
+          \hline
+          Iván Soriano & 102342 & isoriano@fi.uba.ar \\
+          \hline
+      \end{tabular}
+    \end{table}
 
-\begin{center}
-  Tutor: Ing. Pablo Deymonnaz
-\end{center}
+    \begin{center}
+      Tutor: Ing. Pablo Deymonnaz
+    \end{center}
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.5\textwidth]{../assets/fiuba-logo.png}
-\end{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{../assets/FIUBAkka-logo.png} % Ajusta la ruta y tamaño de la imagen
+    \vspace{1cm}
 
+    \today % Fecha
+\end{titlepage}
+
+% Restaurar los márgenes originales después de la primera página
 \restoregeometry
 
 \thispagestyle{empty}
