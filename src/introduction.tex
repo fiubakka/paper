@@ -1,6 +1,6 @@
 \noindent El proyecto desarrollado tiene como objetivo validar una \textit{prueba de concepto} de
 una arquitectura de servidor de videjuegos distribuida, de alta escalabilidad horizontal,
-tolerancia a fallos y elasticidad. Analizaremos las ventajas y desventajas de la arquitectura
+con tolerancia a fallos y elasticidad. Analizaremos las ventajas y desventajas de la arquitectura
 propuesta frente a la alternativa de un servidor monolítico, y evaluaremos su rendimiento
 con el videojuego desarrollado.
  
@@ -8,8 +8,13 @@ Este informe se encuentra compuesto por dos secciones principales. En primera
 instancia se presenta, explica y analiza la arquitectura diseñada y desarrollada para el
 servidor del videojuego. Dicha arquitectura tiene sus cimientos en el uso de Akka, un 
 \textit{toolkit} para el desarrollo de aplicaciones concurrentes y distribuidas basado
-en el modelo de actores. En segunda instancia se presentará cómo integramos este servidor
-con Godot, un motor de videojuegos \textit{open source} de origen argentino, que utilizamos
-para implementar el cliente del videojuego.
+en el modelo de actores. Se llevarán acabo, además, distintas pruebas de performance de este
+servidor en distintas condiciones, donde se tomarán mediciones de uso de memoria y CPU.
 
-TODO a medida que avancemos con el informe entender si podemos expandir esta seccion!
+En segunda instancia se presentará cómo integramos este servidor
+con Godot, un motor de videojuegos \textit{open source} de origen argentino. Utilizamos Godot
+para el desarrollo del programa cliente, que es un videojuego para que los usuarios puedan
+conectarse al servidor
+
+
+% TODO a medida que avancemos con el informe entender si podemos expandir esta seccion!
