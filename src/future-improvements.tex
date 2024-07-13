@@ -1,0 +1,37 @@
+\noindent Además de la posibilidad de implementar los \textit{features} que describimos en la sección \ref{sec:lessons-discarded}
+existe la posibilidad de implementar una \textbf{mejora sustancial} en la arquitectura de \textit{Fiubakka}.
+
+En la sección \ref{sec:client-connection} explicamos que las conexiones de los clientes se realizan a través del protocolo TCP, y que dichas
+conexiones son administradas por un actor PlayerHandler. Esto implica que las conexiones son \textbf{persistentes}, y que si el nodo de la aplicación
+que se encuentra administrado la conexión (donde reside el PlayerHandler de ese jugador) se cae, el jugador se verá efectivamente desconectado de la partida.
+
+Esta decisión fue tomada a consciencia dado que quisimos evitar introducir mayores complejidades a las ya existentes en nuestra arquitectura. Dado que la falla de un nodo
+únicamente implicaría fallos en los jugadores conectados a ese nodo, no se trata de un único punto de fallo de todo el juego y no resultaría tan crítico. Sin embargo, sería
+deseable evitar que el fallo de un nodo resulte en problemas en los clientes. Esto permitiría incluso reducir la cantidad de nodos del cluster durante ejecución sin
+generar ningún tipo de problema. Actualmente la reducción del cluster en ejecución implica que algunos jugadores se verán desconectados de la partida (aquellos que se encuentren conectados
+a los nodos eliminados).
+
+Una forma muy simple de mejorar esta limitante actual podría ser delegar al cliente de Godot la reconexión automática al servidor si detecta el fallo de la conexión con el mismo.
+Dado que el servidor actúa casi exclusivamente como un replicador de la información que el cliente le envía, la mayor parte de las funcionalidades no se verían afectadas durante el transcurso
+de reconexión del cliente (notables excepciones serían la transición entre mapas o una partida de Truco). Sin embargo, creemos que es posible rediseñar toda la capa de comunicación entre el cliente
+y el servidor para evitar por completo cualquier tipo de problema en los clientes.
+
+La idea sería pasar a utilizar el protocolo UDP para la comunicación entre el cliente y el servidor. Al establecer la conexión con el servidor, el cliente recibiría como respuesta un \textit{token}, por ejemplo
+un JWT, que le permitiría identificarse en el servidor en futuras comunicaciones. Cada mensaje que el cliente envíe al servidor será enviado a través de un datagrama UDP, el cual se verá distribuido por un balanceador
+de carga a alguno de los distintos nodos del cluster del servidor. El \textit{token} adjunto será verificado por el nodo servidor para reconocer tanto al jugador como a la validez de su conexión.
+
+Por otro lado, el PlayerHandler deberá pasar de ser un actor a una entidad, y deberá además almacenar en su estado persistido (vía Akka Persistence) la dirección UDP que el cliente exponga como receptor de los eventos del juego.
+De esta forma, si el nodo donde reside el PlayerHandler fallase, tenemos la garantía de que volverá a inicializarse eventualmente en algún otro nodo disponbile. El Player enviaría los eventos a la entidad PlayerHandler que tuviera asignada,
+exactamente igual que como lo hace en la implementación actual.
+Dado que el PlayerHandler asociado al jugador es una entidad de Cluster Sharding referenciable por el nombre del jugador (su identificador) cualquier nodo que reciba el mensaje UDP del cliente podrá enviarle el mensaje al PlayerHandler correspondiente.
+
+Con estos cambios propuestos, además, ya no será necesario que el Player sea una entidad, por lo que podríamos convertirlo en un actor administrado por el PlayerHandler. Esto tiene la ventaja de reducir la latencia, ya que tenemos la garantía de que los mensajes
+entre el PlayerHandler y el Player sucederán dentro del mismo nodo de la aplicación.
+
+Como última optimización posible, se podría desarrollar un balanceador de carga \textit{custom} que se encargue de delegar los mensajes UDP recibidos por un cliente \textbf{al nodo que contiene su PlayerHandler asociado}.
+Esto permitiría reducir incluso más todavía la latencia total de la comunicación entre el cliente y el servidor, ya que una vez que el nodo recibe el mensaje del cliente tendríamos la garantía de que todos los mensajes siguientes sucederían
+dentro del mismo nodo.
+
+Creemos que este desarrollo puede llegar a implicar un Trabajo Profesional adicional en sí mismo, principalmente debido al desarrollo del balanceador de carga mencionado y las alteraciones en el protocolo que puedan llegar a ser necesarias. Sobre este segundo punto,
+dado que \textit{Fiubakka} fue desarrollado con mecanismos de \textit{recovery} ante pérdidas de mensaje en cuenta (debido al uso de actores en el servidor) el pasaje de TCP a UDP debería resultar transparente al protocolo de mensajes utilizado, pero no descartamos
+que alguna modificación pueda llegar a ser necesaria.

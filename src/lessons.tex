@@ -10,7 +10,7 @@
 
 \noindent A continuación detallamos los problemas encontrados a lo largo del desarrollo del
 Trabajo Profesional, así como también las lecciones que aprendimos de ellos. Estos problemas fueron en su mayoría imprevistos que o bien
-dificultaron el progreso o bien imposibilitaron el desarrollo de ciertas funcionalidades deseadas originalmente.
+dificultaron el progreso o imposibilitaron el desarrollo de ciertas funcionalidades propuestas originalmente.
 
 \subsection{Kubernetes}
 \label{sec:lessons-kubernetes}
@@ -32,11 +32,11 @@ los distintos nodos. Sin embargo, al momento de conectar a un jugador, el \texti
 en principio, pero continuamos sin conseguir que acepte el tráfico del cliente.
 
 Finalmente, como último intento de proveedor Cloud, utilizamos Amazon Web Services. AWS no ofrece créditos de regalos para EKS, su implementación de Kubernetes, sino que factura por tiempo
-de uso de los recursos y tráfico externo de la red. Sorprendentemente, la misma configuración que no hicimos en los otros proveedores y dio distintos problemas en cada uno, funcionó correctamente
-en AWS. La aplicación se desplegó correctamente y podíamos conectar clientes sin problemas. Por otro lado, debido a los altos costos de Amazon para su implementación de Kafka (MSK) optamos por utilizar
+de uso de los recursos y tráfico externo de la red. Sorprendentemente, la misma configuración que utilizamos en los otros proveedores y que nos dio distintos problemas en cada uno, funcionó correctamente
+en AWS. La aplicación se desplegó y aceptó conexiones de clientes sin problemas. Por otro lado, debido a los altos costos de Amazon para su implementación de Kafka (MSK) optamos por utilizar
 tanto servicios de \textit{hosting} gratuitos para Kafka como para PostreSQL, siendo \textbf{CloudKarafka} y \textbf{ElephantSQL} los servicios utilizados respectivamente.
 
-Si bien el ambiente productivo Cloud nos fue de utilizada durante unas semanas, finalmente decidimos que debíamos ir a una solución que nos permitiera mantener el ambiente de producción funcionando constantemente
+Si bien el ambiente productivo Cloud nos fue de utilidad durante unas semanas, finalmente decidimos que debíamos ir a una solución que nos permitiera mantener el ambiente de producción funcionando constantemente
 y ejecutar pruebas de carga sin incurrir en costos muy elevados ni vernos limitados por los servicios gratuitos de infraestructura. Además, tanto CloudKarafka como ElephantSQL anunciaron la baja de servicio
 durante el 2024 (ambos son desarrollados por la misma empresa), por lo que todo nos llevó a desarrollar nuestro ambiente productivo actual.
 
@@ -53,24 +53,24 @@ cuando no estuviéramos utilizando el cluster era eliminarlo, por lo que debíam
 \end{figure}
 
 Por otro lado, al utilizar un cluster propio en lugar de manejado por algún proveedor Cloud, surgió la problemática de como exponer los servicios a la red pública. Existen distintas formas de conseguir esto, desde la más cruda vía
-exposición de ports (conocido como \textit{Port Forwarding}) hasta la utilización de servicios externos que ofrecen \textit{proxies} para mayor seguridad y abstracción. Nosotros optamos por esta segunda opción, haciendo uso de
+exposición de puertos (conocido como \textit{Port Forwarding}) hasta la utilización de servicios externos que ofrecen \textit{proxies} para mayor seguridad y abstracción. Nosotros optamos por esta segunda opción, haciendo uso de
 \textbf{Cloudflare} \label{ref:cloudflare}. En particular, utilizamos \textbf{Cloudflare Tunnel} para exponer los distintos servicios a la red pública. Cloudflare lo ofrece de manera gratuita, lo único que tuvimos que pagar fue el dominio (vía Cloudflare
 también) que utilizamos para exponer los servicios. El servidor de \textit{Fiubakka} se encuentra expuesto a través de \textbf{fiubakka.marcosrolando.uk} en el puerto 2020, y lo que se expone es un balanceador de carga TCP de Kubernetes
 para poder distribuir las conexiones entre los distintos nodos del servidor.
 
 \subsection{Funcionalidades descartadas}
+\label{sec:lessons-discarded}
 
-Si bien se lograron implementar tanto la arquitectura del Servidor distribuido que es el objeto
-de estudio de este Trabajo así como también el juego que funciona como interfaz de aplicación
-para los usuarios, existen algunas funcionalidades para el juego que fueron inicialmente
-planeados pero por restricciones de tiempo no fue posible completarlos. A continuación, listamos 
-las mas interesantes:
+Si bien se lograron implementar tanto la arquitectura del servidor distribuido (que es el objeto
+de estudio de este Trabajo) así como también el desarrollo del cliente utilizando el motor de Godot, existen algunas funcionalidades para el juego que fueron inicialmente
+planeadas pero que por restricciones de tiempo no fueron posible implementar. A continuación, listamos 
+las más interesantes:
 
 \subsubsection{Sistema de recompensas y tienda de ítems}
 
-\noindent Así como existen muchos cosméticos para la creación del personaje y además es posible cambiarlos dentro del
+\noindent Si bien existen muchos cosméticos para la creación del personaje y además es posible cambiarlos dentro del
 juego, no existe para los jugadores alguna forma de obtener nuevos cosméticos además de los que poseen en sus
-inventarios. Para solucionar esto, surgió la idea de agregar un tipo de moneda con la cuál un usuario podría comprar nuevos
+inventarios. Para solucionar esto, surgió la idea de agregar un tipo de moneda con la cual un usuario podría comprar nuevos
 items equipables. Dichos objetos podrían ser adquiridos en una tienda ubicada en el \textbf{Level} del \textbf{Comedor}.
 
 Esta funcionalidad hubiese estado relacionada al \textbf{Truco}, ya que la adquisición de esta moneda
@@ -78,14 +78,13 @@ sería una recompensa por ganar partidas de \textbf{Truco}.
 
 \subsubsection{Foro de consultas}
 
-\noindent Teniendo en mente la temática de una facultad, donde uno suele juntarse con profesores y/o compañeros de clase
+\noindent Teniendo en mente la temática de una facultad, donde uno suele juntarse con profesores y compañeros de clase
 para intercambiar ideas o hacer consultas, también se pensó en implementar un foro de consultas donde un usuario
-podría realizar un \textit{post} a modo de consulta y los demás usuarios podrían responder a la misma. Tanto el \textit{post}
+podría realizar un \textit{post} con alguna duda que tuviera y donde los demás usuarios podrían responder a la misma. Tanto el \textit{post}
 original como las respuestas podrían recibir votos positivos o negativos de parte de cualquier usuario, con el fin
-de poder votar la "mejor respuesta". Esta funcionalidad se inspira en foros y páginas de consulta como lo es por ejemplo
-\textit{StackOverflow}.
+de poder votar la "mejor respuesta". Esta funcionalidad se inspira en foros y páginas de consulta como \textit{Stack Overflow} o el Foro de FIUBA.
 
-Para realizar una consulta dentro del juego, un jugador podría hacerla acercandose a una pizarra y creando el \textit{post}.
+Para realizar una consulta dentro del juego, un jugador podría hacerla acercándose a una pizarra y creando el \textit{post}.
 Si bien el chat es una forma de comunicación por texto entre jugadores, carece de la persistencia necesaria que necesitaría
 una consulta que puede ser respondida luego de mucho tiempo, ya que el log de mensajes del chat se borra cuando el jugador
 cierra el juego.
@@ -94,19 +93,16 @@ cierra el juego.
 
 \noindent Una idea que surgió naturalmente dada la ambientación del juego fue la de tener minijuegos relacionados a distintas materias
 de la facultad. De todos los minijuegos que se nos ocurrieron, el más interesante era sin dudas el que apuntaba a simular
-una clase de programación. El jugador ingresaría a una sala similar a los laboratorios del piso 4 y al interactuar con una
-computadora, vería una interfaz como si fuera un \textit{IDE}. Allí tendría una consigna y la posibilidad de escribir código.
-Una vez finalizado, ese código se analizaría para ver si resolvía correctamente la consigna y en ese caso, podría pasar a una nueva
-consigna mas compleja.
-% TODO: Como íbamos a mandar el codigo? Me suena que era con Kafka, pero nose si ya habiamos encontrado una herramienta
-% para analizar el codigo submiteado
-
-\subsection{Godot Editor}
+una clase de programación. El jugador ingresaría a una sala similar a los laboratorios del cuarto piso y al interactuar con una
+computadora, vería una interfaz de un \textit{IDE} simple. Allí tendría una consigna y la posibilidad de escribir el código que resuelva la consigna dada.
+Una vez finalizado, ese código se analizaría para ver si resolvía correctamente la consigna y, en el caso de que lo hiciera, pasaría a una nueva
+consigna más compleja. La ejecución del código sería realizada por un microservicio externo, que recibiría el código y enviaría la respuesta del mismo a través de
+un tópico de Kafka compartido con el servidor de \textit{Fiubakka}. Esto evitaría bloquear o incrementar los requisitos de cómputo que nuestro servidor desarrollado requiere.
 
 \subsubsection{Godot: Optimización de imágenes}
 
 \noindent En cierto punto del desarrollo, nos encontramos con que cargar el proyecto en el editor de Godot
-requería alrededor de 3 GB de memoria RAM y levantar una sola instancia del juego requería además
+requería alrededor de 3 GB de memoria RAM y ejecutar una sola instancia del juego requería además
 otros 3 GB extra en memoria principal. En un entorno de desarrollo donde es necesario testear
 funcionalidades teniendo por lo menos dos instancias del juego corriendo a la vez, esto dificultó e incluso
 imposibilitó para algunos integrantes continuar normalmente con el desarrollo. Este requerimiento
@@ -114,13 +110,12 @@ de RAM no parecía tener sentido, ya que la suma del espacio requerido en disco 
 \textit{assets} de nuestro proyecto no superaba los 100 MB.
 
 Luego de investigar más a fondo el problema y entender cómo estábamos cargando los archivos de imágenes,
-entendimos mejor el mecanismo que usa Godot para importar imágenes y qué implica eso.
-
+entendimos mejor el mecanismo que usa Godot para importar imágenes.
 Al agregar una imagen al proyecto, Godot genera automáticamente un archivo con el mismo nombre y extensión
 \textit{.import}, con metadata y configuraciones del archivo. 
 Por ejemplo, para el caso de las imágenes, es posible configurar el modo de compresión, generación de 
-\textit{mipmaps}, entre otras opciones. Godot un modo de compresión \textbf{Lossless} por defecto. 
-Si bien este modo tiene la ventaja de que no genera artefactos visuales en las imágenes importadas, usa 
+\textit{mipmaps}, entre otras opciones. Godot usa un modo de compresión \textbf{Lossless} por defecto. 
+Si bien este modo tiene la ventaja de que no genera artefactos visuales en las imágenes importadas, consume 
 considerablemente más memoria VRAM (\textit{Video Random Access Memory}) para almacenar la textura o
 imagen importada, en comparación con otras opciones de compresión disponible.
 La documentación de Godot\cite{ref2} provee un estimado del espacio que ocupa una sola textura
@@ -162,23 +157,23 @@ del juego a menos de 1 GB.
 
 \subsubsection{Control de versiones}
 
-\noindent Uno de esos problemas está relacionado al control de versiones. Cada escena o nodo creado posee 
+\noindent Cada escena o nodo creado posee 
 un archivo autogenerado por Godot en el cual se ven reflejados los cambios que realizamos desde 
 el motor de videojuegos. No es usual que este archivo sea modificado manualmente, sino que toda 
-modificación se realiza a través de la interfaz de Godot. Al realizar un merge con Github, si 
+modificación se realiza a través de la interfaz de Godot. Al realizar un merge de Git, si 
 varias personas modificaron una misma escena o nodo, podría ocurrir que hubieran conflictos en 
 dichos archivos autogenerados y al modificarlos manualmente, se eliminaran o modificaran líneas 
 que terminaban ocasionando comportamientos no deseados en el juego.
 
-Por ejemplo, para satisfacer los conflictos de un archivo podría haberse eliminado una signal 
+Por ejemplo, para resolver los conflictos de un archivo podría haberse eliminado una \textit{signal} 
 que activaba alguna funcionalidad al presionarse un botón, y al no considerar que este botón 
-podría dejar de funcionar al realizar el \textit{merge} de Github, este error era descubierto una 
+podría dejar de funcionar al realizar el \textit{merge} de Git, este error era descubierto una 
 vez que deseáramos presionar el botón. Debido a que el error fue introducido en un merge y 
 no momentos antes de presionar dicho botón, la búsqueda del error podía tornarse complicada 
 o confusa. Para prevenir estos problemas, observamos con más detenimiento los archivos 
 autogenerados al momento de realizar merges y al momento de realizar code reviews, 
-incluso dejando comentarios en los pull request preguntando si realizar dichos cambios 
-es el comportamiento que el dueño del pull request está buscando.
+incluso dejando comentarios en los PRs preguntando si realizar dichos cambios 
+es el comportamiento que el dueño del PR está buscando.
 
 \subsubsection{Uso de \textit{signals}}
 
@@ -190,20 +185,9 @@ la mayoría de los nodos se comunicaban con sus nodos hijos de la siguiente mane
 \end{lstlisting}
 
 En un inicio, esta forma parecía resultar cómoda para poder llamar a los métodos de los nodos 
-hijos, pero poseía un problema y era que el código se volvía difícil de reutilizar y refactorizar. 
+hijos, pero terminó resultando en código difícil de reutilizar y refactorizar. 
 Al utilizar signals en lugar de llamar a los métodos de los hijos de esta forma, no es necesario 
 que el nodo padre y los nodos hijos conozcan detalles de la implementación del otro, aumenta 
 la modularización, se puede intercambiar a los hijos de un nodo sin necesidad de modificar el 
-código del padre, mejora la escalabilidad, por mencionar algunas ventajas.
-
-\subsubsection{Convención en el nombramiento de \textit{callbacks}}
-
-\noindent Relacionado al uso de señales, otro de los problemas que surgió es no seguir la convención de 
-Godot al nombrar los callbacks creados manualmente para conectar a las señales:
-
-\begin{lstlisting}
-    _on_<nombre_del_nodo>_<nombre_de_la_signal>()
-\end{lstlisting}
-
-Al no saber qué nodo va a responder a una señal emitida, utilizar esta convención hace más 
-fácil la búsqueda en el código.
+código del padre, mejora la escalabilidad, y aumenta el desacoplamiento. Todos estos motivos, entre otros, son por lo que
+se recomienda \textbf{siempre} el uso de \textit{signals} como método de comunicación entre los nodos de Godot.

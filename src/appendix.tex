@@ -4,6 +4,7 @@
 
 \noindent Los controles del jugador dentro del juego son los siguientes:
 
+\label{ref:game-controls}
 \begin{longtable}{|l|l|}
     \hline
     \textbf{Input} & \textbf{Control}\\
@@ -188,4 +189,99 @@ en la comunicación entre el cliente y el servidor:
     PBTrucoDisconnectAck &  & Servidor \\
     \hline
 \caption{Mensajes Protobuf entre el cliente y servidor} \\
+\end{longtable}
+
+\begin{longtable}{|p{0.3\textwidth}|p{0.40\textwidth}|p{0.2\textwidth}|}
+    \hline
+    \textbf{Nombre} & \textbf{Valores} & \textbf{Usado en} \\ \hline
+    \endfirsthead
+    \hline
+    \textbf{Nombre} & \textbf{Valores} & \textbf{Usado en} \\\hline
+    \endhead
+    \hline
+    \endfoot
+    \hline
+    \endlastfoot
+
+    \hline
+    PBClientMessageType & PBPlayerLogin = 0 & PBClientMetadata \\
+                        & PBPlayerRegister = 1 & \\
+                        & PBPlayerMovement = 2 & \\
+                        & PBPlayerMessage = 3 & \\
+                        & PBPlayerChangeMap = 4 & \\
+                        & PBPlayerUpdateEquipment = 5 & \\
+                        & PBTrucoMatchChallenge = 6 & \\
+                        & PBTrucoMatchChallengeReply = 7 & \\
+                        & PBTrucoPlay = 8 & \\
+                        & PBTrucoPlayAck = 9 & \\
+                        & PBTrucoDisconnect = 10 & \\
+    \hline
+    PBItemType & hair = 0 & PBINewnventory- \\
+                & outfit = 1 & Item \\
+                & facial\_hair = 2 & \\
+                & glases = 3 & \\
+                & hats = 4 & \\
+    \hline
+    PBTrucoMatchChallenge- & ACCEPTED = 0 & PBTrucoMatch- \\
+    ReplyEnum               & REJECTED = 1 & ChallengeReply \\
+    \hline
+    PBTrucoPlayType & CARD = 0 & PBTrucoPlay \\
+                    & SHOUT = 1 & \\
+                    & UPDATE = 2 & \\
+    \hline
+    PBTrucoShout & ENVIDO = 0 & PBTrucoPlay \\
+                    & REAL\_ENVIDO = 1 & \\
+                    & FALTA\_ENVIDO = 2 & \\
+                    & ENVIDO\_QUIERO = 3 & \\
+                    & ENVIDO\_NO\_QUIERO = 4 & \\
+                    & TRUCO = 5 & \\
+                    & RETRUCO = 6 & \\
+                    & VALE\_CUATRO = 7 & \\
+                    & TRUCO\_QUIERO = 8 & \\
+                    & TRUCO\_NO\_QUIERO = 9 & \\
+                    & MAZO = 10 & \\
+    \hline
+    PBServerMessageType & PBGameEntityState = 0 & PBServerMetadata \\
+                        & PBPlayerMessage = 1 & \\
+                        & PBPlayerInitError = 2 & \\
+                        & PBPlayerInitSuccess = 3 & \\
+                        & PBPlayerChangeMapReady = 4 & \\
+                        & PBGameEntityDisconnect = 5 & \\
+                        & PBTrucoMatchChallengeRequest = 6 & \\
+                        & PBTrucoMatchChallengeDenied = 7 & \\
+                        & PBTrucoPlay = 8 & \\
+                        & PBTrucoAllowPlay = 9 & \\
+    \hline
+    PBPlayerInitErrorCode & UNKNOWN = 0 & PBPlayerInitError \\
+                            & INVALID\_PLAYER\_CREDENTIALS = 1 & \\
+                            & PLAYER\_ALREADY\_EXISTS = 2 & \\
+    \hline
+    PBInventoryItemType & hair = 0 & PBInventoryItem \\
+                        & outfit = 1 & \\
+                        & facial\_hair = 2 & \\
+                        & glases = 3 & \\
+                        & hats = 4 & \\
+    \hline
+    PBTrucoPlayType & CARD = 0 & PBTrucoPlay \\
+                    & SHOUT = 1 & \\
+                    & UPDATE = 2 & \\
+    \hline
+    PBTrucoCardSuit & CUPS = 0 & PBTrucoCard \\
+                    & SWORDS = 1 & \\
+                    & COINS = 2 & \\
+                    & CLUBS = 3 & \\
+    \hline
+    PBTrucoShout & ENVIDO = 0 & PBTrucoPlay \\
+                    & REAL\_ENVIDO = 1 & \\
+                    & FALTA\_ENVIDO = 2 & \\
+                    & ENVIDO\_QUIERO = 3 & \\
+                    & ENVIDO\_NO\_QUIERO = 4 & \\
+                    & TRUCO = 5 & \\
+                    & RETRUCO = 6 & \\
+                    & VALE\_CUATRO = 7 & \\
+                    & TRUCO\_QUIERO = 8 & \\
+                    & TRUCO\_NO\_QUIERO = 9 & \\
+                    & MAZO = 10 & \\
+    \hline
+    \caption{Enums Protobuf}\\
 \end{longtable}

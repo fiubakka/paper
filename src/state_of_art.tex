@@ -9,23 +9,21 @@ utilizan una arquitectura cliente-servidor, en la que el jugador
 hace de cliente y se conecta a un servidor centralizado. Este servidor suele manejar
 la mayor parte de la lógica del juego, como puede ser la simulación de las físicas, el procesamiento
 de las acciones de los jugadores, la validación de las reglas del juego, entre otros.
-Es común que algunas funcionalidades sean delegadas a otros servicios pero suelen ser funcionalidades
-secundarias como el manejo de cuentas de usuario, guardado y consulta de estadísticas
+Es común que algunas funcionalidades sean delegadas a otros servicios, pero suelen ser componentes
+secundarios, como el manejo de cuentas de usuario, guardado y consulta de estadísticas
 o la gestión de partidas.
 
 Dada la naturaleza monolítica que prevalece en este modelo de servidores centralizados,
 resulta que la cantidad de eventos, y en consecuencia la cantidad de jugadores,
 que un único servidor puede administrar se encuentra limitada por los recursos de hardware del mismo.
-Como consecuencia de esto, las mejoras de performance dependen de la escalabilidad \textbf{vertical},
-donde la única forma de aumentar la capacidad de jugadores o eventos que un servidor puede manejar
-depende de la mejora de los recursos de hardware.
+Esto resulta en una escalabilidad únicamente \textbf{vertical}, donde la forma de aumentar la capacidad
+de jugadores o eventos que un servidor puede procesar depende de la mejora de los recursos de hardware del mismo.
 
-En un contexto tecnológico donde la investigación y desarrollo de los procesadores
-se encuentra en un punto de inflexión, la ley de Moore se encuentra en su límite,
-se opta por incrementar la cantidad de núcleos ante la dificultad de aumentar la frecuencia de los mismos,
-y donde existe una creciente preferencia por los sistemas distribuidos como  respuesta a las problemáticas
-emergentes es que decidimos explorar la posibilidad de desarrollar un videojuego multijugador
-
+En un contexto tecnológico en el que la investigación y desarrollo de los procesadores
+se encuentra en un punto de inflexión, donde la ley de Moore ya no aplica \cite{moores-law-is-dead},
+donde se opta por incrementar la cantidad de núcleos ante la dificultad de aumentar la frecuencia de los mismos,
+y donde cada vez más se prefiere los sistemas distribuidos como respuesta a las problemáticas surgientes,
+es que decidimos explorar la posibilidad de desarrollar un videojuego multijugador
 \textbf{altamente distribuido}.
 
 % \noindent Akka es un toolkit desarrollado por la empresa Lightbend. Un toolkit es un conjunto de 

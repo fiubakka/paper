@@ -3,3 +3,30 @@
 % el Trabajo Profesional a su formación, a otras entidades si las hubiera, 
 % y los resultados principales obtenidos. También se debe destacar si el 
 % desarrollo generó alguna innovación y de qué tipo.
+
+\noindent Dados los resultados presentados en la sección \ref{sec:validation}, podemos concluir que nuestra arquitectura es, cuanto menos, prometedora. Logramos demostrar que al escalar horizontalmente,
+es decir, al aumentar la cantidad de nodos del servidor en lugar de aumentar la potencia de los nodos existentes,
+la carga disminuye, lo cual nos permitiría tener una cantidad mucho mayor de jugadores que si solo tuviéramos
+una cantidad fija de nodos y nos viéramos limitados a únicamente poder mejorar el hardware de cada uno.
+Sin embargo, descubrimos que hay múltiples consideraciones necesarias para poder aprovechar al máximo nuestra arquitectura. Principalmente, los nodos
+del servidor deben tener un hardware lo suficientemente potente como para no verse limitados por el \textit{overhead} agregado al formar un cluster de Akka, como fue explicado en detalle en la sección \ref{sec:virtualization}.
+Además, no es trivial incrementar la cantidad de nodos que conforman al cluster. Esto implica, potencialmente, mayor inestabilidad en el sistema, dado que los procesos de rebalanceo
+de los jugadores son más complejos de forma proporcional a la cantidad de nodos del cluster. Es sumamente importante realizar una correcta configuración de Cluster Sharding para minimizar posibles errores.
+
+Otra cosa a tener en cuenta es el tipo de juego sobre el cual se quiere aplicar esta arquitectura. Dada la naturaleza
+distribuida, como ya fue explicado en secciones anteriores, la consistencia de la información para todos los jugadores
+será eventual, es decir, en un determinado instante dos jugadores pueden tener información distinta del juego, pero dado cierto tiempo,
+es esperable que se sincronicen. Esto conlleva a que los juegos de naturaleza más competitiva no se adaptarían bien a esta
+arquitectura, ya sea debido a estos problemas de sincronización o también a posibles modificaciones en el cliente que le den una ventaja
+injusta a los jugadores que lo hagan. Dado que nuestro servidor confía en la información que recibe del cliente, es extremadamente susceptible a trampas.
+Otro tipo de juegos incompatibles con nuestra arquitectura son aquellos que requieran una latencia extremadamente baja, como sería
+un juego de acción de tiempo real. Para ese tipo de juegos es preferible una arquitectura monolítica que garantice la mínima latencia posible.
+
+La experiencia de llevar a cabo este proyecto fue extremadamente enriquecedora para todos los integrantes del grupo.
+Nos permitió poner en práctica una gran cantidad de conceptos aprendidos durante el transcurso de la carrera. Desde algoritmos convencionales, programación concurrente, arquitecturas distribuidas y escalabilidad, comunicación en la red, complejidad algorítmica, y hasta incluso metodologías
+de desarrollo ágiles y administración de proyectos. Si bien nos dividimos en equipos durante el desarrollo, eventualmente todos aportamos
+en cada una de las áreas, en distinta medida, pero lo suficiente para que tengamos un entendimiento de todos los conceptos aplicados.
+
+Para concluir, consideramos que nuestro proyecto culminó en una arquitectura que es una base sólida para el desarrollo de videojuegos
+que busquen maximizar la cantidad de jugadores permitidos en simultáneo. Creemos además que esto puede abrir la puerta a integrar el modelo de actores en el desarrollo de los videojuegos,
+dado que actualmente no es un paradigma utilizado en esta área. En el futuro, esperamos que todo lo presentado en este proyecto sirva como base para videojuegos en línea de mayor escala.
