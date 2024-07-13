@@ -1,13 +1,3 @@
-% En esta sección se debe definir todo el proceso de construcción de software,
-% elegir metodología de trabajo, entregables, hitos de avance, 
-% pruebas de código, etc. Se debe explicar la metodología elegida y 
-% su adaptación al trabajo particular. En la descripción de la metodología 
-% se debe incluir una descripción de cómo se gestiona el alcance, tiempos, 
-% estimaciones, indicadores, riesgos, calidad, reuniones dentro del equipo y 
-% con los interesados. Se hace especial hincapié en el hecho de la 
-% documentación del sistema en cuestión, incluyendo documentación técnica de 
-% entregables, documentación funcional y de diseño, minutas de reuniones, etc.
-
 \noindent A continuación se detalla el cronograma del avance del proyecto,
 definiendo cada hito y las fechas aproximadas de inicio y fin de cada uno.
 Estos hitos fueron acompañados de reuniones semanales entre los integrantes,
@@ -30,7 +20,7 @@ validar el avance.
     \begin{itemize}[left=0pt]
         \item Inicio de la cursada del Trabajo Profesional.
         \item Asignación de tutor.
-        \item Reuniones para discutir qué tipo de proyecto se desea crear.
+        \item Reuniones para discutir qué tipo de proyecto deseamos desarrollar.
     \end{itemize} \\ \hline
 
     \multirow{2}{3cm}{\centering 17/09/23 \\ -- \\ 18/10/23} &
@@ -47,18 +37,16 @@ validar el avance.
 
     \multirow{3}{3cm}{\centering 10/11/23 \\ -- \\ 6/12/23} &
     \begin{itemize}[left=0pt]
-        \item Realizar la configuración inicial de las tecnologías necesarias para el desarrollo del trabajo, es decir, configurar en Godot un cliente y levantarlo en un entorno local y configurar un servidor con Akka y levantarlo también en el ambiente local.
+        \item Realizar la configuración inicial de las tecnologías necesarias para el desarrollo del trabajo.
         \item Asignación de roles iniciales para los integrantes del grupo.
-        \item Aplicación mínima de comunicación entre el servidor y el cliente.
-        \item Prueba de concepto del modelo propuesto en Akka. Aplicación que instancie actores y la lógica de event streaming descrita en la arquitectura propuesta.
+        \item Prueba de concepto de comunicación entre el servidor y el cliente.
+        \item Prueba de concepto del modelo propuesto en Akka. Aplicación que cree actores y la lógica de event streaming descrita en la arquitectura propuesta.
         \item Definición del protocolo de comunicación entre el servidor y el cliente.
         \item Configuración de Akka Streams y Akka Cluster.
         \item Configuración de la base de datos.
-        \item Configuración de Dagger.
-        \item Inicio en el deploy de Kubernetes.
+        \item Configuración inicial del servidor en Kubernetes.
         \item Configuración de Kafka.
-        \item Experimentación de la comunicación de Godot con un servidor de prueba en python.
-
+        \item Experimentación de la comunicación de Godot con un servidor de prueba en Python.
     \end{itemize} \\ \hline
 
     \multirow{3}{3cm}{\centering 7/12/23 \\ -- \\ 31/12/23} &
@@ -67,41 +55,41 @@ validar el avance.
         \item Implementación inicial en Godot de las acciones básicas entre jugadores. Ejemplo: que los usuarios puedan mover su propio personaje y ver las acciones de otros jugadores y que puedan comunicarse a través de un chat.
         \item Implementación inicial de un mapa con el cual los jugadores puedan interaccionar. Ejemplo: colisiones y la visualización del entorno donde se encuentra el jugador.
         \item Creación de pantallas para ingresar al juego y para registrarse.
-        \item Configuración de Cinnamon.
-        \item Configuración de Telemetry.
         \item Configuración de la base de datos en producción.
-        \item Creación de jugadores artificiales que simulen acciones sencillas para testeo.
+        \item Creación de jugadores artificiales que simulen acciones sencillas para testing.
         \item Mejora en el manejo de la desconexión de jugadores.
-
     \end{itemize} \\ \hline
 
     \multirow{3}{3cm}{\centering 1/01/24 \\ -- \\ 25/01/24} &
     \begin{itemize}[left=0pt]
         \item Implementación de un inventario para equipar cosméticos al jugador.
         \item Integración de las distintas pantallas del juego.
+        \item Configuración de Cinnamon.
         \item Implementación de un creador de personajes.
-        \item Cambio de TCP a aeronUDP en Akka remoting.
+        \item Cambio de TCP a AeronUDP en Akka Remoting.
     \end{itemize} \\ \hline
 
     \multirow{3}{3cm}{\centering 26/02/24 \\ -- \\ 05/03/24} &
     \begin{itemize}[left=0pt]
-        \item Creación de una pantalla de inicio.
+        \item Creación de una pantalla de inicio y selección de idioma.
         \item Animaciones para los jugadores.
-        \item Configuración de CloudKarafka.
+        \item Configuración de CloudKarafka y ElephantSQL.
+        \item Despliegue de la aplicación en EKS (AWS Kubernetes).
     \end{itemize} \\ \hline
 
     \multirow{3}{3cm}{\centering 06/03/24 \\ -- \\ 14/04/24} &
     \begin{itemize}[left=0pt]
         \item Implementación de un controlador de escenas.
-        \item Implementación del Truco.
+        \item Comienzo de la implementación del Truco.
         \item Mejoras en el aspecto multijugador (ej: manejar un jugador que se desconecta, que entra a otra habitación, etc.)
         \item Configuración de CircleCI.
-        \item Migración a de Scala 2.13 a Scala 3.4.
-        \item Mejora en el deploy.
+        \item Migración de Scala 2.13 a Scala 3.4.
+        \item Configuración y armado del cluster de Kubernetes de RaspberryPis.
     \end{itemize} \\ \hline
 
     \multirow{3}{3cm}{\centering 15/04/24 \\ -- \\ 09/05/24} &
     \begin{itemize}[left=0pt]
+        \item Migración de EKS al cluster local.
         \item Mejoras en las pantallas de inicio de sesión y registro.
         \item Implementación de una pantalla de carga.
         \item Creación de personajes no jugables y una caja de diálogos para que los jugadores puedan comunicarse con ellos.
@@ -112,7 +100,6 @@ validar el avance.
 
     \multirow{3}{3cm}{\centering 10/05/24 \\ -- \\ 10/06/24} &
     \begin{itemize}[left=0pt]
-        \item Pausar la música.
         \item Mejorar los límites de la cámara para los bordes de los mapas.
         \item Más personajes no jugables para poblar los mapas.
         \item Controlador de música.
@@ -125,6 +112,7 @@ validar el avance.
         \item Optimización del uso de los sprite sheets para los personajes.
         \item Detalles en los mapas.
         \item Sonidos en los menús.
+        \item Bug fixing y mejoras generales.
         \item Informe.
     \end{itemize} \\ \hline
 \end{longtable}

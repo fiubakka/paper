@@ -19,7 +19,8 @@ los \textit{deadlocks} y \textit{race conditions}, al evitar el uso de memoria c
 como herramienta de comunicación en el sistema. Resulta, además, en una forma natural de representar a las entidades del videojuego, donde podemos plantear una 
 relación \textbf{1 a 1} entre entidad y actor. Si establecemos que el estado de cada entidad 
 debería ser administrado por ella misma, otra característica intrínseca del modelo de actores,
-se desprende entonces que se ajusta perfectamente a lo que queremos desarrollar.
+se desprende entonces que se ajusta perfectamente a lo que queremos desarrollar, dado que el actor es el único que puede modificar
+su propio estado.
 
 Existen muchas implementaciones del modelo de actores. Algunas de ellas son estándar del lenguaje de programación,
 como en Erlang y Elixir, otras son bibliotecas de terceros que implementan el paradigma sobre lenguajes
@@ -38,9 +39,8 @@ En breve entraremos en más detalle sobre el funcionamiento de Akka y los distin
 
 No alcanza sin embargo únicamente con Akka para poder desarrollar la arquitectura de nuestro videojuego.
 El primer punto a resolver con el que nos encontramos es que necesitamos un mecanismo que nos permita comunicar distintos eventos
-provenientes de un actor a otros N actores. Algunos de estos eventos pueden ser la actualización de las propiedades de uno de los jugadores,
-como su posición y equipamiento, entre otras diversas acciones que el jugador realice. Una primera solución que se podría plantear a esta problemática sería que cuando un jugador realice una acción,
-por ejemplo de movimiento, sea responsabilidad de este notificar vía mensajes a todos los demás actores del juego que se ha desplazado. Esta solución sin embargo no es escalable, principalmente por dos motivos:
+provenientes de un jugador a los otros jugadores. Una primera solución que se podría plantear a esta problemática sería que cuando un jugador realice una acción,
+por ejemplo de movimiento, sea responsabilidad de este notificar vía mensajes a todos los demás jugadores que se ha desplazado. Esta solución sin embargo no es escalable, principalmente por dos motivos:
 
 \begin{itemize}
     \item Cada actor correspondiente a un jugador debería almacenar una referencia a todos los demás jugadores para poder notificarles los eventos.
@@ -51,7 +51,7 @@ por ejemplo de movimiento, sea responsabilidad de este notificar vía mensajes a
 \end{itemize}
 
 El segundo punto podría resolverse si utilizamos un actor central el cual es el encargado de crear a todos los actores de los jugadores
-y almacene las referencias a cada jugador creado, pero este mecanismo presenta un único punto de falla en el sistema, algo que queremos evitar a toda costa
+y almacenar las referencias a cada jugador creado, pero este mecanismo presenta un único punto de falla en el sistema, algo que queremos evitar a toda costa
 para poder maximizar la distribución del modelo desarrollado.
 
 Debido a esto, y siempre con el objetivo de maximizar la distribución del sistema minimizando los puntos de falla únicos del mismo,
@@ -67,7 +67,7 @@ Integrando Kafka en el sistema diseñamos un mecanismo de comunicación de event
 y publicación de eventos en Kafka a actores específicos, de aquí en adelante denominados \textbf{Consumidores}
 y \textbf{Productores}. Los Productores son los encargados de publicar en un tópico de Kafka los eventos de notificación masiva
 que un jugador realice en el juego, como por ejemplo un movimiento o un mensaje de chat a la sala, y los Consumidores
-son los encargados de leer estos eventos y notificar a los actores correspondientes a los demás jugadores.
+son los encargados de leer estos eventos y notificar a los actores correspondientes de los demás jugadores.
 Este último paso, la notificación del Consumidor a los demás jugadores de la partida, no es trivial de implementar.
 A primera vista, volvemos al problema inicial de que deberíamos almacenar referencias a todos los actores del juego registrados
 para poder enviarles los mensajes de notificación. Una forma de evitar esto podría ser proponer que cada jugador tenga un correspondiente
@@ -79,7 +79,7 @@ Es aquí donde introducimos otro de los principales \textit{features} de Akka qu
 Akka Streams es una implementación de Akka de la iniciativa \textit{Reactive Streams}, un estándar para el procesamiento de datos de forma asincrónica y no bloqueante.
 En particular, Akka Streams permite definir \textit{pipelines} de procesamiento de datos a los cuales se les pueden aplicar distintas transformaciones y operaciones.
 La clave detrás del uso de Akka Streams es que permite conectar múltiples fuentes de datos con múltiples consumidores de forma eficiente y sin bloqueos. Es similar a
-lo que ya hacemos con Kafka, pero a nivel del nodo de la aplicación, es decir, internamente, y con la ventaja de consumir considerablemente menos recursos que con
+lo que ya hacemos con Kafka, pero a nivel del nodo de la aplicación, es decir, internamente, y con la ventaja de necesitar considerablemente menos recursos que con
 consumidores de Kafka.
 
 Los eventos masivos, entonces, se procesan de la siguiente manera:
@@ -94,9 +94,9 @@ Los eventos masivos, entonces, se procesan de la siguiente manera:
 
 // TODO agregar diagrama de lo descripto
 
-Este diagrama resume el corazón de la arquitectura desarrollada. Es importante recordar que lo descrito corresponde a un único nodo del sistema.
-La clave de la escalabilidad de la aplicación es que podemos replicarlo en N nodos, donde cada uno de ellos es responsable de un subconjunto de los actores del juego,
-y la comunicación entre los actores de cada nodo es transparente, dando la ilusión de que la ejecución está contenida en un único nodo.
+Este diagrama resume la arquitectura desarrollada de forma simplificada. Es importante recordar que lo descrito corresponde a un único nodo del sistema.
+La clave de la escalabilidad de la aplicación es que podemos replicarlo en N nodos, donde cada uno de ellos es responsable de un subconjunto de los jugadores,
+y la comunicación entre los actores que representan a esos jugadores es transparente a la ubicación del actor en los nodos del sistema, dando la ilusión de que la ejecución está contenida en un único nodo.
 
 \subsection{Introducción a Akka}
 
@@ -108,16 +108,16 @@ Comenzamos por lo central: la implementación del modelo de actores en Akka.
 
 \noindent El corazón de Akka es el modelo de actores. Es su principal componente y sobre el cual se construyen todos los demás.
 Históricamente Akka implementaba a los actores como clases de Scala que heredan de una clase \textbf{Actor}.
-La clase luego debe definir un método \textit{receive} que se encarga de definir el comportamiento del actor según el mensaje recibido.
-Dicho método recibe el mensaje como argumento del mismo, y el mensaje puede \textbf{ser cualquier tipo de dato de Scala}.
+La clase luego debe implementar un método \textit{receive} que se encarga de definir el comportamiento del actor según el mensaje recibido.
+Dicho método recibe el mensaje como argumento del mismo, donde el mensaje puede \textbf{ser cualquier tipo de dato de Scala}.
 Mediante Pattern Matching, un feature nativo de Scala, se define el comportamiento del actor según el tipo de mensaje recibido.
-El problema con esta metodología es que se pierde todo tipo de chequeo de tipos en tiempo de compilación.
+El problema con esta implementación es que se pierde todo tipo de validación de tipos en tiempo de compilación.
 
 Como respuesta a esta problemática, Akka introdujo una nueva versión de la biblioteca de actores llamada \textit{Akka Actors Typed}.
-Esta nueva versión introduce el concepto de tipado para los mensajes que pueden recibir los actores, y además mantiene intercompatibbilidad
+Esta nueva versión introduce el concepto de tipado para los mensajes que pueden recibir los actores, y además mantiene compatibilidad
 con los actores de la versión anterior, renombrada a \textit{Akka Actors Classic}.
 
-A continuación se muestra una comparación entre la definición de un actor en la versión clásica y su análogo en la versión tipada de actores.
+A continuación se muestra una comparación entre la definición de un actor en la versión clásica y su análogo en la versión tipada.
 
 \newpage
 
@@ -182,7 +182,7 @@ de la versión Akka Classic, ya que muchos proyectos existentes todavía la util
 
 \subsubsection{Akka Cluster}
 
-\noindent Anteriormente mencionamos que existen implementaciones del modelo de actores para distintas tecnologías. Si nos retringieramos
+\noindent Anteriormente mencionamos que existen implementaciones del modelo de actores para distintas tecnologías. Si nos limitásemos
 únicamente a utilizar el componente de actores de Akka no habría un motivo diferencial, más allá de la preferencia de lenguaje
 o recursos disponibles en la web, para elegirlo sobre otras implementaciones. Akka Cluster es el primer motivo, y el más importante,
 de por qué usamos Akka para implementar nuestro videojuego.
@@ -197,7 +197,7 @@ Otro problema que Akka permite resolver mayormente de forma transparente es la s
 residen en distintos nodos es necesario serializar los mensajes para poder enviarlos a través de la red, ya sea via TCP o UDP. Por defecto, Akka utiliza conexiones
 TCP entre los nodos para la comunicación de los mensajes de los actores, aunque es posible configurar la conexión vía UDP (como es el caso de la configuración de nuestro proyecto).
 Independientemente del procotolo de comunicación es necesario serializar los mensajes, y Akka provee una dependencia que nos permite definir a los mensajes como extensiones
-de un \textit{trait} o interfaz de Scala, y luego automáticamente se encarga de serializar y deserializar los mensajes en caso de que necesiten viajar por la red.
+de un \textit{trait} o interfaz de Scala, y luego automáticamente se encarga de serializar y deserializarlos en caso de que necesiten viajar por la red.
 
 Inicializar un cluster de Akka es sencillo. A modo de ejemplo, esta es la configuración de \textit{Fiubakka}
 para el ambiente local de desarrollo:
@@ -220,9 +220,9 @@ para el ambiente local de desarrollo:
 
 Para el ambiente local se utilizan lo que se denomina como \textit{seed nodes} o nodos semilla, que son nodos que se encargan de iniciar el cluster.
 Al iniciar un nodo de Akka el mismo verifica si su dirección corresponde a un nodo semilla. Si es así, se encargará de escuchar futuras
-conexiones de otros nodos de Akka que busquen unirse al cluster, y siempre que un nodo de Akka no semilla se inicie intentará conectarse a los nodos semilla especificados
+conexiones de otros nodos que busquen unirse al cluster, y siempre que un nodo no semilla se inicie intentará conectarse a los nodos semilla especificados
 en la configuración. Por supuesto, este método únicamente funciona si las direcciones de los nodos son estáticas y conocidas de antemano.
-Para ambientes dinámicos como Kubernetes existen otros métodos de descubrimiento de nodos que describiremos más adelante.
+Para ambientes dinámicos, como por ejemplo Kubernetes, existen otros métodos de descubrimiento de nodos que describiremos más adelante.
 
 La sección de \textit{sharding} incluida en la configuración nos lleva a nuestro siguiente componente de Akka del que \textit{Fiubakka}
 hace uso: \textbf{Akka Cluster Sharding}, una extensión de las funcionalidades que Akka Cluster provee.
@@ -230,7 +230,7 @@ hace uso: \textbf{Akka Cluster Sharding}, una extensión de las funcionalidades 
 \subsubsection{Akka Cluster Sharding}
 
 \noindent Una problemática que surge al utilizar Akka Cluster es que si bien los actores pueden comunicarse entre sí sin importar en qué nodo
-se encuentren, el problema es conseguir en primera instancia la referencia a actores que residen en otros nodos ajenos al propio. En principio
+se encuentren, es necesario de alguna forma conseguir la referencia a los actores que residen en nodos ajenos al propio. En principio
 pueden utilizarse llamados remotos a los demás nodos y conseguir como respuesta las direcciones de los actores que nos interesan para poder
 crear la referencia a los mismos, pero no es ideal. Por otro lado, una propiedad deseable en los sistemas distribuidos es la capacidad
 de esparcir la carga entre los distintos nodos \textbf{elásticamente}, esto es, que el incremento y decremento de nodos en el cluster
@@ -238,42 +238,44 @@ resulte en un balanceo uniforme de la carga total.
 
 Akka Cluster Sharding es, entre otras cosas, una respuesta a ambos puntos. Permite crear \textbf{entidades} que pueden ejecutarse en cualquier nodo
 del cluster y que pueden ser referenciadas desde cualquier nodo por medio de un identificador único, para poder comunicarnos con las mismas.
-Podemos pensar a una entidad como un actor que reside en un único nodo del cluster en todo momento, y al cual podemos conseguir una referencia sin saber
+Podemos pensar a una entidad como un actor que reside en un único nodo del cluster para todo determinado momento, y al cual podemos conseguir una referencia sin saber
 en qué nodo se encuentra, utilizando su identificador.
 
 Además, Sharding nos permite definir una \textbf{estrategia de balanceo} de las entidades al momento de creación de las mismas,
-y de \textbf{rebalanceo} modificarse la composición de los nodos del cluster. Nuevamente, para nuestra aplicación, estos balanceos son
+y de \textbf{rebalanceo} al modificarse la composición de los nodos del cluster. Nuevamente, para nuestra aplicación, estos balanceos son
 completamente transparentes. Si un nodo se cae, las entidades que residían en el mismo son automáticamente reubicadas en otros nodos del cluster,
 y los distintos actores que estuviesen comunicándose con dichas entidades no se enterarán del cambio.
 
 Sin adentrarnos demasiado en los detalles, Cluster Sharding consigue implementar esto de la siguiente forma.
-En primer lugar, cada entidad tendrá definido por cada tipo de entidad lo que se conoce como un \textit{Shard Coordinator}, un actor singleton
+En primer lugar, por cada tipo de entidad existirá lo que se conoce como un \textit{Shard Coordinator}, un actor singleton
 que residirá en el nodo líder del Akka Cluster y será el responsable de determinar en que nodos del cluster residirá
 un \textit{shard}. Los shards son conjuntos de entidades, donde cada entidad tiene un shard asignado mediante un hash calculado sobre su
 identificador único. En este sentido, la mínima unidad asignable por el Shard Coordinator es el shard, y no entidades individuales (de allí su nombre).
 Cada nodo tendrá lo que se denomina un \textit{Shard Region} por cada tipo de entidad, un actor que se encargará de administrar los shards del nodo
-que le hayan sido asignados por el Coordinator, así como resolver, también mediante en el Shard Coordinator en caso de ser necesario, las ubicaciones
+que le hayan sido asignados por el Coordinator, así como resolver, también mediante el Shard Coordinator en caso de ser necesario, las ubicaciones
 de los shards cuyas entidades sean comunicadas por los actores del nodo.
 
 En el caso de nuestra aplicación \textit{Fiubakka}, cada cliente que se conecta al juego va a generar dos entidades asociadas: una entidad
 \textbf{Player} y otra entidad \textbf{PlayerPersistor}. La ventaja de representar a los jugadores como entidades en lugar de actores es justamente que conseguimos
-referenciar a un jugador sin conocer ni importar el nodo en el que reside, y que además son sujetos a los procesos de balanceo de carga que se hace sobre las entidades.
-Esto nos permite escalar horizontalmente frente al incremento de jugadores en el juego, mediante simplemente agregar más nodos de forma dinámica.
+referenciar a un jugador sin conocer ni importar el nodo en el que reside, y que además son sujetos a los procesos de balanceo de carga que se hacen sobre las entidades.
+Esto nos permite escalar horizontalmente frente al incremento de jugadores en el juego, mediante el agregado de nodos de forma dinámica.
 
 Las entidades definidas tienen una diferencia muy marcada con los actores y es que son automáticamente iniciadas siempre que reciban un mensaje. Dado que pueden ser referenciadas
-desde cualquier actor (u otra entidad) en el cluster, el actor que envía el mensaje desconoce si la entidad está funcionando o no. Debido a esto Akka Cluster Sharding implementa como mecanismo
+desde cualquier actor (u otra entidad) en el cluster, el actor que envía el mensaje desconoce si la entidad está funcionando o no. Debido a esto, Akka Cluster Sharding implementa como mecanismo
 la inicialización automática de las entidades al recibir un mensaje, cualquiera sea el tipo u origen del mismo. Este mecanismo, sin embargo, introduce una problemática. Si las entidades pueden iniciarse
 en cualquier momento, tendríamos que implementar algún proceso que se encargue periódicamente de detener a las entidades cuando no se estén utilizando para liberar los recursos.
 
-Afortunadamente Cluster Sharding toma esto en cuenta también, y lo soluciona mediante un mecanismo automático de \textbf{pasivación} cada cierta cantidad de tiempo (valor configurable, por defecto
+Afortunadamente Cluster Sharding tiene esto en cuenta y lo soluciona mediante un mecanismo automático de \textbf{pasivación} cada cierta cantidad de tiempo (valor configurable, por defecto
 son 2 minutos). La pasivación se trata de detener a todas aquellas entidades que no hayan recibido ningún mensaje en el tiempo de \textit{timeout} definido. Esto garantiza que no se malgastan recursos
 en entidades poco utilizadas y quita responsabilidad al programador de tener que estar administrándolas manualmente. Por supuesto, una entidad pasivada será reiniciada al momento en el que vuelva a recibir un mensaje.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{../assets/cluster-sharding-example.jpeg}
+    \includegraphics[width=0.6\textwidth]{../assets/cluster-sharding-example.jpeg}
     \caption{Ejemplo de Cluster Sharding para la entidad Player}
 \end{figure}
+
+\newpage
 
 Es claro entonces la importancia que tiene Cluster Sharding en nuestro modelo, y tiene un papel fundamental, junto con Akka Cluster, en permitirnos desarrollar nuestra arquitectura
 propuesta. Implementaciones del modelo de actores como \textit{Actix} no cuentan con ningún feature similar. Por otro lado, Elixir sí que cuenta con capacidades similares a las de Akka
@@ -283,7 +285,7 @@ Cluster, aunque no las de Cluster Sharding ni las del siguiente componente clave
 
 \noindent Cluster Sharding nos da la garantía de que las entidades se reinician en caso de error o eliminación de un nodo del cluster, además de rebalancearlas al agregarse un nuevo
 nodo. En principio, únicamente con los componentes de Akka que presentamos hasta ahora, ambos casos resultan en un problema: si la entidad se vuelve a iniciar, estaríamos perdiendo el estado
-de la misma, ya que el estado de los actores está en memoria. Esto resultaría por ejemplo en perder los datos de posición del jugador, o también su inventario o equipamiento.
+de la misma, ya que el estado de los actores está en memoria. Esto resultaría por ejemplo en perder los datos de posición del jugador, su equipamiento y cualquier otra información asociada.
 En arquitecturas \textit{stateless}, el estado sería persistido en una base de datos externa ante cada cambio sucedido.
 Una propuesta más que válida sería persistir el estado del actor serializado como si se tratase de un objeto. Akka Persistence toma esta idea y la integra nativamente en los actores. 
 
@@ -291,11 +293,11 @@ Existen dos \textit{flavors} o implementaciones de Akka Persistence. La primera 
 un comando que es procesado por el actor, y el procesamiento de todos los comandos provenientes de los eventos determina el estado final del actor. Lo que se persisten en ese caso son justamente los eventos.
 En caso de que el actor se reinicie, se leen los eventos persistidos y se reenvían los comandos correspondientes al actor para volver al estado en el que se encontraba previo a su caída.
 Lógicamente, dado que en el tiempo pueden acumularse muchos eventos, se introduce un concepto de \textit{snapshot} del estado del actor que actúa como un checkpoint. Cada N cantidad de eventos
-se almacena el snapshot del estado del actor y se reinician los eventos persistidos, tomando ese snapshot como estado inicial del actor previo al reprocesamiento de los eventos. Esto evita que las inicializaciones
+se almacena el snapshot y se reinician los eventos persistidos, tomando ese snapshot como estado inicial previo al reprocesamiento de los eventos. Esto evita que las inicializaciones
 del actor sean muy costosas en tiempo.
 
 Esta primera versión resulta útil en sistemas donde llevar un registro de los sucesos resulte valioso. En el caso de \textit{Fiubakka} no nos interesa entender los eventos
-que llevaron al estado actual de un jugador, únicamente necesitamos el estado del jugador cada ciertos instantes o acciones.
+que llevaron al estado actual de un jugador, únicamente necesitamos el estado cada ciertos instantes o acciones.
 Afortunadamente, Akka Persistence introdujo en una de sus últimas versiones otra alternativa llamada \textbf{Durable State}.
 
 Durable State permite definir \textit{behaviors} que se caracterizan por generar lo que se denomina un \textit{effect} por cada comando recibido en el actor.
@@ -305,10 +307,10 @@ en la base de datos o responder al actor que envió el mensaje.
 
 Este modelo de persistencia de actores se ajusta casi perfectamente a lo que buscamos para persistir el estado de los actores de los jugadores.
 El único problema, en la práctica, es que la API de Durable State Behavior es algo limitada. No es posible por ejemplo tener como efecto tanto la persistencia del actor
-como la respuesta al actor que envió el mensaje. Además, en el caso de generar como efecto la peresistencia del estado del actor, el mismo no procesará el siguiente mensaje hasta no haberse
-ejecutado la query de almacenamiento en la base de datos. Dado que la ejecución de queries puede llevar un tiempo no despreciable comparado con la velocidad de los actores en el procesamiento de los mensajes,
-preferimos no utilizar Durable State Behavior directamente sobre los actores \textbf{Player} asociados a cada cliente del juego.
-En cambio, definimos otro actor \textbf{PlayerPersistor} que sí utiliza Durable State Behavior y al cual el Player le envía su estado en un mensaje.
+como la respuesta al actor que envió el mensaje. Además, en el caso de generar como efecto la persistencia del estado del actor, el mismo no procesará el siguiente mensaje hasta no haberse
+ejecutado el almacenamiento en la base de datos. Dado que la ejecución de las consultas a la base de datos puede llevar un tiempo no despreciable comparado con la velocidad de los actores en el procesamiento de los mensajes,
+preferimos no utilizar Durable State Behavior directamente sobre las entidades \textbf{Player} asociados a cada cliente del juego.
+En cambio, definimos otra entidad \textbf{PlayerPersistor} que sí utiliza Durable State Behavior y al cual el Player le envía su estado en un mensaje.
 De esta forma desacoplamos la persistencia del estado del jugador del procesamiento de los eventos que reciba, evitando incrementar la latencia y empeorar la experiencia del juego.
 
 Dado que un jugador puede recibir miles de mensajes por segundo de distintos eventos que van sucediendo en el juego, optamos por enviar el mensaje de persistencia al
@@ -331,14 +333,14 @@ object PlayerPersistor {
     
     def apply(persistenceId: PersistenceId): Behavior[Command] = {
         DurableStateBehavior[Command, DurablePlayerState](
-        persistenceId,
-        emptyState = DurablePlayerState(
-            "",
-            Position(845, 1730),
-            Equipment(0, 0, 0, 0, 0, 0, 0),
-            0
-        ),
-        commandHandler = commandHandler
+            persistenceId,
+            emptyState = DurablePlayerState(
+                "",
+                Position(845, 1730),
+                Equipment(0, 0, 0, 0, 0, 0, 0),
+                0
+            ),
+            commandHandler = commandHandler
         )
     }
     
@@ -347,13 +349,13 @@ object PlayerPersistor {
         command: Command
     ): Effect[DurablePlayerState] = {
         command match {
-        case Persist(newState) => {
-            Effect.persist(newState)
-        }
-        case GetState(replyTo) => {
-            replyTo ! GetStateResponse(state)
-            Effect.none
-        }
+            case Persist(newState) => {
+                Effect.persist(newState)
+            }
+            case GetState(replyTo) => {
+                replyTo ! GetStateResponse(state)
+                Effect.none
+            }
         }
     }
 }
@@ -367,9 +369,9 @@ Como base de datos para la persistencia tanto del estado de los actores como de 
 
 \subsubsection{Akka Streams}
 
-\noindent El último componente principal de Akka que utilizamos es uno que mencionamos en el resumen de la arquitectura, Akka Streams.
+\noindent El último componente principal de Akka que utilizamos es uno que mencionamos en el resumen de la arquitectura: Akka Streams.
 Se trata de una implementación de la iniciativa de Reactive Streams, un estándar para el procesamiento de datos de forma asincrónica y no bloqueante.
-Conceptualmente, se trata de un \textit{pipeline} de procesamiento de datos, donde tenemos tres componentes principales: el \textbf{Source},
+Conceptualmente, consiste en un \textit{pipeline} de procesamiento de datos, donde tenemos tres componentes principales: el \textbf{Source},
 el \textbf{Flow} y el \textbf{Sink}. El Source es la fuente de los datos, el Flow es una etapa interna del pipeline que transforma los datos, y el
 Sink es el consumidor final. Todo Stream tiene al menos un Source y un Sink, y puede tener cualquier cantidad (o ningún) Flow entremedio.
 
@@ -377,7 +379,7 @@ Un Stream es un maquetado o \textit{blueprint} de cómo los datos van a ser proc
 \textit{materializar} el Stream. El Stream puede ser materializado una única vez, ya que la fuente de datos (Source) puede ser consumida una única vez.
 
 Se trata de una herramienta particularmente útil para procesar grandes cantidades de datos de forma eficiente. Cada etapa del Stream puede ser procesada
-concurrentemente en distintos threads, lo que garantiza un alto \textit{throughput}. Es posible construir pipelines extremadamente complejos de forma relativamente
+concurrentemente en distintos hilos del procesador, lo que garantiza un alto \textit{throughput}. Es posible construir pipelines extremadamente complejos de forma relativamente
 sencilla, y cuenta con muchos operadores nativos que facilitan la construcción de los mismos. No apunta a la simplicidad de uso, sino a proveer todos los elementos
 básicos necesarios sobre los cuales puede construirse prácticamente cualquier solución.
 
@@ -415,8 +417,8 @@ runnableGraph.run()
 
 \subsection{Arquitectura de Fiubakka}
 
-\noindent Con todos los componentes de Akka presentados, podemos ahora proceder al detalle de nuestra implementación y los distintos componentes
-que la conforman. Haremos una descripción de arriba hacia abajo de la arquitectura, para enteder el flujo completo del procesamiento de
+\noindent Con todos los módulos de Akka presentados, podemos ahora proceder al detalle de nuestra implementación y los distintos componentes
+que la conforman. Haremos una descripción partiendo desde la capa de comunicación hasta la de infraestructura de nuestra aplicación, para enteder el flujo completo del procesamiento de
 los jugadores en el juego.
 
 \subsubsection{Conexión de los clientes}
@@ -462,7 +464,7 @@ object PlayerAcceptor {
 \end{lstlisting}
 
 Cada conexión recibida en el servidor se procesa a través del mensaje \textbf{PlayerAcceptor.Accept}.
-Se crea un nuevo actor \textbf{PlayerHandler} que será el encargado de administrar la conexión con el cliente recibido, incluyendo
+Se crea un nuevo actor \textbf{PlayerHandler} que será el encargado de administrar la conexión con el cliente, incluyendo
 el procesado de los mensajes que reciba y la notificación al cliente de los eventos que sucedan en el juego.
 
 \begin{figure}[htbp]
@@ -471,8 +473,9 @@ el procesado de los mensajes que reciba y la notificación al cliente de los eve
     \caption{Flujo del actor PlayerAcceptor}
 \end{figure}
 
-Los clientes envían información al servidor vía la conexión TCP establecida, y será el actor PlayerHandler quien deba procesar
-los mensajes. El protocolo de comunicación entre el cliente y el servidor será explicado más adelante, en este punto alcanza con entender
+\newpage
+
+El protocolo de comunicación entre el cliente y el servidor será explicado más adelante, en este punto alcanza con entender
 que el PlayerHandler realiza la traducción de los datos serializados enviados por el cliente a mensajes internos del actor para su posterior
 procesamiento. Dado que la conexión con el cliente está abstraída en un Akka Stream, introducimos un Flow entremedio que tiene como entrada
 los \textit{bytes} recibidos y como salida los mensajes internos del actor PlayerHandler. El Sink del Stream es el actor mismo,
@@ -526,6 +529,8 @@ en mensajes que el PlayerHandler puede recibir. Los mensajes son enviados median
     \caption{Flujo de mensajes del cliente al PlayerHandler}
 \end{figure}
 
+\newpage
+
 \subsubsection{Manejo del jugador}
 
 \noindent Hasta aquí explicamos como se conecta un cliente al servidor y como se reciben los mensajes que el cliente emite.
@@ -543,7 +548,7 @@ que el cliente le envía. Si, por ejemplo, el jugador se desplaza, eso genera un
 responsabilidad del servidor tanto persistir la nueva posición recibida como así también notificar a los demás jugadores del desplazamiento propio.
 Ese aviso es parte de los eventos del juego que mencionamos que se realizan a través de Kafka.
 
-De esta forma, lo más cercano a la fuente de la verdad del estado del juego resulta la agregación de los estados individuales
+De esta forma, lo más cercano a la fuente de la verdad del estado del juego resulta ser la agregación de los estados individuales
 de cada jugador almacenados en los clientes conectados al servidor. Si diseñamos el protocolo de mensajes del videojuego de forma tal
 que no dependa del orden de llegada de los mensajes ni de la garantía de que todos los mensajes se envíen, podemos valernos de que
 el estado de un jugador reportado por el cliente tendrá \textbf{consistencia eventual} en el resto de los jugadores.
@@ -555,62 +560,71 @@ Con todo esto en cuenta es que implementamos la entidad \textbf{Player}. Recorde
 en cualquier nodo del cluster y que es susceptible a los procesos de balanceos de carga. La idea de que el Player sea una entidad y no un actor
 es que siendo uno de los componentes que más carga de cómputo va a tener en el sistema (tanto de tener que procesar los mensajes del cliente como de otros jugadores)
 es necesario que pueda ser reubicado en otros nodos en caso de que la carga sobre el nodo en el que esté residiendo sea elevada.
-Además nos garantiza que al conectarse un nuevo cliente al juego se le asigne el Player en el nodo con mayor disponibilidad de recursos.
+Además nos garantiza que al conectarse un nuevo cliente al juego se le asigne el Player en el nodo con menor cantidad de \textit{shards} asignados. En la práctica esto
+suele coincidir con el nodo con menor consumo de recursos.
 
-La entidad Player maneja el estado del jugador, incluyendo información como su posición, inventario o equipamiento. Recordemos que estos datos no son más que una réplica de lo que
+La entidad Player maneja el estado del jugador, incluyendo información como su posición o equipamiento. Recordemos que estos datos no son más que una réplica de lo que
 el cliente le informa, por lo que el estado del Player y del jugador en el cliente podría no ser exactamente el mismo, aunque eventualmente lo serán debido a la consistencia eventual
 que mencionamos anteriormente. Todas las acciones que el cliente realiza o los eventos que van sucediendo en el juego (como pueden ser acciones de otros
 jugadores) serán recibidos y procesados por el Player. En el caso de los eventos externos, el Player se encarga de enviar un mensaje
 al PlayerHandler notificándole del suceso, para que finalmente el PlayerHandler envíe la información al cliente via la conexión TCP que administra.
 
 El siguiente diagrama muestra conceptualmente el flujo de ejecución del movimiento de un jugador. Es importante aclarar que los diagramas de flujo no logran capturar
-el asincronismo del modelo de actores, por lo que el diagrama modela un flujo secuencial. En la realidad el proceso es totalmente asíncrono, ninguno de los procesos esperan
-la respuesta ni que se completen los otros disparados.
+el asincronismo del modelo de actores, por lo que el diagrama modela un flujo secuencial. En la realidad el proceso es totalmente asíncrono, ninguno de los actores esperan
+la respuesta o completitud de procesamiento de los mensajes enviados.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{../assets/player-movement-example.png}
-    \caption{Diagrama de flujo de movimiento de un jugador}
+    \caption{Diagrama de flujo de movimiento de un jugador.}
 \end{figure}
 
-En el diagrama se muestra un componente que mencionamos previamente cuando presentamos el módulo de Akka Persistence: el PlayerPersistor. Se trata la entidad encargada de almacenar (y recuperar) el estado
+\newpage
+
+En el diagrama se muestra un componente que mencionamos previamente cuando presentamos el módulo de Akka Persistence: el PlayerPersistor. Se trata de la entidad encargada de almacenar y recuperar el estado
 del jugador. Hace uso de los \textit{behaviors} de Durable State que Akka Persistence provee. Como comentamos anteriormente, la interacción con la persistencia se delega a esta otra entidad y no propiamente al
 Player por temas de flexibilidad de API y de latencia. Esto por supuesto significa que no existe garantía de que el nuevo estado haya sido persistido, pero al ser el PlayerPersistor una entidad esta sujeto a las garantías
 de Sharding de rebalanceo y recuperabilidad en casos de fallos. En los casos donde haya errores en la persistencia momentáneos podrá recuperarse automáticamente, y dado que el protocolo del juego se basa en mensajes
-que garantizan la consistencia eventual del estado del jugador, esta segregación de la persistencia del estado del jugador no resulta en fallos críticos. En caso de ser necesario garantizar que una acción se haya persistido,
+que garantizan la consistencia eventual del estado del jugador, esta segregación del estado no resulta en fallos críticos. En caso de ser necesario garantizar que una acción se haya persistido,
 existen mecanismos dentro de Akka para cerciorarnos de ello.
 
 \subsubsection{Comunicación de los eventos del juego}
+\label{sec:events-communication}
 
 \noindent Mencionamos en la introducción a la arquitectura de \textit{Fiubakka} que los eventos que deban ser notificados a todos los demás jugadores se realizan mediante mensajes de Kafka.
 La responsabilidad de publicar y consumir estos eventos no recae en sí sobre el Player, sino sobre dos actores que el Player crea al iniciarse: el \textbf{GameEventConsumer} y el \textbf{GameEventProducer}.
 Todo Player cuenta con un GameEventProducer para poder notificar sus acciones a los demás jugadores, y con un GameEventConsumer para poder enterarse de las acciones que otros jugadores han realizado.
+Lo que en su momento simplificamos como Consumidor y Productor, son en realidad propiamente dicho los consumidores y productores de Kafka, los cuales son el \textbf{Source} y \textbf{Sink} de los \textit{streams}
+administrados por el GameEventConsumer y el GameEventProducer, respectivamente.
 
 Cada vez que el Player deba notificar una acción enviará el mensaje con la acción al GameEventProducer. Este se encargará, mediante un Akka Stream conectado a Kafka, de publicar el mensaje
 en el tópico correspondiente. Cada mapa del juego tiene su propio tópico de Kafka, por lo que el mensaje se publicará únicamente en el tópico que corresponda al mapa en el que se encuentre el jugador que realizó la acción.
 De forma análoga, el GameEventConsumer cuenta con un Akka Stream que tiene como fuente un consumidor del tópico de Kafka correspondiente al mapa en el que el jugador se encuentra. A medida que recibe a través del Stream los
-eventos que fueron siendo publicados en el tópico por los demás jugadores, el GameEventConsumer enviará los eventos como mensajes al Player. Finalmente el Player se los notificará al PlayerHandler, quien terminará enviándolos
+eventos que fueron siendo publicados en el tópico por los demás jugadores, el GameEventConsumer enviará los eventos como mensajes al Player. Por último, el Player se los notificará al PlayerHandler, quien terminará enviándolos
 al cliente asignado.
 
 Una consecuencia de este diseño es que los jugadores desconocen en un principio la existencia de los demás. Es únicamente mediante los eventos que van siendo recibidos en el Player provenientes del GameEventConsumer
-que el cliente se entera de la existencia de los demás jugadores. Cada acción que un jugador realiza que generá un cambio en su estado dispara el evento de notificación del nuevo estado. En el momento que los demás jugadores reciben
-el evento y se le envía al cliente, va a ser posible visualizar al jugador. Este mecanismo nos permite delegar la agregación del estado de los jugadores al cliente, disminuyendo sustancialmente el uso de los recuros de memoria del servidor.
-Cada Player almacenará únicamente su propio estado, el estado de los demás jugadores se le reportará al cliente a medida que se reciban pero no se almacenará en el Player en sí.
-Por supuesto, además de en las actualizaciones, se notifica el estado del jugador cada unos pocos segundos de forma constante para evitar que un jugador que nunca realiza una acción sea invisible al resto.
+que el cliente se entera de la existencia de los demás jugadores. Cada acción que un jugador realiza que genera un cambio en su estado dispara el evento de notificación que contiene este nuevo estado actualizado. En el momento que los clientes de los demás jugadores reciben
+el evento van a tener visibilidad de la existencia del jugador que envió el evento. Este mecanismo nos permite delegar la agregación del estado de los jugadores al cliente, disminuyendo sustancialmente el uso de los recuros de memoria del servidor.
+Cada Player almacenará únicamente su propio estado mientras que el estado de los demás jugadores se le reportará al cliente a medida que se reciban los eventos, pero no se almacena ninguna información de los demás jugadores en la entidad Player.
+Por supuesto, además de las actualizaciones, se notifica el estado del jugador cada unos pocos segundos de forma constante para evitar que un jugador que nunca realiza una acción sea invisible al resto.
 
 \begin{figure}[htpb]
     \centering
     \includegraphics[width=0.8\textwidth]{../assets/game-event-consumer-example.png}
-    \caption{Diagrama de flujo de eventos del juego para un Player}
+    \caption{Diagrama de flujo de eventos del juego para un Player.}
 \end{figure}
 
 Al igual que antes, el diagrama de flujo no captura el asincronismo del modelo de actores. Por otro lado, se observa lo que explicamos respecto a que el estado de los demás jugadores no es persisitido de ninguna forma en el PlayerPersistor,
 sino que se delega su manejo al cliente. Es responsabilidad de este mantener el estado del juego en base a los eventos que va recibiendo.
 
-Otro detalle es que cada GameEventConsumer y GameEventProducer de un nodo del cluster de \textit{Fiubakka} interactúan con un único consumidor y productor de Kafka. El consumidor de Kafka lee los eventos de todas las particiones y los envía por el
-Akka Stream correspondiente, donde luego dependiendo el mapa en el que se encuentre el jugador el GameEventConsumer únicamente conectará su Akka Stream al pipeline correspondiente. Para el productor de Kafka no es necesario este mecanismo de multiplexación
-ya que puede el tópico en el que debe publicar el mensaje es parte de la metadata del mismo, por lo que el Sink del Stream es común a todos. Este modelo de procesado resultó en la práctico en considerablemente mejor
-performance que tener un consumidor dedicado tanto para cada jugador como para cada mapa, debido a los altos recursos que implica instanciar consumidores y productores de Kafka. En este sentido, la posibilidad que nos da Akka Streams de armar pipelines no lineales
+Otro detalle es que cada GameEventConsumer y GameEventProducer de un nodo del cluster de \textit{Fiubakka} interactúan con un único consumidor y productor de Kafka. El consumidor de Kafka lee los eventos de todas las particiones y los envía por
+Akka Streams independientes por cada partición, donde luego GameEventConsumer del jugador se conectará al Akka Stream que corresponda a la partición del mapa en el que se encuentre. Esto se debe a que
+existe una relación \textbf{1 a 1} entre mapa de \textit{Fiubakka} y partición de Kafka. 
+
+Para el productor de Kafka no es necesario este mecanismo de multiplexación
+ya que la partición en la que debe publicar el mensaje es parte de su metadata, por lo que el Sink del Stream es común a todos. Este modelo de procesado resultó en la práctica en considerablemente mejor
+performance que tener un consumidor de Kafka dedicado tanto para cada jugador como para cada mapa, debido a los altos recursos que implica instanciar consumidores y productores de Kafka. En este sentido, la posibilidad que nos da Akka Streams de armar pipelines no lineales
 resultó extremadamente beneficiosa.
 
 \begin{figure}[htpb]
@@ -618,6 +632,12 @@ resultó extremadamente beneficiosa.
     \includegraphics[width=1\textwidth]{../assets/kafka-consumer-flow.png}
     \caption{Pipeline de procesamiento de eventos del juego}
 \end{figure}
+
+Como último comentario, debido a que \textit{Fiubakka} hace uso de un único consumidor y productor de Kafka por nodo de la aplicación, se tendría un único punto de falla para ambos a nivel nodo.
+Es decir, si el productor de Kafka en un nodo fallase, no se reportarían las acciones de los jugadores de dicho nodo al resto de los jugadores. De igual forma, si el consumidor de Kafka fallase, no
+se enterarían los jugadores que residan en ese nodo de las acciones de todos los demás, si bien continuarían enviando sus propias acciones correctamente. En la práctica esto no introduce propiamente dicho un
+único punto de falla en el servidor ya que es a nivel de nodo, por lo que no es tan crítico. Igualmente, es posible detectar el fallo y reintentar establecer la conexión del consumidor y productor con Kafka, por lo que
+la caída del nodo sería temporal.
 
 A continuación se provee una implementación resumida de los actores GameEventConsumer y GameEventProducer.
 
@@ -726,16 +746,14 @@ object GameEventProducer {
 \noindent Mencionamos anteriormente que por motivos de practicidad y performance decidimos separar la persistencia del estado de la entidad Player en otro actor PlayerPersistor, el cual
 es el que hace uso de los \textit{behaviors} de Durable State provistos en el módulo de Akka Persistence. Esta decisión conlleva que al momento de iniciar el Player no dispongamos ya del estado
 inicial del jugador, sino que debemos esperar a que el PlayerPersistor nos lo envíe. Para manejar esta situación, el Player envía un mensaje al PlayerPersistor solicitando su estado inicial.
-Se configura un \textit{timeout} esperado (al momento de este informe es de 30 segundos) como límite de tiempo para recibir la respuesta. En caso de error desde el PlayerPersitor o que la respuesta no
+Se configura un \textit{timeout} esperado (al momento de este informe es de 30 segundos) como límite de tiempo para recibir la respuesta. En caso de error en el PlayerPersistor o que la respuesta no
 nos llegue en el tiempo esperado, el Player se detendrá y notificará al PlayerHandler del error. El PlayerHandler luego notifica al cliente, y el cliente deberá reintentar iniciar sesión hasta que eventualmente
 lo consiga. En la práctica estos casos únicamente comienzan a suceder cuando el sistema está bajo muchísima carga.
 
 Por otro lado, el PlayerHandler deberá esperar también a que la entidad Player esté lista para poder confirmarle al cliente que la inicialización se completó correctamente. Al momento de su creación, el actor PlayerHandler
 envía un mensaje a la entidad Player del tipo \textbf{Init}. Dado que Player es una entidad de Cluster Sharding, al recibir el mensaje se inicializará y realizará la sincronización correspondiente con el PlayerPersistor. En cuanto
-obtenga tanto el estado inicial como realizado la creación de sus correspondientes GameEventProducer y GameEventConsumer, contestará entonces al PlayerHandler el mensaje de \textbf{InitReady}, el cual completará la sincronización inicial
+haya obtenido el estado inicial así como también realizado la creación de sus correspondientes GameEventProducer y GameEventConsumer, contestará entonces al PlayerHandler el mensaje de \textbf{InitReady}, el cual completará la sincronización inicial
 del cliente con su jugador en el servidor.
-
-\newpage
 
 \begin{figure}[htbp]
     \centering
@@ -743,7 +761,7 @@ del cliente con su jugador en el servidor.
     \caption{Flujo de sincronización inicial del jugador}
 \end{figure}
 
-\noindent La sincronización es ligeramente distinta cuando el jugador se registra, dado que el estado inicial lo proveerá el cliente en lugar del servidor. En dicho caso, el flujo es el siguiente.
+La sincronización es ligeramente distinta cuando el jugador se registra, dado que el estado inicial lo proveerá el cliente en lugar del servidor. En dicho caso, el flujo es el siguiente.
 
 \begin{figure}[htbp]
     \centering
@@ -751,7 +769,7 @@ del cliente con su jugador en el servidor.
     \caption{Flujo de registro del jugador}
 \end{figure}
 
-Vemos que ya no se hace un pedido del estado al PlayerPeristor dado que el estado inicial es provisto directamente por el cliente, y recibido por el Player en el mensaje de \textbf{Init} del PlayerHandler.
+Vemos que ya no se hace un pedido del estado al PlayerPersistor dado que el mismo es provisto directamente por el cliente y recibido luego por el Player en el mensaje de \textbf{Init} del PlayerHandler.
 
 \subsubsection{\textit{Heartbeats} del Player}
 
@@ -765,8 +783,8 @@ Para solucionar este problema implementamos una técnica conocida como \textit{h
 siguen activos. Su uso es extremadamente común en los sistemas distribuidos, por ejemplo, Kubernetes lo utiliza para conocer el estado de los distintos nodos del cluster. Akka hace exactamente lo mismo para sus propios nodos del Akka Cluster.
 \textit{etcd} es una base de datos distribuida que también lo emplea.
 
-En nuestro caso, el PlayerHandler envía un mensaje de tipo \textbf{Heartbeat} hacia el Player cada un par segundos. Cuando el Player recibe el mensaje actualiza un valor de su estado que indica el último \textit{timestamp}
-en el que recibió el mensaje de Heartbeat. Adicionalmente, el Player se envía mensajes a sí mismo de forma periódica cada unos 5 segundos donde verifica si la diferencia entre el \textit{timestamp} actual y el almacenado en su estado
+En nuestro caso, el PlayerHandler envía un mensaje de tipo \textbf{Heartbeat} hacia el Player cada un par segundos. Cuando el Player recibe el mensaje actualiza un valor de su estado que indica el \textit{timestamp}
+del momento en el que lo recibió. Adicionalmente, el Player se envía mensajes a sí mismo de forma periódica cada unos 5 segundos donde verifica si la diferencia entre el \textit{timestamp} actual y el almacenado en su estado
 supera los 10 segundos. En caso de que así sea, el Player automáticamente da por perdida la conexión y se detiene, garantizando que los recursos se liberen.
 
 \begin{figure}[htbp]
@@ -775,21 +793,23 @@ supera los 10 segundos. En caso de que así sea, el Player automáticamente da p
     \caption{Flujo de \textit{heartbeats} del Player}
 \end{figure}
 
-Si la pasivación vía \textit{heartbeats} del Player se activa se envía además un mensaje de tipo \textbf{Stop} al PlayerHandler para que cierre la conexión. En la práctica este mensaje esta más por si acaso, dado que lo más probable
+\newpage
+
+Si la pasivación vía \textit{heartbeats} del Player se activa se envía además un mensaje de tipo \textbf{Stop} al PlayerHandler para que cierre la conexión. En la práctica este mensaje se envía por redundancia, dado que lo más probable
 es que el PlayerHandler ya esté detenido si no recibimos ningún \textit{heartbeat} en los últimos 10 segundos.
 
 \subsubsection{Rebalanceo del Player en el Akka Cluster}
 
-\noindent Vimos que de las ventajas de usar Akka Cluster Sharding es que permite el rebalanceo de entidades automáticamente al alterarse la composición de los nodos del Akka Cluster. Si bien es cierto que Akka se encargará de eliminar a una
-entidad de un nodo e iniciarla nuevamente en otro, toda la lógica de sincronización de la capa de negocio es algo que debemos definir y manejar nosotros. Para el caso del Player, esto implica que al realizarse un reinicio de la entidad debemos 
-volver a realizar la sincronización inicial del jugador. La diferencia principal que tenemos con el caso mostrado en la anterior sección es que el PlayerHandler no se entera de este rebalanceo, sino que sigue comunicandose con el Player normalmente.
+\noindent Vimos que una de las principales ventajas de usar Akka Cluster Sharding es que permite el rebalanceo de entidades automáticamente al alterarse la composición de los nodos del Akka Cluster. Si bien es cierto que Akka se encargará de eliminar a una
+entidad de un nodo e iniciarla nuevamente en otro de forma transparente, toda la lógica de sincronización de la capa de negocio es algo que debemos definir y manejar nosotros. Para el caso del Player, esto implica que al realizarse un reinicio de la entidad debemos 
+volver a realizar la sincronización inicial del jugador. La diferencia principal que tenemos con el caso mostrado en la anterior sección es que el PlayerHandler no se entera de este rebalanceo, sino que sigue comunicándose con el Player normalmente.
 
 Para poder recuperar el estado del Player únicamente debemos plantear un flujo distinto para la sincronización con el PlayerHandler. Al recibir cualquier mensaje del PlayerHandler el Player volverá a iniciarse (debido a las garantías de Cluster Sharding)
-y volverá a solicitar su estado al PlayerPeristor e inicializar a su consumidor y productor de eventos del juego. El único punto faltante entonces sería recuperar la dirección del actor PlayerHandler para poder comunicarle los eventos del juego.
-Sin embargo, el PlayerHandler desconoce que el Player necesita nuevamente su dirección, y sin su dirección el Player no puede enviarle un mensaje como para comunicarle lo que necesita.
+y volverá a solicitar su estado al PlayerPersistor e inicializar a su consumidor y productor de eventos del juego. El único punto faltante entonces sería recuperar la dirección del actor PlayerHandler para poder comunicarle los eventos del juego.
+Sin embargo, el PlayerHandler desconoce que el Player necesita nuevamente su dirección, y sin su dirección, lógicamente, el Player no puede enviarle un mensaje pidiendole su dirección.
 
 Es por esto que el mensaje de tipo \textbf{Heartbeat} contiene como argumento la dirección del PlayerHandler. Dado que sabemos que el PlayerHandler se encarga de enviar este mensaje periódicamente, tenemos la garantía de que eventualmente lo recibiremos.
-El Player, en caso de recibir el mensaje de Heartbeat y está en el \textit{behavior} de inicialización, almacenará la dirección del PlayerHandler en su estado y procederá a completar su inicialización. De aquí en adelante hemos recuperado el estado del Player
+El Player, en caso de recibir el mensaje de Heartbeat y estar en el \textit{behavior} de inicialización, almacenará la dirección del PlayerHandler en su estado y procederá a completar su inicialización. De aquí en adelante hemos recuperado el estado del Player
 correctamente y el flujo de mensajes entre el Player y el PlayerHandler se reestablece.
 
 Debido a que la fuente de la verdad del estado del jugador proviene del cliente, la próxima actualización de estado recibida garantizará la consistencia que se perdió durante el rebalanceo del Player.
@@ -858,22 +878,22 @@ object Bot {
 
 \subsubsection{Resumen de la arquitectura}
 
-\noindent En las anteriores secciones ahondamos en los distintos componentes que forman \textit{Fiubakka} y las relaciones entre ellos. Partimos de los conceptos escenciales
-de Akka y mostramos que papel juega cada uno en nuestra aplicación. A modo de resumen y para tener una vista más panorámica de la arquitectura, el siguiente diagrama engloba
+\noindent En las anteriores secciones ahondamos en los distintos componentes que integran a \textit{Fiubakka} y las relaciones entre ellos. Partimos de los conceptos esenciales
+de Akka y mostramos qué papel juega cada uno de ellos en nuestra aplicación. A modo de resumen y para tener una vista más panorámica de la arquitectura, el siguiente diagrama engloba
 todos los conceptos explicados hasta ahora. Si bien \textit{Fiubakka} cuenta con algunos features más que mostraremos en las posteriores secciones, lo descrito hasta ahora es el
 núcleo de la aplicación.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{../assets/fiubakka-architecture.png}
-    \caption{Arquitectura núcleo de Fiubakka}
+    \caption{Arquitectura núcleo de Fiubakka.}
 \end{figure}
 
 \newpage
 
 \subsection{Truco: un minijuego dentro de Fiubakka}
 
-\noindent Hasta aquí llega la explicación de la arquitectura \textit{core} de \textit{Fiubakka}. Si bien implementamos varios features dentro de Fiubakka para jugar con lo que es posible hacer
+\noindent Hasta aquí llega la explicación de la arquitectura \textit{core} de \textit{Fiubakka}. Si bien implementamos varios features dentro de Fiubakka para experimentar con lo que es posible hacer
 en nuestro videojuego (como puede ser la sala de chat, las transiciones entre distintos mapas o la posibilidad de cambiarse el equipamiento mediante el inventario) el \textit{feature} principal
 que implementamos es el \textit{Truco}, el juego de cartas más famoso de Argentina.
 
@@ -900,13 +920,13 @@ Una vez que ambos jugadores estén listos, comienza la partida.
     \caption{Sincronización inicial de partida de Truco}
 \end{figure}
 
-En la figura anterior no se muestran los PlayerHandler para simplificar el flujo, pero por supuesto siempre están presentes como capa media entre el cliente y su correspondiente entidad Player.
+En la figura anterior no se muestran los PlayerHandler para simplificar el flujo, pero por supuesto siempre están presentes como capa intermedia entre el cliente y su correspondiente entidad Player.
 
 \subsubsection{Protocolo de comunicación del Truco}
 
-\noindent Una vez comenzada la partida de Truco el TrucoManager inicializa los modelos de dominio del Truco, los cuales manejarán la lógica de actualizaciones del juego y mantendrán el estado central
+\noindent Una vez comenzada la partida de Truco el TrucoManager inicializa los modelos de dominio del juego, los cuales manejarán la lógica de las actualizaciones y mantendrán el estado central
 de la partida. A diferencia de la arquitectura \textit{core} de \textit{Fibuakka}, que vimos que es descentralizada, el estado del Truco se encuentra centralizado en una clase \textbf{TrucoMatch}, que es
-administrado por el actor TrucoManager. El motivo por el que el estado de la partida de Truco debe ser centralizado se debe principalmente a los siguientes puntos:
+administrado por el actor TrucoManager. Cada partida de Truco tendrá su correspondiente TrucoManager asociado, es decir, son independientes entre sí. El motivo por el que el estado de la partida de Truco debe ser centralizado se debe principalmente a los siguientes puntos:
 
 \begin{itemize}
     \item Dado que una partida de Truco típica se compone por dos jugadores, mantener una copia del juego en cada jugador podría resultar en desincronizaciones entre ambos que no habría forma de conciliar.
@@ -916,10 +936,10 @@ administrado por el actor TrucoManager. El motivo por el que el estado de la par
 
 Dado que el estado se encuentra centralizado en el servidor es necesario asegurarnos que los jugadores tengan el estado correcto reflejado en cada cliente para poder avanzar correctamente con el desarrollo de la partida.
 Además debemos tomar en cuenta que todo mensaje enviado por el cliente al servidor o viceversa puede perderse, debido a la naturaleza del modelo de actores. En general, esta característica del modelo de actores no resulta
-un problema en el resto del juego porque justamente está diseñado alrededor de la consistencia eventual y el tipo de juego desarrollado no requiere sincronización entre todos los clientes para funcionar correctamente. Para el caso
+en un problema en el resto del juego porque justamente está diseñado alrededor de la consistencia eventual y el tipo de juego desarrollado no requiere sincronización entre todos los clientes para funcionar correctamente. Para el caso
 del Truco (o cualquier otro juego de cartas) es necesaria la \textbf{consistencia inmediata}, es decir, no podemos avanzar en el juego hasta tanto no nos hayan confirmado todos los jugadores que estén sincronizados con el último estado del juego.
 
-Para garantizar la sincronización constante entre los clientes y el estado del Truco en el servidor decidimos utilizar un protocolo de \textit{acknowledgements} ante cada cambio de estado de la partida. Cada cambio de estado de la partida,
+Para garantizar la sincronización constante entre los clientes y el estado del Truco en el servidor decidimos utilizar un protocolo de \textit{acknowledgements} ante cada cambio de estado de la partida. A cada cambio,
 como por ejemplo al realizar una jugada o al transicionar de ronda, se le asocia un identificador numérico incremental llamado \textbf{playId} y se envía la actualización a los clientes. Esta notificación se realiza periódicamente para evitar problemas devenidos por la
 pérdida de mensajes inherente en los actores. Cuando el cliente recibe la notificación de cambio de estado, revisa si el \textbf{playId} recibido es el siguiente al almacenado por él. En caso de serlo, aplica la actualización a su partida y envía
 un mensaje de \textit{acknowledgement} al servidor con el \textbf{playId} recibido. El servidor esperará a recibir la confirmación de ambos jugadores para poder pasar a la siguiente jugada o estado del juego, según correspondiese.
@@ -936,7 +956,7 @@ de los mensajes enviados, ya que solo necesitamos notificar el cambio (por ejemp
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{../assets/truco-state-update.png}
-    \caption{Diagrama de flujo de jugada en el Truco}
+    \caption{Diagrama de flujo de jugada en el Truco.}
 \end{figure}
 
 \subsubsection{Fin de partida de Truco}
@@ -954,10 +974,11 @@ el cliente enviará el mensaje de \textbf{TrucoDisconnect} y se repite el flujo 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{../assets/truco-disconnection.png}
-    \caption{Diagrama de desconexión de partida de Truco al abandonar un jugador}
+    \caption{Diagrama de desconexión de partida de Truco al abandonar un jugador.}
 \end{figure}
 
 \subsection{Protocolo de comunicación}
+\label{sec:communication-protocol}
 
 \noindent Tanto la comunicación por TCP entre cliente y servidor así como el envío de eventos con Kafka
 requirió que definamos un protocolo de mensajes propio. Este protocolo lo diseñamos con el objetivo de
@@ -980,7 +1001,7 @@ La metadata contiene dos valores: el largo del contenido, en 4 bytes, y el tipo 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/protobuf.png}
-    \caption{Estructura de un mensaje serializado}
+    \caption{Estructura de un mensaje serializado.}
 \end{figure}
 
 \newpage
@@ -992,7 +1013,7 @@ Finalmente, serializamos la metadata, le concatenamos el mensaje serializado ori
 Llegado este punto ya tenemos la totalidad del mensaje serializado y estamos listos para enviarlo por el canal correspondiente.
 
 Para leer un mensaje recibido el flujo es el contrario. Leemos los primeros 4 bytes que nos indican el largo
-total del mensaje. Luego, leemos los 4 bytes que nos indican el tamaño que ocupa la metadata. Con esta información, podemos leer
+total del mensaje, y procedemos a leer el mensaje total. Luego, con el mensaje leído y almacenado en un \textit{buffer}, leemos los primeros 4 bytes que nos indican el tamaño que ocupa la metadata. Con esta información, podemos leer
 el campo de metadata, que a su vez nos indica el tipo y el largo del contenido del mensaje en sí. Finalmente, al saber el tipo del contenido, lo
 deserializamos para luego poder manejarlo correctamente.
 
@@ -1038,24 +1059,25 @@ Naturalmente, \textbf{Kubernetes} surge como la solución ideal donde desplegar 
 Kubernetes es un sistema de orquestación de contenedores \textit{open source} que permite automatizar el despliegue, escalamiento y manejo de aplicaciones de \textit{software}.
 Dado que Akka y Kubernetes son tecnologías que se complementan perfectamente, existe un \textit{plugin} de Akka llamado \textbf{Akka Management} especialmente orientado a los despliegues
 en Kubernetes. Cuando la aplicación se ejecuta en un cluster de Kubernetes e inicializa el módulo de Akka Management, se levanta por un lado un servidor HTTP donde se pueden recibir \textit{requests}
-de otros nodos que deseen formar o unirse al cluster. En paralelo, el mismo nodo se encarga de hacer un \textit{discovery} en el ambiente de Kubernetes de otros nodos que estén inicializados y deseen formar
-un cluster. Cuando los nodos se descubren entre sí, se ponen de acuerdo en quién será el líder del Akka Cluster (en Akka, el líder siempre corresponde al nodo más antiguo) y comienzan a formar el cluster.
+de otros nodos que deseen unirse al cluster de Akka. En paralelo, el mismo nodo se encarga de hacer un \textit{discovery} en el ambiente de Kubernetes de otros nodos que estén inicializados y deseen formar
+un cluster. Cuando los nodos se descubren entre sí, se ponen de acuerdo en quién será el líder del Akka Cluster y comienzan a formar el cluster. Particularmente, la elección de líder en Akka es un algoritmo determinístico,
+es decir, dado un conjunto de nodos siempre se elegirá al mismo líder.
 
 Si un nodo del Akka Cluster falla, el líder se encarga de eliminarlo del cluster y notificar a los demás miembros. Si el líder es el que falla, automáticamente los demás miembros saben que el siguiente líder
-es el nodo más antiguo registrado en el cluster. Kubernetes, al detectar el fallo del nodo, se encargará de crear una nueva instancia para mantener la cantidad de réplicas de la aplicación constante en el valor
+es el nodo más antiguo registrado en el cluster. Kubernetes, al detectar el fallo del nodo, se encargará de crear una nueva instancia para mantener la cantidad de réplicas de la aplicación constante según el valor
 configurado. La nueva instancia se unirá al cluster; efectivamente recuperándose el sistema sin necesidad de intervención humana.
 
-El proceso descrito anteriormente ignora la configuración de \textit{seed nodes} descrita en \ref{config:akka-cluster}, ya que el descubrimiento de los demás nodos es dinámico y no se cuenta
+El proceso descrito anteriormente ignora la configuración de \textit{seed nodes} descrita en la sección \ref{config:akka-cluster}, ya que el descubrimiento de los demás nodos es dinámico y no se cuenta
 con IPs estáticas.
 
 Respecto al proveedor de Kubernetes, \textit{Fiubakka} no utiliza ningún proveedor Cloud; se encuentra desplegado de forma totalmente \textit{self hosted} en un cluster de RaspberryPis administrado
-por uno de los integrantes del equipo. Tanto Kafka, PostgresSQL, el servidor de \textit{Fiubakka}, como todos los demás componentes necesarios para el funcionamiento del servidor se ejecutan en este cluster.
+por uno de los integrantes del equipo. Tanto Kafka, PostgreSQL, el servidor de \textit{Fiubakka}, como todos los demás componentes necesarios para el correcto funcionamiento y monitoreo del servidor se ejecutan en este cluster.
 En la sección \ref{sec:lessons-kubernetes} se encuentra la explicación del por qué fuimos por esta solución y las ventajas que nos brindó.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{../assets/akka-management.png}
-    \caption{Componentes del \textit{discovery} de nodos de Akka en Kubernetes}
+    \caption{Componentes del \textit{discovery} de nodos de Akka en Kubernetes.}
 \end{figure}
 
 Con esto concluimos todo lo que compete al servidor de \textit{Fiubakka}. En las siguientes secciones analizaremos la otra columna de nuestro proyecto: el cliente de Godot.
@@ -1063,8 +1085,8 @@ Con esto concluimos todo lo que compete al servidor de \textit{Fiubakka}. En las
 \subsection{Cliente: Godot}
 
 \noindent \textit{Godot} es un motor para desarrollo de videojuegos, de origen argentino, gratuito y de código abierto. 
-Fue creado originalmente en 2001 por Juan Linietsky and Ariel Manzur \textit{in-house} en un estudio de juegos argentino,
-y luego se hizo público en 2014, bajo licencia MIT. Godot recibió una gran cantidad de apoyo y features desde su 
+Fue creado originalmente en 2001 por Juan Linietsky y Ariel Manzur para su propio estudio de juegos,
+y luego se hizo público en 2014, bajo la licencia MIT. Godot recibió una gran cantidad de apoyo y funcionalidades desde su 
 lanzamiento \textit{open source}.
 
 Este motor brinda distintas herramientas para desarrollar aplicaciones interactivas (principalmente
@@ -1079,17 +1101,20 @@ API orientada a objetos en los lenguajes C++, C\# e incluso GDScript, un lenguaj
     \caption{Editor de Godot Engine \cite{ref1}.}
 \end{figure}
 
-\textit{GDScript} es un lenguaje de programación de alto nivel y con sintaxis similar a Python. 
+\textit{GDScript} es un lenguaje de programación interpretado de alto nivel y con sintaxis similar a Python. 
 El hecho de que sea un lenguaje interpretado tiene la ventaja de que no es necesario volver a compilar 
 todo el código cada vez que se hacen modificaciones sobre el mismo.
 A partir de la versión 4.0 de Godot, GDScript ofrece soporte opcional de tipado estático, el cual puede
-mejorar la performance en runtime y aumenta la eficiencia del código.
+mejorar la performance en las \textit{builds} de desarrollo, mejora la productividad del desarrollo al eliminar los errores
+de tipos y aumenta la eficiencia del código.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth]{../assets/godot-code-editor.png}
+    \includegraphics[width=0.8\textwidth]{../assets/godot-code-editor.png}
     \caption{Editor de código de Godot.}
 \end{figure}
+
+\newpage
 
 El motor ofrece una amplia colección de \textbf{Nodos}, que son los componentes básicos que se utilizan para 
 construir \textbf{Escenas}. A su vez, estas escenas pueden ser sub-nodos de otras escenas. Los Nodos pueden ser desde un 
@@ -1109,30 +1134,34 @@ su comportamiento como sea necesario.
             inspector del nodo seleccionado (5).}
 \end{figure}
 
+\newpage
+
 Otro feature importante de Godot es el uso de señales (\textit{signals}) para comunicar eventos entre nodos.
 Tanto los Nodos por defecto como las Escenas compuestas personalizadas pueden emitir \textit{signals} con un nombre específico 
 (e incluso con parámetros) para que otros Nodos o Escenas se suscriban a dicha señal. Al suscribirse, los 
-Nodos receptores definen un handler (comúnmente nombrado \textit{\_on\_node\_signal\_name}) para manejar 
+Nodos receptores definen un \textit{handler} para manejar 
 la señal recibida. De esta forma se pueden crear escenas compuestas de múltiples Nodos distintos, con 
 comportamiento más complejo, pero sin acoplar todos los nodos que necesiten comunicarse entre sí. En la
-Figura \ref{fig:signals-editor} se ejemplifica cómo se ve una señal en el editor de Godot, mientras que
-la Figura \ref{fig:signals-diagram} ilustra cómo es el flujo al emitirse una señal.
+Figura \ref{fig:signals-editor} se ejemplifica cómo se ve una señal en el editor de Godot. Cuando el nodo LoginUsername emite la signal
+username\_submitted, el nodo Login la recibe en su función \textit{\_on\_login\_username\_text\_submitted}. Por otro lado,
+la Figura \ref{fig:signals-diagram} ilustra cómo es el flujo al emitirse una señal. Primero se define la señal text\_submitted
+en el nodo LoginUsername y se la conecta al nodo Login (que es padre de LoginUsername).
+Al emitirse esta señal, Login la escucha y entonces ejecuta su función handler
+\textit{\_on\_login\_username\_text\_submitted}.
+
+\newpage
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth]{../assets/godot-signals.png}
-    \caption{Ejemplo de conexión de una signal. Cuando el nodo LoginUsername emite la signal
-            username\_submitted, el nodo Login la recive en su función \_on\_login\_username\_text\_submitted}
+    \includegraphics[width=0.7\textwidth]{../assets/godot-signals.png}
+    \caption{Ejemplo de conexión de una signal.}
     \label{fig:signals-editor}
 \end{figure}
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth]{../assets/godot-signals-diagram.png}
-    \caption{Diagrama del flujo de emisión de una signal. Primero se define la señal text\_submitted
-            en el nodo LoginUsername y se la conecta al nodo Login (que es padre de LoginUsername).
-            Al emitirse esta señal, Login la escucha y entonces ejecuta su función handler
-            \textit{\_on\_login\_username\_text\_submitted}}
+    \includegraphics[width=0.7\textwidth]{../assets/godot-signals-diagram.png}
+    \caption{Diagrama del flujo de emisión de una signal.}
     \label{fig:signals-diagram}
 \end{figure}
 
@@ -1140,8 +1169,8 @@ La filosofía del diseño de Godot es construir Escenas reutilizables usando Nod
 nodos se les puede agregar comportamiento con \textit{scripts}. Con la composición y jerarquía de los Nodos, 
 se puede construir una lógica de juego que es clara y fácil de entender.
 Es por estas características de cohesión, simplicidad y eficiencia en el diseño de Godot, así
-como también el tipo de herramientas que provee que optamos por usar este motor para el desarrollo del
-Cliente del proyecto en lugar de crear módulos de autoría propia con un lenguaje de más bajo nivel, 
+como también el tipo de herramientas que provee, que optamos por usar este motor para el desarrollo del
+cliente del proyecto en lugar de crear módulos de autoría propia con un lenguaje de más bajo nivel, 
 como por ejemplo C o C++.
 
 \subsubsection{Estructura de proyecto}
@@ -1151,21 +1180,21 @@ anteriormente, cómo las aplicamos y los motivantes.
 
 Para este proyecto, definimos una primera Escena \textbf{Main} donde se instancian las escenas más importantes 
 del juego, necesarias para el funcionamiento del mismo. Por ejemplo, es en este nodo donde se instancian
-escenas como el (\textbf{MainMenu}), las pantallas de \textbf{Login} y \textbf{CharacterCreation}
-y los nodos necesarios para la comunicación con el Servidor, principalmente\textbf{ServerConsumer}
+escenas como el \textbf{MainMenu}, las pantallas de \textbf{Login} y \textbf{CharacterCreation}
+y los nodos necesarios para la comunicación con el Servidor, principalmente \textbf{ServerConsumer}
 y \textbf{ServerProducer}.
-Los niveles propiamente dichos no se instancian al iniciar el juego, sino una vez que el jugador 
-se haya conectado al servidor y luego a medida que se mueve por las distintas zonas del juego.
+Los niveles (también llamados mapas) propiamente dichos no se crean al iniciar el juego, sino una vez que el jugador 
+se haya conectado al servidor y luego a medida que se mueve por los distintos niveles del juego.
 De esta forma, encapsulamos todas las escenas activas en un mismo lugar y 
-no desperdiciamos recursos instanciandolas todas a la vez, solo se instancian las escenas que
+no desperdiciamos recursos creándolas todas a la vez, solo se crean las escenas que
 se van a usar. En la Figura \ref{fig:godot-node-tree} se muestra
 cómo se ve el arbol de nodos en distintos momentos del juego.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth]{../assets/godot-scene-tree.png}
+    \includegraphics[width=0.6\textwidth]{../assets/godot-scene-tree.png}
     \caption{Izquierda: árbol de nodos (Scene Tree) en la pantalla principal del juego,
-             derecha: árbol de nodos cuando el jugador está en un nivel del juego}
+             derecha: árbol de nodos cuando el jugador está en un nivel del juego.}
     \label{fig:godot-node-tree}
 \end{figure}
 
@@ -1177,19 +1206,21 @@ llamada Register).
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth]{../assets/godot-main-menu.png}
+    \includegraphics[width=0.7\textwidth]{../assets/godot-main-menu.png}
     \caption{Pantalla del Menú Principal}
     \label{fig:godot-main-menu}
 \end{figure}
 
+\newpage
+
 Si el usuario opta por ingresar al juego a través de Login, deberá ingresar con un nombre de usuario
-y contraseña existentes. En caso de haber algún error de login, se mostrará por pantalla según el error 
+y contraseña existentes. En caso de haber algún error de login, se mostrará por pantalla el error 
 correspondiente, como por ejemplo credenciales inválidas. Como el sistema de autenticación de usuario no
-fue el foco de este proyecto, no es posible recuperar la contraseña de un usuario ni tampoco darlo de baja.
+fue el foco de este proyecto, no es posible recuperar la contraseña de un usuario ni tampoco eliminarlo.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth]{../assets/godot-login.png}
+    \includegraphics[width=0.7\textwidth]{../assets/godot-login.png}
     \caption{Pantalla de Login. Son necesarios un nombre de usuario y contraseña.}
     \label{fig:godot-main-menu}
 \end{figure}
@@ -1198,7 +1229,7 @@ Por otro lado, si se tratase de un nuevo jugador o si se desea crear otro person
 puede entrar a la pantalla de registro donde podrá ingresar sus nuevas
 credenciales de usuario y también personalizar la apariencia de su nuevo personaje. En esta pantalla
 se visualiza del lado izquierdo un \textit{sprite} del personaje que será creado y a la derecha una
-lista de selectores para los distintos cosméticos que componen al \textit{sprite}. El usuario podrá elegir
+lista de selectores para los distintos cosméticos que componen al \textit{sprite}. El usuario podrá
 agregar, combinar e incluso quitar los cosméticos de su personaje a su gusto. Una vez que haya hecho su elección
 e ingrese sus credenciales, se crea el usuario correspondiente.
 
@@ -1210,7 +1241,7 @@ e ingrese sus credenciales, se crea el usuario correspondiente.
 \end{figure}
 
 Un feature del cual hacemos uso en Godot es el de los scripts \textbf{Autoloads}, que funcionan de manera
-similar que las clases \textbf{Singleton} del patrón de diseño del mismo nombre.
+similar a las clases \textbf{Singleton} del patrón de diseño del mismo nombre.
 Estos Autoloads se cargan en el arbol de escenas desde el comienzo y están siempre disponibles
 sin importar cual es la escena actualmente activa. Un detalle importante es que
 estos Autoloads no son Singletons propiamente dichos, sino que simplemente actúan como tales. Esto quiere
@@ -1222,19 +1253,19 @@ que es un script Autoload que permite transicionar entre niveles dentro del jueg
 se implementaron Singletons de estilo \textit{Manager} para acceder a distintos comportamientos y 
 configuraciones globales (información del jugador, cambio de escenas, control de entidades, entre otros).
 
-Cada nivel es una instancia de la clase \textbf{Level}, para que cada uno herede el comportamiento común
+Cada nivel es una instancia de la clase \textbf{Level}, la cual define el comportamiento común
 necesario, principalmente el manejo de las puertas y transición entre niveles.
 Si bien cada escena de nivel fue diseñada de forma especial para replicar alguna parte de la arquitectura de la Facultad de Ingeniería,
 existen ciertos tipos de nodos que deben usarse en todos los niveles (ver Figura \ref{fig:level-nodes}).
-Por ejemplo, para definir la forma, apariencia y estructura de cada nivel, debe tener un \textbf{TileMap},
-que es un tipo de nodo que a partir de una textura permite "pintar" sobre
+Por ejemplo, para definir la forma, apariencia y estructura de cada nivel, debe tener un \textbf{TileMap} asociado.
+Se trata de un nodo que a partir de una textura permite "pintar" sobre
 una grilla predefinida de pixeles, como si fuera un canvas. Además se deben definir las colisiones de las 
 paredes de cada nivel, para que el jugador no se pase del límite de la cámara ni se vaya 
 \textit{out of bounds}. Esto se logra con nodos del tipo \textbf{StaticBody2D} y \textbf{CollisionShape2D},
 definiendo su posición y la forma de la colisión.
 Otro nodo importante en un nivel es el \textbf{Player}, ya que cada nivel debe incluir su propio jugador.
-Esto quiere decir que no instanciamos un solo Player y lo transferimos entre los distintos 
-niveles, sino que cada instancia de Level debe instanciar su propio Player. Esta implementación
+Esto quiere decir que no existe un Player único que transferimos entre los distintos 
+niveles, sino que cada instancia de Level debe recrear al nodo Player. Esta implementación
 simplifica la transferencia de data necesaria entre niveles.
 También son importantes las puertas o \textbf{Doors} en los niveles, ya que estas cumplen la función de
 permitirles a los jugadores cambiar de nivel y moverse a través de la Facultad.
@@ -1254,6 +1285,7 @@ el usuario. El proceso para cambiar de un nivel a otro es:
 
 \begin{itemize}
     \item Mostrar una escena de pantalla de carga \textbf{LoadingScreen} (Figura \ref{fig:loading-screen}).
+    \item Esperar la respuesta del servidor con la confirmación de la transición al nuevo mapa.
     \item Cargar en memoria la nueva escena en un hilo separado.
     \item Una vez cargada la escena nueva, montarla en el arbol de escenas.
     \item Antes de remover la escena actual, transferir cualquier tipo de data relevante de un nivel a otro,
@@ -1271,7 +1303,7 @@ el usuario. El proceso para cambiar de un nivel a otro es:
 
 Un Player o jugador es una escena donde se encapsulan tanto la vista como el comportamiento del
 personaje que controla el usuario. Está compuesto tanto de \textbf{CompositeSprites} para la visualización
-de los cosméticos elegidos en la pantalla de creación del personaje, como de CollisionShape2D para
+de los cosméticos elegidos en la pantalla de creación del personaje o mediante los ítems de su inventario, como de CollisionShape2D para
 la detección de colisiones con las paredes u otros objetos del nivel donde se encuentre.
 Además es esta escena la que contiene una \textbf{Camera2D}, que representa la vista que el usuario tendrá
 del juego en el \textit{viewport} de su pantalla. Al ser un subnodo del Player, logramos un efecto donde la
@@ -1293,11 +1325,11 @@ Una vez dentro de la Facultad, el jugador podrá moverse a través del nivel usa
 direccionales del teclado o \textbf{WASD}.
 También podrá acceder a un inventario presionando la tecla \textbf{I} (ver Figura \ref{fig:inventory}).
 Dentro de este inventario verá listados los objetos que tenga disponible, ya sean objetos personales u otros
-cosméticos. En el caso de los cosméticos, podrá optar por equipar o desesquiparselos, modificando la
+cosméticos. En el caso de los cosméticos, podrá optar por equipar o desesquipárselos, modificando la
 apariencia de su personaje.
 Además al presionar la tecla \textbf{TAB} abrirá una ventana de chat, donde podrá intercambiar mensajes con
 todos los otros jugadores que estén conectados en la misma región de la Facultad (ver Figura \ref{fig:chat}).
-Mientras esté chateando, el jugador no podrá moverse y tendrá cerrar la ventana de chat presionando \textbf{TAB} nuevamente.
+Mientras esté chateando, el jugador no podrá moverse y tendrá que cerrar la ventana de chat presionando \textbf{TAB} nuevamente.
 
 \begin{figure}[htbp]
     \centering
@@ -1315,7 +1347,7 @@ Mientras esté chateando, el jugador no podrá moverse y tendrá cerrar la venta
 
 Uno de los principales features del juego es la posibilidad de desafiar a otros jugadores a una partida de 
 Truco. El Truco es un juego de cartas argentino que se juega con naipes españoles. El objetivo del juego
-es obtener 30 puntos antes que el oponente, ganando las manos y haciendo disitntas jugadas con cantos.
+es obtener 30 puntos antes que el oponente, ganando las manos y haciendo distintas jugadas con cantos.
 Para desafiar a otro jugador a una partida de Truco, el usuario solo debe hacer click derecho sobre cualquier
 otro personaje (no NPC) que vea en su pantalla. Eso habilitará un submenú con un botón para jugar al Truco.
 El otro jugador recibirá una notificación que puede aceptar o rechazar. Al aceptarla, ambos jugadores
@@ -1337,15 +1369,15 @@ verán la pantalla de Truco y la partida comienza. (Figuras \ref{fig:truco-subme
 
 Los jugadores verán las cartas de su mano en la región inferior de la pantalla, así como también las opciones
 de cantos disponibles en dicho turno, como se muestra en la Figura \ref{fig:truco-game}.
-Para hacer un canto, solo deben clickear el botón correspondiente
+Para hacer un canto, solo deben hacer click en el botón correspondiente
 y esperar la respuesta del oponente. Para jugar un carta, el jugador que corresponda podrá arrastrarla con el
 mouse desde su mano y soltarla sobre la mesa en la región que corresponda al turno que está transcurriendo,
-haciendo \textit{drag and drop}. El otro jugador va a ver la carta jugada por su oponente y se le hailitará
-que juegue su turno, si aún no terminó la ronda.
+lo que se conoce como \textit{drag and drop}. El otro jugador va a ver la carta jugada por su oponente y se le habilitará
+su turno si es que aún no terminó la ronda.
 La partida termina cuando un jugador llega a acumular 30 puntos o en caso de que alguno abandone, ya sea 
 voluntariamente o por alguna desconexión.
 Todas las reglas del Truco así como también el control del transcurso de la partida y del \textit{game state}
-están implementadas en el Servidor. El Cliente solo funciona a modo de interfaz para que los
+están implementadas en el servidor. El cliente solo funciona a modo de interfaz para que los
 usuarios puedan jugar.
 
 \begin{figure}[htbp]
@@ -1354,114 +1386,84 @@ usuarios puedan jugar.
     \caption{Pantalla de Truco durante una partida en transcurso. 
              Las regiones numeradas son: región del oponente con nombre, cartas y puntaje (1),
              zona de juego (2), botón para salir (3), región del jugador con nombre, puntaje e
-             indicador de turno (4), mano del jugador (5) y cantos disponibles (6)}
+             indicador de turno (4), mano del jugador (5) y cantos disponibles (6).}
     \label{fig:truco-game}
 \end{figure}
 
-Todos los controles del juego están detallados en el apéndice.
+Todos los controles del juego están detallados en el apéndice \ref{ref:game-controls}.
 
 
-\subsubsection{Comunicación por red}
+\subsubsection{Comunicación con el servidor}
 
-\noindent Al comienzo del proyecto, un posible limitante de usar Godot eran las herramientas que podía ofrecer 
-el motor para la conectividad con el servidor, ya sea UDP, TCP o incluso HTTP. 
-Para nuestro beneficio, Godot provee distintas APIs para conectividad que cumplen los requisitos
-de los protocolos antes mencionados. En nuestro caso, decidimos usar el protocolo TCP por sus características:
+\noindent Al comienzo del proyecto, pensamos que un posible limitante de usar Godot podían ser las herramientas
+que el motor ofrece para la conectividad con el servidor. 
+Afortunadamente, Godot provee APIs para conexiones UDP y TCP que cumplieron con los requisitos
+necesarios para implementar nuestro protocolo. En nuestro caso, decidimos usar el protocolo de red TCP debido a los siguientes requisitos
+que habíamos establecido para \textit{Fiubakka}:
 \begin{itemize}
-    \item Handshake con el Servidor
-    \item Conexión mantenida con el Servidor
-    \item Garantía de recepción de todos los paquetes enviados
-    \item \textit{Flow Control}
+    \item Conexión persistente con el servidor.
+    \item Detección de fallos en la conexión con el servidor.
 \end{itemize}
 
 Luego, definimos nuestras propias clases \textit{wrapper} para establecer la conexión al servidor y el 
-manejo de mensajes. 
+manejo de mensajes. Para la recepción implementamos un ServerConsumer que se encarga de recibir los paquetes 
+del servidor, deserealizar el mensaje (ver sección \ref{sec:events-communication}) y, según el mensaje recibido, 
+invocar al \textit{handler} correspondiente para actualizar el estado del juego del lado del cliente.
+Este ServerConsumer se ejecuta en un hilo aparte, para no bloquear el hilo principal mientras
+esperamos recibir paquetes del servidor. Sin embargo, luego de deseralizar un mensaje recibido, el \textit{handler}
+correspondiente se ejecuta en el hilo principal.
 
-Para la recepción implementamos un ServerConsumer que se encarga de recibir los paquetes 
-del Servidor, parsea el mensaje completo (ver sección Protocol buffers) y según qué mensaje recibió, 
-invoca al \textit{handler} correspondiente para actualizar el estado del juego del lado del Cliente.
-Este ServerConsumer se ejecuta en un thread aparte, para no bloquear el thread principal mientras
-esperamos recibir paquetes del Servidor. Sin embargo, luego de parsear un mensaje recibido, el \textit{handler}
-correspondiente se ejecuta en el thread principal.
-
-Es análogo el envío de mensajes en el sentido desde el Cliente hacia el Servidor: algún input de un 
+El envío de mensajes del cliente hacia el servidor funciona de forma análoga: algún input de un 
 usuario dispara una \textit{signal} que el ServerProducer recibe, este se encarga de crear 
-el mensaje correspondiente con los parámetros correctos, lo serializa y envía los paquetes de bytes 
-al Servidor a través de la conexión TCP.
-Esta conexión con el Servidor se establece ni bien corre el juego, puesto que es necesaria para el Login y Registro.
+el mensaje correspondiente con los parámetros correctos, lo serializa y lo envía al servidor a través de la conexión TCP establecida
+al iniciar el juego.
 
-\subsection{Comunicación entre cliente y servidor}
-Aún habiendo definido el protocolo de estándar de comunicación que utilizaríamos para conectar al Cliente y Servidor,
-fue necesario tomar ciertas decisiones y establecer otros protocolos a la hora de definir los mensajes
-concretos que intercambiarían el frontend con el backend.
+Aún habiendo definido el protocolo de comunicación a utilizar para conectar al cliente y servidor,
+fue necesario tomar ciertas decisiones sobre las responsabilidades de cada uno de los dos componentes
+y como afectarían al diseño del juego. Esto nos lleva a una característica importante de nuestra arquitectura:
+el manejo del movimiento de los jugadores y las colisiones.
 
 \subsubsection{Lógica del juego: movimiento y colisiones}
 \label{sec:movement-logic}
+
 \noindent Otro de nuestros problemas iniciales fue decidir cómo implementaríamos el movimiento del 
 jugador. Al tratarse de un juego online, lo ideal sería que la lógica fuera mayormente implementada del 
 lado del servidor y así garantizar que los jugadores no pudieran realizar movimientos prohibidos, como 
-ir a zonas que no estuvieran permitidas u obtener algún tipo de ventaja. Con este acercamiento del 
-problema, Godot no debería hacer más que enviar los inputs de la dirección a la que se desea mover el 
-jugador y dejar que el servidor se encargara de verificar que se tratase de un input válido y calcular 
-el efecto de este input en la nueva posición. Luego el servidor respondería enviandole a Godot la nueva
-dirección para que se viera reflejada en el juego.
+ir a zonas que no estuvieran permitidas u obtener algún tipo de ventaja. Para este caso, Godot únicamente debería comunicar la dirección a la que se desea mover el 
+jugador y dejar que el servidor se encargue de verificar que el movimiento es válido, para luego calcular 
+la nueva posición del jugador. Por último, el servidor le respondería al cliente de Godot la nueva
+posición del jugador para que se vea reflejada en el juego. Esto implicaría que el servidor tendría la responsabilidad
+de validar las colisiones.
 
-Esta solución sirvió en un inicio donde el juego era un prototipo donde no teníamos definidos 
-mapas con un perímetro definido, sin embargo empezaron a verse las faltas de la misma cuando 
-se comenzaron a implementar las colisiones del jugador con los mapas y los objetos dentro de sus límites.
+Sin embargo, se hizo rápidamente aparente
+los problemas que esta decisión tendría. Por un lado tendríamos la complejidad de implementar un sistema de colisiones en una arquitectura distribuida,
+donde habría que centralizar el estado de las posiciones ocupadas por cada jugador en un único actor, lo cual iría en contra de la distribución de nuestra arquitectura, o implementar
+algún sistema de colisiones distribuido, que sería extremadamente complejo y excedería ampliamente el \textit{scope} del proyecto.
+Se decidió entonces ceder la mayor parte de la lógica del movimiento al cliente debido a que Godot ya provee 
+su propio sistema de colisiones, por lo cual resulta responsabilidad del cliente verificar que el movimiento sea válido y respete las colisiones con los demás
+objetos del juego.
 
-Un primer planteo fue manejar y controlar las colisiones en el Servidor. Sin embargo, se hizo rápidamente aparente
-la complejidad de implementar un sistema de colisiones con una arquitectura como la nuestra, ya que en primer lugar
-sería necesario calcular las colisiones de forma centralizada, matando el propósito de la arquitectura propuesta.
-Por otro lado, intentar plantear un sistema de resolución de colisiones distibuido implicaría una complejidad que excede
-el objetivo de este Trabajo.
-Se decidió entonces ceder la mayor parte de la lógica del movimiento a Godot debido a que este provee 
-su propio sistema de colisiones, aprovechando las herramientas que provee sin reinventar un sistema 
-nuevo. Este acercamiento nos hacía renunciar a que el input fuera 
-verificado con cada movimiento, pero facilitaba de forma significativa la implementación del 
-movimiento y las colisiones. Debido a que nuestro juego no muestra ninguna ventaja competitiva 
-en la modificación del movimiento del jugador, decidimos perder parte de las verificaciones en 
-favor a la facilidad de desarrollo provista por Godot.
-Cabe aclarar además que esta solución funciona solo para colisiones estáticas, es decir, entre un solo objeto
-dinámico (el jugador) y los demás objetos estáticos (el perímetro de un nivel, o sus "paredes").
-
-\subsubsection{Juego de cartas: Truco}
-\noindent Como se mencionó anteriormente y a modo de muestra del tipo de funcionalidades que se pueden
-desarrollar en conjunto entre Godot y el modelo de actores, hemos implementado el juego de cartas \textbf{Truco},
-específicamente en su versión de reglas argentinas.
-
-Al igual que con el movimiento del jugador y las colisiones, debimos decidir qué 
-responsabilidades recaerían tanto para el frontend como para el backend. En la sección 
-sobre el movimiento del jugador, concluímos que no existía una importante necesidad de 
-validar cada movimiento del jugador, pero el caso de un minijuego como el Truco es distinto. 
-En el movimiento, que los demás jugadores vean a otro jugador en una posición incorrecta es 
-corregible, momentáneo e insignificante, pero en el Truco, que un jugador presencie una acción 
-incorrecta es inaceptable debido a que cada acción realizada por un jugador afecta el flujo del juego.
-
-Para poder mantener la coherencia y la integridad de una partida de Truco, se decidió dejar 
-la responsabilidad del manejo de flujo y las verificaciones al backend, mientras que el 
-frontend tiene la responsabilidad de mostrarle al jugador todo lo que el backend dicte, 
-como por ejemplo las cartas en su mano, las jugadas de su adversario y los cantos disponibles. 
-El frontend también posee la responsabilidad de ofrecerle una buena jugabilidad al jugador, 
-por lo que la interfaz de juego fue diseñada con estas intenciones. Implementamos un método 
-de movimiento para jugar las cartas denominado “drag and drop” para que el jugador pueda 
-arrastrar las cartas en caso de que desee jugarlas o volver a colocarla en la mano con tan 
-solo volver a arrastrarla a su zona original y una interfaz que muestre los cantos disponibles; 
-un cartel que aparezca para avisarle al jugador que su oponente realizó un canto y que luego 
-desaparezca, indicadores de a qué jugador le corresponde realizar una jugada, entre otras cosas.
+Cabe aclarar que esta solución funciona solo para colisiones estáticas, es decir, entre un solo objeto
+dinámico (el jugador) y los demás objetos estáticos (el perímetro de un nivel u otros objetos).
+Debido a que nuestro juego no tiene colisiones dinámicas (es decir, entre jugadores u objetos móviles) esta restricción
+no nos afecta. Es importante sin embargo tenerla en cuenta si se desease desarrollar un videojuego de otras características utilizando
+nuestra arquitectura.
 
 \subsection{Juego ejecutable}
-\noindent Otro aspecto importante del proyecto frontend es poder generar un archivo ejecutable con el juego,
-para disponibilizar a los usuarios.
-Si bien una forma de poder correrlo es clonando el código fuente y levantando el proyecto con el editor
+
+\noindent Otro aspecto importante del cliente es poder generar un archivo ejecutable con el juego,
+para facilitar el acceso del mismo a los usuarios.
+Si bien una forma de poder ejecutarlo es clonando el código fuente y levantando el proyecto vía el editor
 de Godot, esta forma no es recomendable por dos razones:
+
 \begin{itemize}
-    \item No es muy práctico ni amigable para el usuario no técnico hacerlo clonar un repositorio de código y además
-    hacerle descargar y usar otro programa que no sea el juego en si.
+    \item No es muy práctico ni amigable para el usuario no técnico.
     \item Al disponibilizar el código fuente, cualquier usuario podría correr una versión modificada del 
-    frontend del juego y conectarse de todas formas al servidor.
+    cliente del juego y conectarse de todas formas al servidor. Existen formas de evitar esto pero no se encuentran
+    implementadas en \textit{Fiubakka}.
 \end{itemize}
-Es por esto que debemos generar un archivo ejecutable con el juego.
+
+Debido a esto decidimos generar un ejecutable del cliente para poder distribuirlo fácilmente.
 
 Godot provee una forma muy fácil y sencilla de exportar el juego a un ejecutable para distintas plataformas.
 Solo es necesario descargar los \textit{templates} correspondientes a la plataforma destino, que pueden ser
@@ -1470,7 +1472,7 @@ Android o incluso aplicaciones web.
 Para nuestro proyecto generamos ejecutables funcionales para sistemas operativos Windows y Linux.
 
 Como se explicará más adelante, para poder jugar es necesario además conectarse al servidor a través de Cloudflare\ref{ref:cloudflare}.
-Es por esto que el jugador deberá instalar el \textit{Daemon} de Cloudflare y correr el siguiente comando en una terminal antes de ejecutar el juego:
+Es por esto que el jugador deberá instalar el \textit{daemon} de Cloudflare y correr el siguiente comando en una terminal antes de ejecutar el juego:
 
 \begin{lstlisting}[language=bash]
     $ cloudflared access tcp --hostname fiubakka.marcosrolando.uk --url 127.0.0.1:2020

@@ -4,8 +4,8 @@
 % en la primera lectura, este ítem es de fundamental importancia al momento 
 % de ser evaluado el proyecto.
 
-\noindent Si bien el modelo monolítico descrito anteriormente funciona bien para la mayoría de los 
-casos con una cantidad acotada de jugadores, empieza a ser un problema cuando el juego 
+\noindent Si bien el modelo monolítico descrito anteriormente funciona bien en la mayoría de los 
+videojuegos desarrollados, empieza a ser un problema cuando el juego 
 permite la interacción de una magnitud mayor de jugadores u otras entidades en simultáneo. 
 Para mejorar la performance se suele recurrir a delegar ciertas tareas a distintos hilos del procesador, para así distribuir 
 el cómputo realizado y conseguir paralelizar el procesamiento de la lógica del juego. 
@@ -17,5 +17,5 @@ independientes que puedan ser procesadas en paralelo.
 
 Todas estas problemáticas resultan en limitantes a la hora de determinar, a nivel jugable,
 la cantidad máxima de eventos que se pueden procesar en una única instancia del juego.
-Si el juego a desarrollar tiene como requisito soportar una cantidad elevada de jugadores
+Si se tiene como requisito soportar una cantidad elevada de jugadores
 en simultáneo será necesario buscar una solución alternativa que permita escalar horizontalmente.

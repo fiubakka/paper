@@ -9,36 +9,38 @@
 % Como todo proyecto tiene riesgos, deberá haber una lista de los riesgos 
 % iniciales del proyecto.
 
-\noindent En esta sección se detallará de qué forma se llevó a cabo el proyecto, explicando los métodos
-utilizados.
+\noindent En esta sección se detallará de qué forma se llevó a cabo el proyecto. Explicaremos la metodología de trabajo
+aplicada, los roles principales que se asignaron a cada integrante de este equipo, la estructura del proyecto, y el despliegue del mismo
+en un ambiente de desarrollo local así como también en un ambiente productivo.
 
 \subsection{Metodología de trabajo}
 
-\noindent Inicialmente, la intención fue de desarrollar el trabajo siguiendo una metodología ágil, más específicamente, Scrum.
+\noindent Inicialmente, la intención fue desarrollar este proyecto siguiendo una metodología ágil, más específicamente, Scrum.
 Es decir, dividimos el período total de desarrollo del Trabajo (desde Agosto 2023 hasta Julio 2024) en Sprints de duración fija,
-donde cada uno incluía reuniones de planificación, review, dailies y también las reuniones necesarias con nuestro tutor.
+donde cada uno incluía reuniones de planificación, review, \textit{dailies} y también las reuniones necesarias con nuestro tutor.
 
-\noindent Entrando más en detalle sobre la metodología planeada, definimos la duración de los Sprints en dos semanas. Con respecto a
+Entrando más en detalle sobre la metodología aplicada, definimos la duración de los Sprints en dos semanas. Con respecto a
 la planificación, comenzamos usando la herramienta Trello, donde creábamos las tareas a desarrollar durante el Sprint, le asignábamos
 el integrante responsable y los story points correspondientes. Para definir cuantos story points eran asignados a una tarea, usamos la
 técnica conocida como \textit{Planning Poker}, que consiste en definir un sistema de puntos (en nuestro caso, decidimos usar la secuencia
 de Fibonacci) y luego cada integrante, sin saber las elecciones de los otros, le asigna el puntaje que considera. Una vez que todos
-eligieron un puntaje, se muestra la decision de todos, y el puntaje final de la tarea es definido por mayoría. La reunión de review sería
-al final del Sprint, y allí repasaríamos lo desarrollado durante las pasadas dos semanas. Finalmente, coordinamos con nuestro tutor para tener reuniones aproximadamente cada 2 semanas, donde mostraríamos el avance hasta el momento,
-validar que estemos en el camino correcto y también ayudar a definir el trabajo de los proximos Sprints.
+eligieron un puntaje, se muestra la decisión de todos, y el puntaje final de la tarea es definido por mayoría. La reunión de review sería
+realizada al final del Sprint, y allí repasaríamos lo desarrollado durante las pasadas dos semanas. Finalmente, coordinamos con nuestro tutor para tener reuniones aproximadamente cada dos semanas, donde mostraríamos el avance hasta el momento,
+validar que estemos en el camino correcto y también ayudar a definir el trabajo de los próximos Sprints.
 
 En la realidad, las cosas fueron ligeramente diferentes. Si bien mantuvimos la separación en Sprints de dos semanas, algunas reuniones
-fueron dejadas de lado completamente luego de los primeros Sprints, ya que nos dimos cuenta que no nos aportaban tanto como pensabamos
+fueron dejadas de lado completamente luego de los primeros Sprints, ya que nos dimos cuenta que no nos aportaban tanto como pensábamos
 inicialmente.
 Las reuniones de planificación fueron las primeras que dejamos de hacer. Esto se debió a que al empezar el proyecto, las 
 dos tecnologías principales que elegimos usar eran completamente nuevas para todo el grupo, lo que causó que una porción considerable de
 los primeros Sprints fuera dedicada exclusivamente a la investigación y familiarización tanto con Godot como con Akka. Esto causó que al
 comienzo, estas primeras tareas fueran difíciles de planificar y puntuar, ya que había demasiada incertidumbre. Dado esto, decidimos dejar
-de lado las reuniones de planificación, y nunca las retomamos.
-Por otro lado, nos dimos cuenta que dar updates pequeños en alguno de los canales de comunicación que usamos (Discord, Whatsapp) era suficiente
+de lado las reuniones de planificación, y nunca las retomamos formalmente. En su lugar, lo reemplazamos con sesiones de \textit{discovery} esporádicas donde compartíamos
+el estado de nuestros avances y discutíamos los siguientes pasos a seguir.
+Por otro lado, nos resultó más productivo dar actualizaciones de nuestros avances mediante alguno de los canales de comunicación que utilizamos, como Discord o Whatsapp,
 como reemplazo de las \textit{dailies}.
 Las reuniones de review al final de cada Sprint fueron mantenidas acorde al plan inicial.
-Por su lado, las reuniones con el tutor las seguimos haciendo, pero con una frecuencia variable.
+Las reuniones con el tutor las seguimos haciendo, pero con una frecuencia variable dependiendo si teníamos dudas o actualizaciones de importancia.
 
 \subsection{Desarrollo del proyecto}
 
@@ -46,57 +48,53 @@ Por su lado, las reuniones con el tutor las seguimos haciendo, pero con una frec
 en dos grupos de dos integrantes cada uno. Iván y Marcos con Akka, Franco y Nicole con Godot. Al principio, cada grupo se enfocaría en 
 familiarizarse con la tecnología correspondiente e ir haciendo pruebas de concepto relacionadas al proyecto. Por ejemplo, para Akka 
 comenzamos a modelar un jugador, agregando los mensajes necesarios para la lógica del movimiento. Por otro lado, en Godot, en lo que primero
-se trabajó también fue el movimiento, sumado a como mostrar al personaje con gráficos acordes a su orientación.
+se trabajó fue el movimiento del jugador, sumado a las animaciones del personaje.
 Llegó un punto donde el cliente empezó a necesitar más trabajo que el servidor, por lo que la separación en grupos se fue desarmando y
 todos desarrollábamos en donde era requerido.
 
-Como se explica en la sección \ref{sec:movement-logic}, durante los primeros Sprints de desarrollo, el cliente enviaba los inputs de movimiento al servidor y esperaba una respuesta con la
-la posición resultante de ese movimiento. Como en ese momento el servidor no estaba completamente funcional, decidimos crear una especie de servidor
+En un comienzo, el cliente enviaba los movimientos del jugador al servidor y esperaba una respuesta con la
+posición resultante de ese movimiento. Como en ese momento el servidor no estaba completamente funcional, decidimos crear una especie de servidor
 \textit{mock} para simular el comportamiento del real. Este servidor fue desarrollado en Python, y se encargaba simplemente de escuchar mensajes por TCP
-y devolver una respuesta. Esto permitió que el grupo que trabajaba en Godot no quedara bloqueado en el desarrollo del movimiento del jugador
-hasta que el servidor en Akka llegase a un estado funcional.
+y devolver una respuesta. Esto permitió que el grupo que trabajaba en Godot no se viera bloqueado por el desarrollo del servidor de Akka inicialmente.
 
-\subsubsection{Repositorios y esquemas de branching}
+\subsubsection{Repositorios y esquemas de \textit{branching}}
 
 \noindent Tenemos dos repositorios principales que fueron creados en el inicio del desarrollo del proyecto.
 El correspondiente para el servidor es llamado \textit{fiubakka-server} mientras que el del cliente es \textit{fiubakka-game}.
-Debido a las diferentes circunstancias entre el cliente y el servidor, el desarrollo se llevó a cabo con distintas estrategias
-en cada repositorio.
+El desarrollo se llevó a cabo con distintas estrategias en cada repositorio, principalmente debido a las diferencias entre los proyectos.
 
 En el servidor, comenzamos el desarrollo haciendo \textit{pair programming}. Es decir, hacíamos una reunión en la cual un integrante
-escribía el código, pero los dos pensábamos la solución. Esto conllevó a que gran parte del desarrollo inicial fuera mergeada directamente
+escribía el código, pero los dos pensábamos la solución. Esto conllevó a que gran parte del desarrollo inicial fuera \textit{mergeada} directamente
 a la rama principal del repositorio (\textit{main} en este caso). Una vez que ambos nos sentimos cómodos con la tecnología y separamos el 
 desarrollo, casi no hubo momentos en los cuales los dos tuvimos que desarrollar en paralelo sobre una misma parte del código, lo que evitó tener
 que establecer una estrategia de branching, ya que la probabilidad de tener conflictos importantes era muy baja. En caso de tener conflictos, 
 estos siempre fueron fácilmente solucionados.
 Sin embargo, hubo casos en los cuales el desarrollo de una funcionalidad se hizo en una rama diferente de la principal, ya sea porque era demasiado
-grande o porque era algo mas experimental, como por ejemplo cuando agregamos Kafka para los eventos, o al empezar a utilizar las particiones de Kafka
+grande o porque era algo más experimental, como por ejemplo cuando agregamos Kafka para los eventos, o al empezar a utilizar las particiones de Kafka
 para poder cambiar de mapas.
 
 Por otro lado, la situación en el cliente fue distinta. Desde el principio tuvimos la posibilidad de paralelizar el desarrollo, por lo que 
 decidimos de entrada utilizar la estrategia de \textit{feature branching}. Esta estrategia consiste en que para cada nueva funcionalidad
 que queríamos agregar en el cliente, debíamos crear una nueva rama a partir de la principal (\textit{main} al igual que para el servidor),
-hacer el desarrollo de la funcionalidad en la rama creada, actualizandola con \textit{main} si fuera necesario, y una vez que este finalizada
-crear un \textit{Pull Request} para que los otros integrantes puedan revisar los cambios. Al revisar un \textit{PR}, se podían dejar comentarios
-sobre cambios que se consideran necesarios, por ejemplo arreglar un error, o cambiar una implementación por otra mas eficiente. Una vez atendidos
-los comentarios, el \textit{PR} era mergeado a main. En nuestro caso, si bien eran importantes, no era obligatorio tener un mínimo de aprobaciones para poder mergear un \textit{PR},
+hacer el desarrollo de la funcionalidad en la rama creada, actualizándola con \textit{main} si fuera necesario, y una vez que estuviera finalizada,
+crear un \textit{Pull Request} para que los otros integrantes pudieran revisar los cambios. Al revisar un \textit{PR}, se podían dejar comentarios
+sobre cambios que se considerasen necesarios, por ejemplo arreglar un error, o cambiar una implementación por otra más eficiente. Una vez resueltos
+los comentarios, el \textit{PR} era \textit{mergeado} a la rama principal. En nuestro caso, si bien eran importantes, no era obligatorio tener un mínimo de aprobaciones para poder mergear un \textit{PR},
 para así no bloquear el desarrollo en caso de que los otros integrantes no pudieran revisarlo.
 
 
-Una vez que la comunicación entre el servidor y el cliente fue establecida, y definimos el protocolo detallado en la sección 6.4, que consiste en
+Una vez que la comunicación entre el servidor y el cliente fue establecida, y definimos el protocolo detallado en la sección \ref{sec:communication-protocol}, que consiste en
 múltiples mensajes de protobuf, nos dimos cuenta de que íbamos a tener que definir dichos mensajes tanto en el servidor como en el cliente. Eso iba
 a generar mucho código repetido, lo que a su vez aumentaría la probabilidad de tener algún error donde el mismo mensaje fuera definido de
-forma distinta en los dos proyectos. Es por eso que decidimos unificar todos los mensajes en un repositorio aparte llamado \textit{fiubakka-protocol-buffers}, que utilizando submodulos
-de Git, se vería como un directorio y se mantendría igual en ambos proyectos, lo que evitaría el error mencionado anteriormente.
-Entonces, para agregar o editar un mensaje, se debía agregar el archivo al repositorio y luego, en el repositorio de cada uno de los proyectos, 
-ejecutar el comando \texttt{git submodule --update} para actualizar. Una vez hecho esto, los mensajes de proto debían ser compilados para poder
-ser usados en el código. En el servidor, esto se hacía automáticamente al levantar el proyecto. Por otro lado, para el cliente, armamos un
+forma distinta en los dos proyectos. Es por eso que decidimos unificar todos los mensajes en un repositorio aparte llamado \textit{fiubakka-protocol-buffers}. Utilizando submódulos
+de Git, se vería reflejado como un directorio más en cada proyecto.
+Entonces, para agregar o editar un mensaje, se debía agregar el archivo con el mensaje deseado al repositorio y luego, en el repositorio de cada uno de los proyectos, 
+actualizar el submódulo. Una vez hecho esto, los mensajes de proto debían ser compilados para poder
+ser usados en el código. En el servidor esto se hacía automáticamente al levantar el proyecto, mientras que para el cliente armamos un
 script en Bash llamado \textit{gobuf-compile.sh} que se encargaba de compilar todos los mensajes y guardar el resultado en otra carpeta que 
 luego sería subida al repositorio, para no tener que hacer la compilación múltiples veces.
 
-Por último tenemos un repositorio llamado simplemente \textit{paper} que usamos para el desarrollo del informe final.
-
-Todos estos repositorios están agrupados en una organización de Github llamada \textit{fiubakka}.
+Todos estos repositorios se encuentran agrupados en una organización de Github llamada \textit{fiubakka}.
 
 \subsection{Integración de los cambios}
 
@@ -107,15 +105,15 @@ inmediatamente en la imagen de Docker, y los desarrolladores del cliente no nece
 imagen de Docker y ya tenían todo lo necesario para poder probarlo. La otra imagen publicada es la utilizada para producción, una imagen optimizada en tamaño y sin las dependencias de infraestructura
 embebidas. Ambas imágenes pueden ser consultadas en DockerHub, siendo las imágenes \textbf{mrmarcosrolando/fiubakka:prod-latest} y \textbf{mrmarcosrolando/fiubakka:dev-latest} respectivamente.
 
-Por otro lado, una vez que mudamos nuestro ambiente de producción al cluster de Kubernetes que construimos, implementamos también \textbf{Continous Deployment (CD)} en nuestro proyecto.
+Por otro lado, una vez que mudamos nuestro ambiente de producción al cluster de Kubernetes que construimos (ver sección \ref{sec:lessons-kubernetes}), implementamos también \textbf{Continous Deployment (CD)} en nuestro proyecto.
 Además de publicar las imágenes de Docker, cada cambio realizado en la rama principal actualiza la versión de \textit{Fiubakka} ejecutada en el servidor. En particular, para el caso de la imagen productiva,
 tuvimos que utilizar \textbf{CircleCI} como herramienta de CI/CD, ya que Github Actions no cuenta con \textit{runners} basados en la arquitectura de ARM. Dado que nuestro cluster de Kubernetes utiliza
 RaspberryPis, y por ende, arquitectura ARM, fue necesario construir las imágenes de producción exclusivamente en CircleCI para poder cumplir con la compatibilidad de la arquitectura de la imagen. De todas formas, sí utilizamos
 \textbf{Github Actions} para construir la imagen de desarrollo, dado que las computadoras donde desarrollamos son exclusivamente de arquitectura x86 y evitábamos consumir todos los créditos gratuitos ofrecidos por CircleCI.
 
-Tanto para la construcción de las imágenes de Docker como para el despliegue automático en Kubernetes, es decir, todo nuestro proceso de CI/CD fue desarrollado con \textbf{Dagger} en lugar de los lenguajes de configuración nativos
-de Github Actions y CircleCI basados en YAML. Dagger es un motor de CI/CD que se ejecuta totalmente en contenedores, y tiene como objetivo revolucionar la forma en que se escriben los pipelines de de \textit{devops}.
-Dagger abandona el YAML prevalente en prácticamente todas las herramientas de pipelines y opta por definir los pipelines vía código. Esto tiene muchísimas ventajas, no solo porque cualquier entorno con Docker puede reproducir el pipeline
+Tanto para la construcción de las imágenes de Docker como para el despliegue automático en Kubernetes, es decir, todo nuestro proceso de CI/CD, utilizamos \textbf{Dagger} en lugar de los lenguajes de configuración nativos
+de Github Actions y CircleCI basados en YAML. Dagger es un motor de CI/CD que se ejecuta totalmente en contenedores, y tiene como objetivo revolucionar la forma en que se escriben los pipelines de \textit{devops}.
+Dagger abandona el YAML prevalente en prácticamente todas las herramientas de pipelines y opta por definirlos vía código. Esto tiene muchísimas ventajas, no solo porque cualquier entorno con Docker puede reproducir el pipeline
 (sin ninguna duda su mayor ventaja) sino también porque permite la reutilización de código, la modularización de los pipelines y la posibilidad de elegir entre múltiples lenguajes de programación para el desarrollo. En particular, todo nuestro
 CI/CD utiliza el SDK de Dagger en Python.
 
@@ -166,5 +164,5 @@ anyio.run(main)
 \end{lstlisting}
 
 Vemos que la implementación del pipeline, a diferencia de YAML, es considerablemente más práctica y entendible. El hecho de que sea código convencional
-en lugar de un lenguaje declarativo como YAML permite una mayor flexibilidad, reutilización y modularización del pipeline, y manejar errores de forma que en YAML
-sería imposible. La comunidad detrás de Dagger está creciendo muy rápidamente y esto es solo el comienzo de que lo, creemos, va a poder ser posible en el futuro.
+en lugar de un lenguaje declarativo permite una mayor flexibilidad, reutilización y modularización del pipeline, y manejar errores de forma que en YAML
+sería imposible. La comunidad detrás de Dagger está creciendo muy rápidamente y esto es solo el comienzo de lo que creemos que va a poder ser posible en el futuro.
