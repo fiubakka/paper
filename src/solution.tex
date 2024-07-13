@@ -788,7 +788,7 @@ Para solucionar este problema implementamos una técnica conocida como \textit{h
 siguen activos. Su uso es extremadamente común en los sistemas distribuidos, por ejemplo, Kubernetes lo utiliza para conocer el estado de los distintos nodos del cluster. Akka hace exactamente lo mismo para sus propios nodos del Akka Cluster.
 \textit{etcd} es una base de datos distribuida que también lo emplea.
 
-En nuestro caso, el PlayerHandler envía un mensaje de tipo \textbf{Heartbeat} hacia el Player cada un par segundos. Cuando el Player recibe el mensaje actualiza un valor de su estado que indica el \textit{timestamp}
+En nuestro caso, el PlayerHandler envía un mensaje de tipo \textbf{Heartbeat} hacia el Player cada 2 segundos. Cuando el Player recibe el mensaje actualiza un valor de su estado que indica el \textit{timestamp}
 del momento en el que lo recibió. Adicionalmente, el Player se envía mensajes a sí mismo de forma periódica cada unos 5 segundos donde verifica si la diferencia entre el \textit{timestamp} actual y el almacenado en su estado
 supera los 10 segundos. En caso de que así sea, el Player automáticamente da por perdida la conexión y se detiene, garantizando que los recursos se liberen.
 
