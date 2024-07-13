@@ -85,14 +85,18 @@ consumidores de Kafka.
 Los eventos masivos, entonces, se procesan de la siguiente manera:
 
 \begin{itemize}
-    \item Un jugador realiza una acción en el juego, como por ejemplo un movimiento.
+    \item Un jugador realiza una acción en el juego, como por ejemplo  un movimiento.
     \item El actor correspondiente al jugador envía un mensaje al Productor con el evento.
     \item El Productor publica el evento en un tópico de Kafka.
     \item Un Consumidor lee el evento del tópico de Kafka y lo envía por un \textit{stream}.
     \item Cada uno de los demás jugadores del nodo recibe el evento a través del \textit{stream}.
 \end{itemize}
 
-// TODO agregar diagrama de lo descripto
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{../assets/introduction-architecture.png}
+    \caption{\textit{Overview} simplificado de la arquitectura propuesta.}
+\end{figure}
 
 Este diagrama resume la arquitectura desarrollada de forma simplificada. Es importante recordar que lo descrito corresponde a un único nodo del sistema.
 La clave de la escalabilidad de la aplicación es que podemos replicarlo en N nodos, donde cada uno de ellos es responsable de un subconjunto de los jugadores,
@@ -422,6 +426,7 @@ que la conforman. Haremos una descripción partiendo desde la capa de comunicaci
 los jugadores en el juego.
 
 \subsubsection{Conexión de los clientes}
+\label{sec:client-connection}
 
 \noindent Comenzamos entonces por el punto de entrada de conexión del cliente. El servidor está configurado para exponer un \textit{listener} de TCP en el puerto 2020.
 Este listener es manejado por el actor \textbf{PlayerAcceptor} mediante la creación de un Akka Stream que recibe como elementos
@@ -1222,7 +1227,7 @@ fue el foco de este proyecto, no es posible recuperar la contraseña de un usuar
     \centering
     \includegraphics[width=0.7\textwidth]{../assets/godot-login.png}
     \caption{Pantalla de Login. Son necesarios un nombre de usuario y contraseña.}
-    \label{fig:godot-main-menu}
+    \label{fig:godot-login}
 \end{figure}
 
 Por otro lado, si se tratase de un nuevo jugador o si se desea crear otro personaje, el usuario
@@ -1237,7 +1242,7 @@ e ingrese sus credenciales, se crea el usuario correspondiente.
     \centering
     \includegraphics[width=1.0\textwidth]{../assets/godot-register.png}
     \caption{Pantalla de creación de personaje.}
-    \label{fig:godot-main-menu}
+    \label{fig:godot-register}
 \end{figure}
 
 Un feature del cual hacemos uso en Godot es el de los scripts \textbf{Autoloads}, que funcionan de manera
@@ -1382,7 +1387,7 @@ usuarios puedan jugar.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=1.0\textwidth]{../assets/godot-truco.png}
+    \includegraphics[width=0.8\textwidth]{../assets/godot-truco.png}
     \caption{Pantalla de Truco durante una partida en transcurso. 
              Las regiones numeradas son: región del oponente con nombre, cartas y puntaje (1),
              zona de juego (2), botón para salir (3), región del jugador con nombre, puntaje e

@@ -1,13 +1,13 @@
-\noindent El proyecto desarrollado tiene como objetivo validar una \textit{prueba de concepto} de
-una arquitectura de servidor de videjuegos distribuida, de alta escalabilidad horizontal,
-tolerancia a fallos y elasticidad. Analizaremos las ventajas y desventajas de la arquitectura
-propuesta frente a la alternativa de un servidor monolítico, y evaluaremos su rendimiento
-con el videojuego desarrollado.
- 
-Este informe se encuentra compuesto por dos secciones principales. En primera
-instancia se presenta, explica y analiza la arquitectura diseñada y desarrollada para el
-servidor del videojuego. Dicha arquitectura tiene sus cimientos en el uso de Akka, un 
-\textit{toolkit} para el desarrollo de aplicaciones concurrentes y distribuidas basado
-en el modelo de actores. En segunda instancia se presentará cómo integramos este servidor
-con Godot, un motor de videojuegos \textit{open source} de origen argentino, que utilizamos
-para implementar el cliente del videojuego.
+\noindent El presente documento abarca una gran cantidad de conceptos y tecnologías que son necesarios comprender
+para poder tener un completo entendimiento del sistema desarrollado. Comenzaremos describiendo la problemática que decidimos
+abordar, para contextualizar la situación actual del estado del arte en el área de estudio. Presentaremos luego nuestra alternativa,
+los diferentes componentes que la conforman, y cómo se relacionan íntegramente las distintas tecnologías que utilizamos para su desarrollo.
+Finalmente, expondremos los resultados obtenidos de una serie de pruebas y mediciones que realizamos para evaluar el desempeño de nuestra solución ideada.
+
+Este trabajo abarca un conjunto variado de tecnologías, algunas muy conocidas y estándar de la industria, otras de nicho y aplicación en problemas más particulares.
+Desde motores de videojuegos, paradigmas de programación concurrente, principios de sistemas distribuidos, hasta sistemas de orquestación de contenedores, veremos como
+relacionamos todas estas tecnologías para resolver el problema de estudio.
+
+Como estudiantes de la carrera de Ingeniería en Informática todos los integrantes de este grupo tenemos experiencia, y particular aprecio, por los videojuegos.
+Es un pasatiempo que nos ha acompañado además a lo largo de nuestras vidas y que nos resulta de amplio interés. Es por esto mismo que el objeto de este trabajo
+se centra, en particular, en el desarrollo de videojuegos en línea. 

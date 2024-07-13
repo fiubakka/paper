@@ -49,7 +49,7 @@ de cada nodo.
 \end{tabular}
 \end{center}
 
-\noindent Lógicamente, para cada prueba realizada se adjunta el nodo de Kubernetes en el que se ejecutó el \textit{pod}, para poner en referencia los recursos utilizados.
+Lógicamente, para cada prueba realizada se adjunta el nodo de Kubernetes en el que se ejecutó el \textit{pod}, para poner en referencia los recursos utilizados.
 
 \subsection{Recursos utilizados por 1 nodo de \textit{Fiubakka}}
 
@@ -59,9 +59,10 @@ Es importante tener en cuenta que Kubernetes reporta el consumo de CPU en \texti
 a 1 core de la CPU del nodo de Kubernetes en el que se encuentre el pod. Kubernetes es agnóstico a la velocidad del procesador en sí, en la práctica lo que tiende a suceder
 es que nodos más rápidos que otros reportan un consumo de CPU menor para la misma tarea.
 
-\noindent El resultado obtenido es el siguiente:
+El resultado obtenido es el siguiente:
 
-\begin{center}
+\begin{table}[h]
+\centering
 \begin{tabular}{|c|c|c|}
     \hline
     \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
@@ -69,11 +70,13 @@ es que nodos más rápidos que otros reportan un consumo de CPU menor para la mi
     raspberrypi1 & 269m & 344Mi \\
     \hline
 \end{tabular}
-\end{center}
+\caption{Consumo de recursos en \textit{idle} del nodo raspberrypi1.}
+\end{table}
 
-\noindent Para demostrar el punto anterior sobre el consumo de CPU en nodos más rápidos, este es el resultado para el nodo \textbf{raspberrypi3}:
+Para demostrar el punto anterior sobre el consumo de CPU en nodos más rápidos, este es el resultado para el nodo \textbf{raspberrypi3}:
 
-\begin{center}
+\begin{table}[h]
+\centering
 \begin{tabular}{|c|c|c|}
     \hline
     \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
@@ -81,9 +84,10 @@ es que nodos más rápidos que otros reportan un consumo de CPU menor para la mi
     raspberrypi3 & 118m & 374Mi \\
     \hline
 \end{tabular}
-\end{center}
+\caption{Consumo de recursos en \textit{idle} del nodo raspberrypi3.}
+\end{table}
 
-\noindent Vemos que es aproximadamente la mitad del consumo de CPU respecto al nodo \textbf{raspberrypi1}. Esto es coherente con lo mostrado en el cuadro de recursos de cada
+Vemos que es aproximadamente la mitad del consumo de CPU respecto al nodo \textbf{raspberrypi1}. Esto es coherente con lo mostrado en el cuadro de recursos de cada
 nodo.
 
 \subsection{Pruebas de carga en 1 nodo}
@@ -98,7 +102,8 @@ procesa por jugador.
 
 Los resultados obtenidos fueron los siguientes:
 
-\begin{center}
+\begin{table}[h]
+\centering
 \begin{tabular}{|c|c|c|c|}
     \hline
     \textbf{Nodo de ejecución} & \textbf{Cantidad de jugadores} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
@@ -116,10 +121,10 @@ Los resultados obtenidos fueron los siguientes:
     raspberrypi1 & 24 & 3485m & 1645Mi \\
     \hline
 \end{tabular}
-\end{center}
+\caption{Consumo de recursos en 1 nodo con distintas cantidades de jugadores.}
+\end{table}
 
-
-\noindent Con la última prueba de carga con 24 jugadores llegamos al límite de CPU que el nodo \textbf{raspberrypi1} tolera, pasado este número estamos ejerciendo más carga que la que el procesador
+Con la última prueba de carga con 24 jugadores llegamos al límite de CPU que el nodo \textbf{raspberrypi1} tolera, pasado este número estamos ejerciendo más carga que la que el procesador
 puede soportar \textit{gracefully} y comienzan los errores de mensajes no entregados, por lo que nos detendremos aquí. 
 
 En principio, pareciera que el consumo de CPU escala en el orden lineal con la cantidad de jugadores. Esto contradice nuestro planteo original
@@ -137,8 +142,6 @@ y la cantidad de eventos procesados en total por todos los jugadores, respectiva
     \caption{Procesamiento de eventos generados en función de la cantidad de jugadores.}
 \end{figure}
 
-\newpage
-
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{../assets/stream-consumer-metrics.png}
@@ -154,8 +157,6 @@ los resultados son más claros.
     \includegraphics[width=1\textwidth]{../assets/stream-producer-amplified-metrics.png}
     \caption{Procesamiento de eventos generados en función de la cantidad de jugadores.}
 \end{figure}
-
-\newpage
 
 \begin{figure}[htbp]
     \centering
@@ -179,7 +180,8 @@ entre nodos que pueden incrementar el consumo de recursos.
 
 Los resultados obtenidos para $m=2$, con cada nodo de \textit{Fiubakka} en un nodo distinto de Kubernetes, fueron los siguientes:
 
-\begin{center}
+\begin{table}[h]
+\centering
 \begin{tabularx}{\textwidth} { 
     | >{\centering\arraybackslash}X 
     | >{\centering\arraybackslash}X 
@@ -213,12 +215,14 @@ Los resultados obtenidos para $m=2$, con cada nodo de \textit{Fiubakka} en un no
         & raspberrypi2 & 2979m & 1328Mi \\
         \hline
 \end{tabularx}
-\end{center}
+\caption{Consumo de recursos en 2 nodos con distintas cantidades de jugadores.}
+\end{table}
 
-\noindent Para $m=3$ se elimina el caso de 2 jugadores, dado que no se aprovecharía la distribución entre los 3 nodos, y se modifican algunas pruebas para que
+Para $m=3$ se elimina el caso de 2 jugadores, dado que no se aprovecharía la distribución entre los 3 nodos, y se modifican algunas pruebas para que
 la cantidad de jugadores sea uniformemente distribuible entre los nodos. Se obtuvieron los siguientes resultados:
 
-\begin{center}
+\begin{table}[h]
+\centering
 \begin{tabularx}{\textwidth} { 
     | >{\centering\arraybackslash}X 
     | >{\centering\arraybackslash}X 
@@ -258,9 +262,10 @@ la cantidad de jugadores sea uniformemente distribuible entre los nodos. Se obtu
         & raspberrypi3 & 2378m & 1166Mi \\
         \hline
 \end{tabularx}
-\end{center}
+\caption{Consumo de recursos en 3 nodos con distintas cantidades de jugadores.}
+\end{table}
 
-\noindent Los resultados obtenidos en principio son sorpresivos, dado que no coinciden con la hipótesis propuesta. Vemos que para cantidades bajas de jugadores
+Los resultados obtenidos en principio son sorpresivos, dado que no coinciden con la hipótesis propuesta. Vemos que para cantidades bajas de jugadores
 el consumo de CPU es mayor que en el caso de un único nodo, mientras que el consumo de memoria se mantiene aproximadamente igual. Para cantidades de jugadores más elevadas,
 como 16 o 24, el consumo de CPU disminuye ligeramente en las configuraciones de multinodo y ya si se observa menor consumo de memoria que en el caso de un único nodo.
 
@@ -287,7 +292,8 @@ lo que garantizamos así que las pruebas sean lo más fiel posible a nuestro ent
 
 A continuación se listan las características más relevantes de la máquina donde se realizaron las pruebas:
 
-\begin{center}
+\begin{table}[h]
+\centering
 \begin{tabularx}{\textwidth} { 
     | >{\centering\arraybackslash}X 
     | >{\centering\arraybackslash}X 
@@ -299,14 +305,16 @@ A continuación se listan las características más relevantes de la máquina do
     Intel i7-12700K & 20 & 4.7GHz & 32GiB \\
     \hline
 \end{tabularx}
-\end{center}
+\caption{Características de la máquina utilizada para las pruebas de carga virtualizadas.}
+\end{table}
 
-\noindent Para las pruebas de carga en este entorno utilizamos un total de 84 jugadores. Esta cantidad de jugadores es divisible entre 2 y 3 nodos
+Para las pruebas de carga en este entorno utilizamos un total de 84 jugadores. Esta cantidad de jugadores es divisible entre 2 y 3 nodos
 uniformemente y resulta una carga adecuada para ejercer presión sobre los nodos pero no sobrecargarlos.
 
 En este caso, todos los nodos son equivalentes en recursos, ya que comparten el mismo \textit{host}. Los resultados obtenidos fueron los siguientes:
 
-\begin{center}
+\begin{table}[h]
+\centering
 \begin{tabularx}{\textwidth} { 
     | >{\centering\arraybackslash}X 
     | >{\centering\arraybackslash}X 
@@ -328,9 +336,10 @@ En este caso, todos los nodos son equivalentes en recursos, ya que comparten el 
         & k3d nodo 3 & 5563m & 1588Mi \\
         \hline
 \end{tabularx}
-\end{center}
+\caption{Consumo de recursos en 2 y 3 nodos virtualizados con 84 jugadores.}
+\end{table}
 
-\noindent Los resultados obtenidos ahora son prometedores, y se ajustan a la hipótesis planteada. Vemos que al distribuir la carga de los jugadores
+Los resultados obtenidos ahora son prometedores, y se ajustan a la hipótesis planteada. Vemos que al distribuir la carga de los jugadores
 sobre 2 nodos reducimos el consumo de CPU en aproximadamente un 40\% por nodo, y al distribuir la carga sobre 3 nodos reducimos el consumo de CPU en aproximadamente un 50\% por nodo.
 Es posible que la reducción de consumo de CPU en 3 nodos sea en realidad mayor a la observada, dado que para esa configuración el procesador del \textit{host} se encontraba al 100\% de uso,
 por lo que podíamos estar ante \textit{throttling}. Por otro lado, es lógico igualmente que la reducción práctica no coincida exactamente con la planteada en la teoría, ya estamos ignorando el \textit{overhead} introducido por la comunicación entre los nodos del cluster.

@@ -1,7 +1,5 @@
-% Tomado del Anteproyecto, adaptar
-\textit{
-    In this Project, we will develop an online video game with the particularity that the game server will be a distributed system under the actor model paradigm.
-    For the backend, we will use the tools provided by the Akka toolkit to implement a distributed server under the actor model paradigm. Additionally, we will make use of Akka Streams to handle general game state updates, reserving the use of actor messages for interactions between entities.
-    For the frontend (client), we will implement a desktop program or application that can communicate with the server and render the game based on the updates it receives. This client will enable user interaction with other players and game entities.
-    Our goal is not merely to enable the interaction of multiple online players based on the actor model but to develop an architecture that allows the concurrent connection of a large number of players, prioritizing system scalability and availability.
-}
+\noindent This project aims to validate a \textit{proof of concept} for a distributed game server architecture, featuring high horizontal scalability, elasticity, and fault tolerance. We will analyze the advantages and disadvantages of the proposed architecture compared to the alternative of a monolithic server and evaluate its performance based on our developed game.
+
+This report is composed of two main sections. First, we present, explain, and analyze the designed and developed architecture for the game server. This architecture is based on the use of Akka, a toolkit for developing concurrent and distributed applications based on the actor model. Various performance tests will also be conducted under different conditions, measuring the consumed resources in each case.
+
+Secondly, we will present how we integrated this server with our client developed in Godot, an open-source game engine created in Argentina.
