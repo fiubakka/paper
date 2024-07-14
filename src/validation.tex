@@ -337,6 +337,7 @@ En este caso, todos los nodos son equivalentes en recursos, ya que comparten el 
         \hline
 \end{tabularx}
 \caption{Consumo de recursos en 2 y 3 nodos virtualizados con 84 jugadores.}
+\label{tab:virtualization-results}
 \end{table}
 
 Los resultados obtenidos ahora son prometedores, y se ajustan a la hipótesis planteada. Vemos que al distribuir la carga de los jugadores
@@ -344,11 +345,11 @@ sobre 2 nodos reducimos el consumo de CPU en aproximadamente un 40\% por nodo, y
 Es posible que la reducción de consumo de CPU en 3 nodos sea en realidad mayor a la observada, dado que para esa configuración el procesador del \textit{host} se encontraba al 100\% de uso,
 por lo que podíamos estar ante \textit{throttling}. Por otro lado, es lógico igualmente que la reducción práctica no coincida exactamente con la planteada en la teoría, ya estamos ignorando el \textit{overhead} introducido por la comunicación entre los nodos del cluster.
 
-Por otro lado, vemos que la memoria consumida se reduce apreciablemente para la mayoría de los nodos. El nodo con consumo de memoria más elevado es, seguramente, el que tiene
+Vemos que la memoria consumida se reduce apreciablemente para la mayoría de los nodos. El nodo con consumo de memoria más elevado es, seguramente, el que tiene
 asignado los Shard Coordinators de las entidades. Sería esperable que si aumentásemos la cantidad de jugadores la diferencia relativa en uso de memoria se reduzca incluso más, pero en nuestras pruebas
 incrementar la cantidad de jugadores a números considerablemente más elevados ya comienza a resultar en errores en los jugadores, por lo que no pudimos verificarlo.
 
-Finalmente, lo que sí debería verse claramente es como al aumentar la cantidad de nodos la carga de consumidores inducida en cada nodo debería ser proporcional a $\frac{n^2}{m}$.
+Lo que sí debería verse claramente es como al aumentar la cantidad de nodos la carga de consumidores inducida en cada nodo debería ser proporcional a $\frac{n^2}{m}$.
 Como referencia primero se muestra el gráfico de carga de procesamiento de eventos para el caso de un único nodo con los 84 jugadores.
 
 \begin{figure}[htbp]
@@ -373,15 +374,114 @@ Como referencia primero se muestra el gráfico de carga de procesamiento de even
 
 Vemos que para los casos de 2 y 3 nodos la carga se distribuye entre ellos de forma equitativa, mantiéndose aproximadamente el mismo valor total de velocidad de consumo de eventos del único nodo si tomamos la suma
 de cada velocidad en los casos multinodos. Particularmente, para el caso de 3 nodos se observa que uno de ellos (el celeste) quedó por debajo de los otros. En este caso en particular se dio que algunos jugadores se terminaron procesando
-en los otros dos nodos, por lo que la carga del nodo celeste quedo algo por debajo del resto. Los resultados observados coinciden perfectamente con el planteo teórico propuesto anteriormente, y revalidan la hipótestis de escalabilidad
+en los otros dos nodos, por lo que la carga del nodo celeste quedo algo por debajo del resto. Los resultados observados coinciden perfectamente con el planteo teórico propuesto anteriormente, y revalidan la hipótesis de escalabilidad
 horizontal que planteamos para nuestra arquitectura.
+
+Por último, y retomando las métricas de consumo de recursos de los \textit{pods} vistos en el cuadro \ref{tab:virtualization-results}, realizamos primero las mismas pruebas de carga pero reduciendo al mínimo el tráfico de red asociado al intercambio de mensajes entre los actores.
+La estrategia por defecto que utiliza Cluster Sharding es asignar nuevos \textit{shards} al nodo que contenga la menor cantidad de ellos. Esto resulta en una distribución uniforme de las entidades, pero introduce mayor tráfico a través de la red, dado que no
+hay garantía de que el Player administrado por el PlayerHandler exista en el mismo nodo. Sin embargo, es posible definir una estrategia alternativa que fuerce a que la creación de los \textit{shards} se den \textbf{siempre} dentro del mismo nodo que quiere comunicarse con sus entidades.
+De esta forma podemos tener una comparación directa del consumo de recursos de los nodos de la aplicación sin el \textit{overhead} introducido por intercambios de mensajes a través de la red.
+
+Los resultados obtenidos fueron los siguientes:
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth} { 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X | }
+        \hline
+        \textbf{Cantidad de jugadores (N)} & \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
+        \hline
+        84 & k3d nodo 1 & 11263m & 2427Mi \\
+        \hline
+        \multirow{2}{*}{84} & k3d nodo 1 & 6241m & 1857Mi \\
+        \cline{2-4}
+        & k3d nodo 2 & 5989m & 1913Mi \\
+        \hline
+        \multirow{3}{*}{84} & k3d nodo 1 & 5025m & 1457Mi \\
+        \cline{2-4}
+        & k3d nodo 2 & 5698m & 1824Mi \\
+        \cline{2-4}
+        & k3d nodo 3 & 5081m & 1743Mi \\
+        \hline
+\end{tabularx}
+\caption{Consumo de recursos en 2 y 3 nodos virtualizados con 84 jugadores, con la comunicación entre el Bot (PlayerHandler) y Player contenida dentro del mismo nodo.}
+\label{tab:virtualization-no-network-results}
+\end{table}
+
+Vemos que para el caso de 1 único nodo el consumo de CPU y memoria es prácticamente el mismo que en el cuadro \ref{tab:virtualization-results}, esto es esperable dado que en ambos casos no se introduce comunicación a través de la red, por lo que
+son equivalentes. En cambio, tanto para el caso de 2 nodos como el de 3 nodos, vemos que el consumo se redujo aproximadamente 1 core por nodo de la aplicación. Esto valida nuestra hipótesis de que el \textit{overhead} que agrega la comunicación a través
+de la red no es despreciable, y que al minimizarlo se obtiene una mejor performance en la aplicación.
+
+Como última prueba, modificamos las pruebas de carga para que tanto el Player como el PlayerPersistor pasen a ser actores en lugar de entidades de Sharding. De esta forma no solo eliminamos la comunicación a través de la red, como en el caso del cuadro \ref{tab:virtualization-no-network-results},
+sino que además se elimina el \textit{overhead} introducido por los mecanismos de Cluster Sharding, particularmente por los Shard Region y Shard Coordinator explicados en la sección \ref{sec:cluster-sharding}.
+
+Los resultados obtenidos fueron los siguientes:
+
+\newpage
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth} { 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X 
+    | >{\centering\arraybackslash}X | }
+        \hline
+        \textbf{Cantidad de jugadores (N)} & \textbf{Nodo de ejecución} & \textbf{Consumo de CPU} & \textbf{Consumo de memoria} \\
+        \hline
+        84 & k3d nodo 1 & 11288m & 2383Mi \\
+        \hline
+        \multirow{2}{*}{84} & k3d nodo 1 & 4760m & 1793Mi \\
+        \cline{2-4}
+        & k3d nodo 2 & 4714m & 1831Mi \\
+        \hline
+        \multirow{3}{*}{84} & k3d nodo 1 & 3726m & 1553Mi \\
+        \cline{2-4}
+        & k3d nodo 2 & 3684m & 1484Mi \\
+        \cline{2-4}
+        & k3d nodo 3 & 3724m & 1483Mi \\
+        \hline
+        \multirow{4}{*}{84} & k3d nodo 1 & 3237m & 1594Mi \\
+        \cline{2-4}
+        & k3d nodo 2 & 3334m & 1609Mi \\
+        \cline{2-4}
+        & k3d nodo 3 & 3315m & 1603Mi \\
+        \cline{2-4}
+        & k3d nodo 4 & 3295m & 1683Mi \\
+        \hline
+        \multirow{6}{*}{84} & k3d nodo 1 & 2689m & 1781Mi \\
+        \cline{2-4}
+        & k3d nodo 2 & 2723m & 1811Mi \\
+        \cline{2-4}
+        & k3d nodo 3 & 2670m & 1816Mi \\
+        \cline{2-4}
+        & k3d nodo 4 & 2832m & 1771Mi \\
+        \cline{2-4}
+        & k3d nodo 5 & 2823m & 1764Mi \\
+        \cline{2-4}
+        & k3d nodo 6 & 2668m & 1961Mi \\
+        \hline
+\end{tabularx}
+\caption{Consumo de recursos en 2, 3, 4 y 6 nodos virtualizados con 84 jugadores, sin Cluster Sharding.}
+\label{tab:virtualization-no-network-results}
+\end{table}
+
+Vemos que sin utilizar Cluster Sharding el consumo de recursos se reduce considerablemente por nodo y conseguimos escalar a una mayor cantidad de nodos antes de llegar
+al punto de mejoras marginales. Particularmente, para el caso de $N = 3$ vemos que se obtiene una mejora de aproximadamente $35\%$ en consumo de CPU, una diferencia muy considerable.
+
+En resumen, es posible disminuir considerablemente el consumo de cada nodo de la aplicación si se minimiza la comunicación a través de la red y además se elimina el uso de Cluster Sharding
+para los Player, reemplazándolo por actores convencionales. La contracara de esta decisión es que se pierden las propiedades de rebalanceo que Cluster Sharding provee al incrementar la cantidad de nodos
+en el cluster y la tolerancia a fallos que provee al asegurar que cualquier fallo en el Player o PlayerPersistor resulta en un reinicio de la entidad.
 
 \subsection{Métricas del servidor}
 
 \noindent Ningún sistema está completo sin métricas de monitoreo. Las métricas son esenciales no solo para medir el desempeño de la aplicación, sino también para poder detectar errores y diagnosticar las causas de bajo rendimiento.
 \textit{Fiubakka} no es una excepción, y cuenta con una batería de métricas que permiten analizar al detalle la \textit{performance} de cada componente que lo conforma.
 
-Para obtener las métricas de \textit{Fiubakka} utilizamos el plugin de \textbf{Cinnamon}, también conocido como Lightbend Telemetry. Cinnamon es un agente de Java desarrollado por la empresa Lightbend, responsables del desarrollo de tanto Scala
+Para obtener las métricas de \textit{Fiubakka} utilizamos el \textit{plugin} de \textbf{Cinnamon}, también conocido como Lightbend Telemetry. Cinnamon es un agente de Java desarrollado por la empresa Lightbend, responsables del desarrollo de tanto Scala
 como Akka, para la instrumentación y obtención de métricas de aplicaciones basadas en Akka. Ofrece un conjunto de bibliotecas, todas optativas, para instrumentar cada componente de Akka. Por supuesto, también permite instrumentar la JVM de la aplicación
 del nodo.
 

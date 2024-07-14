@@ -232,6 +232,7 @@ La sección de \textit{sharding} incluida en la configuración nos lleva a nuest
 hace uso: \textbf{Akka Cluster Sharding}, una extensión de las funcionalidades que Akka Cluster provee.
 
 \subsubsection{Akka Cluster Sharding}
+\label{sec:cluster-sharding}
 
 \noindent Una problemática que surge al utilizar Akka Cluster es que si bien los actores pueden comunicarse entre sí sin importar en qué nodo
 se encuentren, es necesario de alguna forma conseguir la referencia a los actores que residen en nodos ajenos al propio. En principio
@@ -537,6 +538,7 @@ en mensajes que el PlayerHandler puede recibir. Los mensajes son enviados median
 \newpage
 
 \subsubsection{Manejo del jugador}
+\label{sec:player-handling}
 
 \noindent Hasta aquí explicamos como se conecta un cliente al servidor y como se reciben los mensajes que el cliente emite.
 Ahora vamos a explicar como se maneja el estado del jugador y como se integra con todos los demás jugadores que pueden estar
